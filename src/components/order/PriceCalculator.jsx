@@ -2,16 +2,17 @@ import React, { useEffect, useState } from "react";
 import { PricingLabels } from "@/entities/PricingLabels";
 import { Rates } from "@/entities/Rates";
 import { CalculationSettings } from "@/entities/CalculationSettings";
+import { Coupon } from "@/entities/Coupon";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Calculator, ArrowRight, ArrowLeft } from "lucide-react";
+import { Loader2, Calculator, ArrowRight, ArrowLeft, Tag, X, CheckCircle } from "lucide-react";
 import { motion } from "framer-motion";
 
 const formatCurrency = (amount, currency = 'ILS') => {
   const num = Number(amount || 0);
   const symbol = currency === 'ILS' ? '₪' : currency === 'USD' ? '$' : currency === 'EUR' ? '€' : '£';
-  // Round to nearest integer for ILS, keep decimals for other currencies
   const displayAmount = currency === 'ILS' ? Math.round(num) : num.toFixed(2);
   return `${symbol}${displayAmount}`;
 };
@@ -25,21 +26,25 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
   const [rates, setRates] = useState({ usd: 3.7, eur: 4.0, gbp: 4.5 });
   const [settings, setSettings] = useState(null);
   const [domesticShipping, setDomesticShipping] = useState(35);
+  
+  // Coupon state
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponError, setCouponError] = useState('');
+  const [checkingCoupon, setCheckingCoupon] = useState(false);
+  const [discount, setDiscount] = useState(0);
 
-  // Check if this is a local stock order
   const isLocalOrder = site === 'local' || (cart.length > 0 && cart[0].site === 'local');
 
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       try {
-        // Load pricing labels
         const labelsList = await PricingLabels.list();
         if (labelsList.length > 0) {
           setLabels(labelsList[0]);
         }
 
-        // Load rates
         const ratesList = await Rates.list();
         let loadedRates = { usd: 3.7, eur: 4.0, gbp: 4.5 };
         if (ratesList && ratesList.length > 0) {
@@ -52,7 +57,6 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
           setRates(loadedRates);
         }
 
-        // Load calculation settings
         const settingsList = await CalculationSettings.list();
         let loadedSettings = null;
         let domesticShipCost = 35;
@@ -64,7 +68,6 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
           setDomesticShipping(domesticShipCost);
         }
 
-        // Helper function to convert price to ILS
         const convertToILS = (price, currency) => {
           const amount = Number(price) || 0;
           if (currency === 'USD') return amount * loadedRates.usd;
@@ -73,68 +76,50 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
           return amount;
         };
 
-        // Calculate full cost per item - SAME AS CartSummary
         const calculateItemFullCost = (item, allItems) => {
-          // For local stock - simple calculation
           if (item.site === 'local') {
             return Number(item.original_price || 0) * (item.quantity || 1);
           }
 
-          // For international orders - complex calculation
           if (!loadedSettings) return convertToILS(item.original_price, item.original_currency) * (item.quantity || 1);
 
           const priceILS = convertToILS(item.original_price, item.original_currency);
           const itemWeight = (item.item_weight || 0.3) * (item.quantity || 1);
           
-          // Calculate total weight
           const totalWeight = allItems.reduce((sum, it) => sum + ((it.item_weight || 0.3) * (it.quantity || 1)), 0);
 
           if (totalWeight === 0) {
             return priceILS * (item.quantity || 1);
           }
 
-          // Calculate international shipping cost
           const weightWithPackaging = totalWeight + (loadedSettings.outer_pack_kg || 0.3);
           const roundedWeight = Math.ceil(weightWithPackaging / (loadedSettings.carrier_rounding_kg || 0.5)) * (loadedSettings.carrier_rounding_kg || 0.5);
           const baseShipping = roundedWeight * (loadedSettings.ship_rate_per_kg || 100);
           const withSurcharges = baseShipping * (1 + (loadedSettings.fuel_surcharge_pct || 0) + (loadedSettings.remote_area_pct || 0));
           
-          // Calculate fixed fees
           const fixedFees = loadedSettings.fixed_fees_ils || 50;
-          
-          // Total overhead per order
           const totalOverhead = withSurcharges + fixedFees;
-          
-          // Distribute overhead proportionally by item weight
           const itemProportion = itemWeight / totalWeight;
           const itemOverhead = totalOverhead * itemProportion;
-          
-          // Item cost before VAT
           const itemBaseCost = priceILS * (item.quantity || 1);
           const itemCostBeforeVAT = itemBaseCost + itemOverhead;
-          
-          // Add VAT
           const vatRate = loadedSettings.vat_pct || 0.18;
           const itemFullCostWithVAT = itemCostBeforeVAT * (1 + vatRate);
           
           return itemFullCostWithVAT;
         };
 
-        // Calculate SAME AS CartSummary
         const totalWeightKg = cart.reduce((sum, item) => sum + ((item.item_weight || 0.35) * item.quantity), 0);
 
-        // Calculate items total using the SAME function as CartSummary
         const itemsTotal = cart.reduce((sum, item) => {
           return sum + calculateItemFullCost(item, cart);
         }, 0);
         
-        // Final total - ROUNDED
         const total = Math.round(itemsTotal + domesticShipCost);
 
         setTotalPrice(total);
         setTotalWeight(totalWeightKg);
         
-        // Set detailed items with same calculation
         setDetailedItems(cart.map(item => ({
           ...item,
           priceILS: calculateItemFullCost(item, cart)
@@ -152,18 +137,98 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
     }
   }, [cart, site, isLocalOrder]);
 
+  const validateCoupon = async () => {
+    if (!couponCode.trim()) return;
+    
+    setCheckingCoupon(true);
+    setCouponError('');
+    
+    try {
+      const coupons = await Coupon.filter({ code: couponCode.toUpperCase().trim() });
+      
+      if (coupons.length === 0) {
+        setCouponError('קוד קופון לא תקין');
+        return;
+      }
+      
+      const coupon = coupons[0];
+      
+      // Validate coupon
+      if (!coupon.is_active) {
+        setCouponError('קופון זה אינו פעיל');
+        return;
+      }
+      
+      const now = new Date();
+      const validFrom = new Date(coupon.valid_from);
+      const validUntil = new Date(coupon.valid_until);
+      
+      if (now < validFrom || now > validUntil) {
+        setCouponError('קופון זה אינו בתוקף');
+        return;
+      }
+      
+      if (coupon.usage_limit && coupon.times_used >= coupon.usage_limit) {
+        setCouponError('קופון זה מוגבל בשימוש והגיע למכסה');
+        return;
+      }
+      
+      const itemsSubtotal = detailedItems.reduce((sum, item) => sum + item.priceILS, 0);
+      
+      if (coupon.minimum_order_amount && itemsSubtotal < coupon.minimum_order_amount) {
+        setCouponError(`קופון זה תקף רק להזמנות מעל ₪${coupon.minimum_order_amount}`);
+        return;
+      }
+      
+      if (coupon.applies_to_site !== 'all' && coupon.applies_to_site !== site) {
+        setCouponError('קופון זה לא תקף לאתר שנבחר');
+        return;
+      }
+      
+      // Calculate discount
+      let discountAmount = 0;
+      if (coupon.discount_type === 'percentage') {
+        discountAmount = Math.round((itemsSubtotal + domesticShipping) * (coupon.discount_value / 100));
+      } else {
+        discountAmount = Math.round(coupon.discount_value);
+      }
+      
+      // Don't allow discount to exceed total
+      const maxDiscount = itemsSubtotal + domesticShipping;
+      discountAmount = Math.min(discountAmount, maxDiscount);
+      
+      setAppliedCoupon(coupon);
+      setDiscount(discountAmount);
+      
+    } catch (error) {
+      console.error("Error validating coupon:", error);
+      setCouponError('שגיאה בבדיקת הקופון');
+    } finally {
+      setCheckingCoupon(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setDiscount(0);
+    setCouponCode('');
+    setCouponError('');
+  };
+
   const handleContinue = () => {
-    // Calculate items subtotal
     const itemsSubtotal = detailedItems.reduce((sum, item) => sum + item.priceILS, 0);
+    const finalTotal = totalPrice - discount;
     
     const breakdown = {
       items_total_ils: itemsSubtotal,
       domestic_ship_ils: domesticShipping,
-      final_total_ils: totalPrice,
+      discount_ils: discount,
+      coupon_code: appliedCoupon?.code || null,
+      final_total_ils: finalTotal,
       is_local: isLocalOrder
     };
     
-    onConfirm(totalPrice, totalWeight, breakdown);
+    onConfirm(finalTotal, totalWeight, breakdown);
   };
 
   if (loading) {
@@ -174,8 +239,8 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
     );
   }
 
-  // Calculate subtotal from items
   const itemsSubtotal = detailedItems.reduce((sum, item) => sum + item.priceILS, 0);
+  const finalTotal = totalPrice - discount;
 
   return (
     <motion.div
@@ -217,6 +282,65 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
 
           <Separator className="my-6" />
 
+          {/* Coupon Section */}
+          <div className="mb-6">
+            <h3 className="font-medium text-stone-700 mb-3 flex items-center gap-2">
+              <Tag className="w-4 h-4" />
+              קוד הנחה
+            </h3>
+            
+            {!appliedCoupon ? (
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Input
+                    value={couponCode}
+                    onChange={(e) => {
+                      setCouponCode(e.target.value.toUpperCase());
+                      setCouponError('');
+                    }}
+                    placeholder="הזן קוד קופון"
+                    className="font-mono"
+                    onKeyPress={(e) => e.key === 'Enter' && validateCoupon()}
+                  />
+                  <Button
+                    onClick={validateCoupon}
+                    disabled={!couponCode.trim() || checkingCoupon}
+                    className="bg-rose-500 hover:bg-rose-600 text-white"
+                  >
+                    {checkingCoupon ? <Loader2 className="w-4 h-4 animate-spin" /> : 'החל'}
+                  </Button>
+                </div>
+                {couponError && (
+                  <p className="text-sm text-red-600">{couponError}</p>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                  <div>
+                    <p className="font-semibold text-green-800 font-mono">{appliedCoupon.code}</p>
+                    <p className="text-sm text-green-700">
+                      {appliedCoupon.discount_type === 'percentage' 
+                        ? `${appliedCoupon.discount_value}% הנחה` 
+                        : `₪${appliedCoupon.discount_value} הנחה`}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={removeCoupon}
+                  className="text-green-600 hover:bg-green-100"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
+          </div>
+
+          <Separator className="my-6" />
+
           {/* Price Summary */}
           <div className="space-y-3">
             <div className="flex justify-between text-stone-700">
@@ -229,6 +353,13 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
               <span className="font-semibold">{formatCurrency(domesticShipping, 'ILS')}</span>
             </div>
 
+            {discount > 0 && (
+              <div className="flex justify-between text-green-700">
+                <span>הנחה ({appliedCoupon?.code})</span>
+                <span className="font-semibold">-{formatCurrency(discount, 'ILS')}</span>
+              </div>
+            )}
+
             <Separator className="my-4" />
 
             <div className="flex justify-between items-center pt-2">
@@ -236,7 +367,7 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
                 {labels.final_total_label || 'סה״כ לתשלום'}
               </span>
               <span className="text-2xl font-bold text-rose-600">
-                {formatCurrency(totalPrice, 'ILS')}
+                {formatCurrency(finalTotal, 'ILS')}
               </span>
             </div>
 

@@ -16,6 +16,7 @@ import LocalStock from './pages/LocalStock';
 import ManageLocalStock from './pages/ManageLocalStock';
 import LocalStockItemDetail from './pages/LocalStockItemDetail';
 import ExchangeRates from './pages/ExchangeRates';
+import ManageCoupons from './pages/ManageCoupons';
 import Layout from './Layout.jsx';
 
 
@@ -38,6 +39,7 @@ export const PAGES = {
     "ManageLocalStock": ManageLocalStock,
     "LocalStockItemDetail": LocalStockItemDetail,
     "ExchangeRates": ExchangeRates,
+    "ManageCoupons": ManageCoupons,
 }
 
 export const pagesConfig = {
