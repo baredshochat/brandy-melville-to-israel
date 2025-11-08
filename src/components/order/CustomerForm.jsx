@@ -1,27 +1,48 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea"; // Import Textarea
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ArrowRight, ArrowLeft, User, Mail, Phone, Home, MapPin, MessageSquare } from "lucide-react"; // Import MessageSquare (replacing Hash)
+import { ArrowRight, ArrowLeft, User, Mail, Phone, Home, MapPin, MessageSquare } from "lucide-react";
 import { motion } from "framer-motion";
+import { User as UserEntity } from "@/entities/User";
 
 export default function CustomerForm({ onSubmit, onBack }) {
+  const [user, setUser] = useState(null);
   const [formData, setFormData] = useState({
     customer_name: '',
     customer_email: '',
     customer_phone: '',
     shipping_address: '',
     city: '',
-    notes: '' // Changed from postal_code to notes
+    notes: ''
   });
+
+  // Load user and auto-fill email
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const userData = await UserEntity.me();
+        setUser(userData);
+        
+        // Auto-fill email from logged-in user
+        if (userData && userData.email) {
+          setFormData(prev => ({
+            ...prev,
+            customer_email: userData.email
+          }));
+        }
+      } catch (error) {
+        console.error("Error loading user:", error);
+      }
+    };
+    loadUser();
+  }, []);
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // FIX: allow calling without event (from onClick outside the form)
   const handleSubmit = (e) => {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
     onSubmit(formData);
@@ -32,14 +53,14 @@ export default function CustomerForm({ onSubmit, onBack }) {
 
   const isValid = formData.customer_name && formData.customer_email && 
                  formData.customer_phone && formData.shipping_address && 
-                 formData.city && emailValid; // require a valid email format
+                 formData.city && emailValid;
 
   const inputFields = [
       { id: 'customer_name', label: 'שם מלא', placeholder: 'הזיני את שמך המלא', width: 'full', icon: User, component: 'input', required: true },
       { id: 'customer_email', label: 'כתובת אימייל', placeholder: 'your.email@example.com', type: 'email', width: 'full', icon: Mail, component: 'input', required: true },
       { id: 'customer_phone', label: 'טלפון', placeholder: '05X-XXXXXXX', type: 'tel', width: 'full', icon: Phone, component: 'input', required: true },
       { id: 'shipping_address', label: 'כתובת', placeholder: 'רחוב, מספר בית, דירה', width: 'full', icon: Home, component: 'input', required: true },
-      { id: 'city', label: 'עיר', placeholder: 'תל אביב', width: 'full', icon: MapPin, component: 'input', required: true }, // Changed from 'half' to 'full'
+      { id: 'city', label: 'עיר', placeholder: 'תל אביב', width: 'full', icon: MapPin, component: 'input', required: true },
       { id: 'notes', label: 'הערות (אופציונלי)', placeholder: 'בקשות מיוחדות, הנחיות לשליח...', width: 'full', icon: MessageSquare, component: 'textarea', required: false },
   ];
 
@@ -72,7 +93,6 @@ export default function CustomerForm({ onSubmit, onBack }) {
         </div>
 
         <div className="bg-white/95 backdrop-blur-sm p-4 sm:p-8 border border-stone-200 rounded-none">
-          {/* ADD: id to the form so external submit button can target it */}
           <form id="customer-form" onSubmit={handleSubmit} className="grid grid-cols-2 gap-x-3 gap-y-4 sm:gap-x-4 sm:gap-y-6">
             {inputFields.map(field => {
                 const Icon = field.icon;
@@ -110,10 +130,10 @@ export default function CustomerForm({ onSubmit, onBack }) {
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0 mt-6 sm:mt-8">
           <Button
             type="submit"
-            form="customer-form"  // NEW: link the button to the form above
+            form="customer-form"
             disabled={!isValid}
             className="order-1 sm:order-none h-10 sm:h-12 px-6 sm:px-8 bg-black hover:bg-stone-800 active:bg-stone-700 text-white font-medium transition-all duration-300 flex items-center justify-center gap-2 rounded-none text-sm sm:text-base" 
-            onClick={undefined} // ensure no manual click handler bypasses validation
+            onClick={undefined}
           >
             המשך לתשלום
             <ArrowLeft className="w-4 h-4" />
