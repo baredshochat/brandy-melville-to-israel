@@ -741,7 +741,7 @@ Example output for the Priscilla Pants:
             <div className="flex justify-center mb-6"><Heart className="w-20 h-20 text-rose-400 fill-rose-400" /></div>
             <h2 className="text-3xl font-semibold text-stone-900 mb-3">ההזמנה נשלחה בהצלחה!</h2>
             <p className="text-base text-stone-600 mb-2">מספר הזמנה: {currentOrder?.order_number}</p>
-            <p className="text-base text-stone-600 mb-2">סכום לתשלום: ₪{totalPriceILS}</p>
+            <p className="text-base text-stone-600 mb-2">סכום לתשלום: ₪{Math.round(totalPriceILS)}</p>
             <p className="text-base text-stone-600 mb-8">קישור לתשלום ועדכונים נשלחו למייל.</p>
             <button onClick={resetFlow} className="bg-rose-500 hover:bg-rose-600 text-white font-medium py-3 px-8 transition-all duration-300 shadow-lg flex items-center gap-2 mx-auto">
               <Heart className="w-4 h-4 fill-white" /> בצעי הזמנה חדשה
