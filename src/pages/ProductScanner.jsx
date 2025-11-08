@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { ScannedProduct } from "@/entities/ScannedProduct";
+import { LocalStockItem } from "@/entities/LocalStockItem";
 import { SkuImage } from "@/entities/SkuImage";
 import { User } from "@/entities/User";
+import { CalculationSettings } from "@/entities/CalculationSettings";
+import { Rates } from "@/entities/Rates";
 import { InvokeLLM, UploadFile } from "@/integrations/Core";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +14,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Scan, Upload, CheckCircle, AlertCircle, ExternalLink, Trash2, Image as ImageIcon, Edit, Copy } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2, Scan, Upload, CheckCircle, AlertCircle, ExternalLink, Trash2, Image as ImageIcon, Edit, Copy, Package, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPageUrl } from "@/utils";
 
@@ -29,6 +33,11 @@ export default function ProductScanner() {
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
   const [duplicatingProduct, setDuplicatingProduct] = useState(null);
   const [newColor, setNewColor] = useState('');
+  
+  // New state for batch conversion
+  const [selectedProducts, setSelectedProducts] = useState(new Set());
+  const [converting, setConverting] = useState(false);
+  const [conversionProgress, setConversionProgress] = useState(null);
 
   useEffect(() => {
     const init = async () => {
@@ -331,6 +340,169 @@ Return clean JSON only.`,
     }
   };
 
+  // NEW: Batch conversion functions
+  const toggleProductSelection = (productId) => {
+    setSelectedProducts(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(productId)) {
+        newSet.delete(productId);
+      } else {
+        newSet.add(productId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectAll = (productList) => {
+    const allIds = productList.map(p => p.id);
+    const allSelected = allIds.every(id => selectedProducts.has(id));
+    
+    if (allSelected) {
+      // Deselect all
+      setSelectedProducts(prev => {
+        const newSet = new Set(prev);
+        allIds.forEach(id => newSet.delete(id));
+        return newSet;
+      });
+    } else {
+      // Select all
+      setSelectedProducts(prev => {
+        const newSet = new Set(prev);
+        allIds.forEach(id => newSet.add(id));
+        return newSet;
+      });
+    }
+  };
+
+  const calculateLocalPrice = async (originalPrice, currency) => {
+    try {
+      // Load exchange rates and calculation settings
+      const [ratesList, settingsList] = await Promise.all([
+        Rates.list(),
+        CalculationSettings.list()
+      ]);
+
+      const rates = ratesList && ratesList.length > 0 ? ratesList[0] : { eur: 4.0, gbp: 4.5, usd: 3.7 };
+      const settings = settingsList && settingsList.length > 0 ? settingsList[0] : null;
+
+      // Convert to ILS
+      let priceILS = originalPrice;
+      if (currency === 'EUR') {
+        priceILS = originalPrice * (rates.eur || 4.0);
+      } else if (currency === 'GBP') {
+        priceILS = originalPrice * (rates.gbp || 4.5);
+      } else if (currency === 'USD') {
+        priceILS = originalPrice * (rates.usd || 3.7);
+      }
+
+      // Apply margin and fees if settings exist
+      if (settings) {
+        const commissionMultiplier = 1 + (settings.commission_pct || 0.1);
+        const fxFeeMultiplier = 1 + (settings.fx_fee_pct || 0.027);
+        const bufferMultiplier = 1 + (settings.buffer_pct || 0.05);
+        
+        priceILS = priceILS * commissionMultiplier * fxFeeMultiplier * bufferMultiplier;
+        
+        // Add VAT
+        const vatMultiplier = 1 + (settings.vat_pct || 0.18);
+        priceILS = priceILS * vatMultiplier;
+      } else {
+        // Default multiplier if no settings (approximately 1.5x for margin + VAT)
+        priceILS = priceILS * 1.5;
+      }
+
+      // Round to nearest 10
+      return Math.round(priceILS / 10) * 10;
+    } catch (error) {
+      console.error("Error calculating price:", error);
+      // Fallback calculation
+      return Math.round(originalPrice * 5 / 10) * 10; // Simple 5x conversion + rounding
+    }
+  };
+
+  const convertToLocalStock = async () => {
+    if (selectedProducts.size === 0) {
+      alert('אנא בחרי לפחות מוצר אחד להמרה');
+      return;
+    }
+
+    const productsToConvert = products.filter(p => selectedProducts.has(p.id));
+    const productsWithoutImages = productsToConvert.filter(p => !p.uploaded_image_url && !p.ai_image_url);
+    
+    if (productsWithoutImages.length > 0) {
+      const confirm = window.confirm(
+        `${productsWithoutImages.length} מוצרים אינם כוללים תמונה.\nהאם להמשיך בכל זאת?`
+      );
+      if (!confirm) return;
+    }
+
+    setConverting(true);
+    setConversionProgress({ current: 0, total: productsToConvert.length, success: 0, failed: 0 });
+
+    try {
+      for (let i = 0; i < productsToConvert.length; i++) {
+        const product = productsToConvert[i];
+        
+        try {
+          // Calculate local price
+          const priceILS = await calculateLocalPrice(product.original_price, product.original_currency);
+          
+          // Get best available image
+          const imageUrl = product.uploaded_image_url || product.ai_image_url || '';
+          
+          // Create LocalStockItem
+          await LocalStockItem.create({
+            product_name: product.product_name,
+            product_description: product.product_description || '',
+            image_url: imageUrl,
+            price_ils: priceILS,
+            color: product.available_colors && product.available_colors.length > 0 ? product.available_colors[0] : '',
+            size: product.available_sizes && product.available_sizes.length > 0 ? product.available_sizes[0] : 'One Size',
+            quantity_available: 1,
+            is_available: true,
+            category: product.category || 'other',
+            internal_sku: product.product_sku,
+            source_url: product.product_url,
+            weight_kg: 0.3
+          });
+          
+          // Mark scanned product as processed
+          await ScannedProduct.update(product.id, { is_processed: true });
+          
+          setConversionProgress(prev => ({
+            ...prev,
+            current: i + 1,
+            success: prev.success + 1
+          }));
+          
+        } catch (error) {
+          console.error(`Error converting product ${product.id}:`, error);
+          setConversionProgress(prev => ({
+            ...prev,
+            current: i + 1,
+            failed: prev.failed + 1
+          }));
+        }
+      }
+      
+      // Reload products and clear selection
+      await loadProducts();
+      setSelectedProducts(new Set());
+      
+      // Show success message
+      setTimeout(() => {
+        setConversionProgress(prev => ({ ...prev, done: true }));
+        setTimeout(() => setConversionProgress(null), 3000);
+      }, 500);
+      
+    } catch (error) {
+      console.error("Error in batch conversion:", error);
+      alert('שגיאה בהמרה. נסי שוב.');
+    } finally {
+      setConverting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -561,6 +733,53 @@ Return clean JSON only.`,
           </DialogContent>
         </Dialog>
 
+        {/* Conversion Progress Dialog */}
+        {conversionProgress && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <Card className="w-96">
+              <CardContent className="p-6">
+                <div className="text-center">
+                  {conversionProgress.done ? (
+                    <>
+                      <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
+                      <h3 className="text-xl font-bold text-green-900 mb-2">הומר בהצלחה!</h3>
+                      <p className="text-green-700">
+                        {conversionProgress.success} מוצרים הועברו למלאי המקומי
+                      </p>
+                      {conversionProgress.failed > 0 && (
+                        <p className="text-red-600 mt-2">
+                          {conversionProgress.failed} מוצרים נכשלו
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <Loader2 className="w-16 h-16 text-blue-600 mx-auto mb-4 animate-spin" />
+                      <h3 className="text-xl font-bold text-stone-900 mb-4">ממיר מוצרים...</h3>
+                      <div className="mb-2">
+                        <div className="flex justify-between text-sm text-stone-700 mb-1">
+                          <span>{conversionProgress.current} מתוך {conversionProgress.total}</span>
+                          <span>{Math.round((conversionProgress.current / conversionProgress.total) * 100)}%</span>
+                        </div>
+                        <div className="w-full bg-stone-200 rounded-full h-3">
+                          <div
+                            className="bg-blue-600 h-3 rounded-full transition-all duration-300"
+                            style={{ width: `${(conversionProgress.current / conversionProgress.total) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex justify-between text-xs text-stone-600 mt-4">
+                        <span>✓ הצליחו: {conversionProgress.success}</span>
+                        <span>✗ נכשלו: {conversionProgress.failed}</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* Products Tabs */}
         <Tabs defaultValue="needs_image" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
@@ -578,103 +797,157 @@ Return clean JSON only.`,
           <TabsContent value="needs_image">
             <Card>
               <CardContent className="pt-6">
+                {/* Batch Actions Bar */}
+                {selectedProducts.size > 0 && (
+                  <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Package className="w-5 h-5 text-blue-600" />
+                      <span className="font-medium text-blue-900">
+                        {selectedProducts.size} מוצרים נבחרו
+                      </span>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={convertToLocalStock}
+                        disabled={converting}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        {converting ? (
+                          <>
+                            <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                            ממיר...
+                          </>
+                        ) : (
+                          <>
+                            <Package className="w-4 h-4 ml-2" />
+                            המר למלאי מקומי
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => setSelectedProducts(new Set())}
+                      >
+                        בטל בחירה
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 {needsImageProducts.length === 0 ? (
                   <p className="text-center text-stone-500 py-8">אין מוצרים שצריכים תמונה</p>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {needsImageProducts.map((product) => (
-                      <Card key={product.id} className="border-orange-200">
-                        <CardContent className="p-4">
-                          <div className="flex items-start justify-between mb-2">
-                            <AlertCircle className="w-5 h-5 text-orange-600 flex-shrink-0" />
-                            <div className="flex gap-1">
+                  <>
+                    <div className="mb-4 flex items-center gap-2">
+                      <Checkbox
+                        checked={needsImageProducts.every(p => selectedProducts.has(p.id))}
+                        onCheckedChange={() => toggleSelectAll(needsImageProducts)}
+                      />
+                      <Label className="cursor-pointer" onClick={() => toggleSelectAll(needsImageProducts)}>
+                        בחר הכל
+                      </Label>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {needsImageProducts.map((product) => (
+                        <Card key={product.id} className="border-orange-200">
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <Checkbox
+                                  checked={selectedProducts.has(product.id)}
+                                  onCheckedChange={() => toggleProductSelection(product.id)}
+                                />
+                                <AlertCircle className="w-5 h-5 text-orange-600 flex-shrink-0" />
+                              </div>
+                              <div className="flex gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleEdit(product)}
+                                  className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDuplicate(product)}
+                                  className="text-purple-600 hover:text-purple-800 hover:bg-purple-50"
+                                >
+                                  <Copy className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDelete(product.id)}
+                                  className="text-stone-400 hover:text-red-600"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+
+                            <h3 className="font-semibold text-sm mb-2 line-clamp-2">
+                              {product.product_name}
+                            </h3>
+                            
+                            <p className="text-xs text-stone-500 mb-2">
+                              {product.product_sku}
+                            </p>
+
+                            <p className="text-sm font-medium text-stone-800 mb-3">
+                              {product.original_currency === 'EUR' ? '€' : '£'}{product.original_price}
+                            </p>
+
+                            <div className="space-y-2">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                id={`upload-${product.id}`}
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleImageUpload(product.id, product.product_sku, file);
+                                }}
+                                disabled={uploadingImageFor === product.id}
+                              />
+                              <label htmlFor={`upload-${product.id}`}>
+                                <Button
+                                  asChild
+                                  className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                                  disabled={uploadingImageFor === product.id}
+                                >
+                                  <span className="cursor-pointer flex items-center justify-center">
+                                    {uploadingImageFor === product.id ? (
+                                      <>
+                                        <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                                        מעלה...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Upload className="w-4 h-4 ml-2" />
+                                        העלה תמונה
+                                      </>
+                                    )}
+                                  </span>
+                                </Button>
+                              </label>
+
                               <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleEdit(product)}
-                                className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                                variant="outline"
+                                size="sm"
+                                className="w-full"
+                                onClick={() => window.open(product.product_url, '_blank')}
                               >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDuplicate(product)}
-                                className="text-purple-600 hover:text-purple-800 hover:bg-purple-50"
-                              >
-                                <Copy className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDelete(product.id)}
-                                className="text-stone-400 hover:text-red-600"
-                              >
-                                <Trash2 className="w-4 h-4" />
+                                <ExternalLink className="w-3 h-3 ml-1" />
+                                פתח באתר
                               </Button>
                             </div>
-                          </div>
-
-                          <h3 className="font-semibold text-sm mb-2 line-clamp-2">
-                            {product.product_name}
-                          </h3>
-                          
-                          <p className="text-xs text-stone-500 mb-2">
-                            {product.product_sku}
-                          </p>
-
-                          <p className="text-sm font-medium text-stone-800 mb-3">
-                            {product.original_currency === 'EUR' ? '€' : '£'}{product.original_price}
-                          </p>
-
-                          <div className="space-y-2">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              id={`upload-${product.id}`}
-                              className="hidden"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) handleImageUpload(product.id, product.product_sku, file);
-                              }}
-                              disabled={uploadingImageFor === product.id}
-                            />
-                            <label htmlFor={`upload-${product.id}`}>
-                              <Button
-                                asChild
-                                className="w-full bg-orange-500 hover:bg-orange-600 text-white"
-                                disabled={uploadingImageFor === product.id}
-                              >
-                                <span className="cursor-pointer flex items-center justify-center">
-                                  {uploadingImageFor === product.id ? (
-                                    <>
-                                      <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                                      מעלה...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Upload className="w-4 h-4 ml-2" />
-                                      העלה תמונה
-                                    </>
-                                  )}
-                                </span>
-                              </Button>
-                            </label>
-
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full"
-                              onClick={() => window.open(product.product_url, '_blank')}
-                            >
-                              <ExternalLink className="w-3 h-3 ml-1" />
-                              פתח באתר
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -683,65 +956,118 @@ Return clean JSON only.`,
           <TabsContent value="pending">
             <Card>
               <CardContent className="pt-6">
+                {/* Batch Actions Bar */}
+                {selectedProducts.size > 0 && (
+                  <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Package className="w-5 h-5 text-blue-600" />
+                      <span className="font-medium text-blue-900">
+                        {selectedProducts.size} מוצרים נבחרו
+                      </span>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={convertToLocalStock}
+                        disabled={converting}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        {converting ? (
+                          <>
+                            <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                            ממיר...
+                          </>
+                        ) : (
+                          <>
+                            <Package className="w-4 h-4 ml-2" />
+                            המר למלאי מקומי
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => setSelectedProducts(new Set())}
+                      >
+                        בטל בחירה
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 {pendingProducts.length === 0 ? (
                   <p className="text-center text-stone-500 py-8">אין מוצרים ממתינים</p>
                 ) : (
-                  <div className="space-y-3">
-                    {pendingProducts.map((product) => (
-                      <Card key={product.id} className="border-blue-200">
-                        <CardContent className="p-4">
-                          <div className="flex items-start gap-4">
-                            {(product.uploaded_image_url || product.ai_image_url) && (
-                              <img
-                                src={product.uploaded_image_url || product.ai_image_url}
-                                alt={product.product_name}
-                                className="w-20 h-20 object-cover"
+                  <>
+                    <div className="mb-4 flex items-center gap-2">
+                      <Checkbox
+                        checked={pendingProducts.every(p => selectedProducts.has(p.id))}
+                        onCheckedChange={() => toggleSelectAll(pendingProducts)}
+                      />
+                      <Label className="cursor-pointer" onClick={() => toggleSelectAll(pendingProducts)}>
+                        בחר הכל
+                      </Label>
+                    </div>
+                    <div className="space-y-3">
+                      {pendingProducts.map((product) => (
+                        <Card key={product.id} className="border-blue-200">
+                          <CardContent className="p-4">
+                            <div className="flex items-start gap-4">
+                              <Checkbox
+                                checked={selectedProducts.has(product.id)}
+                                onCheckedChange={() => toggleProductSelection(product.id)}
+                                className="mt-1"
                               />
-                            )}
-                            <div className="flex-1">
-                              <h3 className="font-semibold mb-1">{product.product_name}</h3>
-                              <p className="text-xs text-stone-500 mb-2">{product.product_sku}</p>
-                              <p className="text-sm text-stone-700">
-                                {product.original_currency === 'EUR' ? '€' : '£'}{product.original_price}
-                              </p>
+                              {(product.uploaded_image_url || product.ai_image_url) && (
+                                <img
+                                  src={product.uploaded_image_url || product.ai_image_url}
+                                  alt={product.product_name}
+                                  className="w-20 h-20 object-cover"
+                                />
+                              )}
+                              <div className="flex-1">
+                                <h3 className="font-semibold mb-1">{product.product_name}</h3>
+                                <p className="text-xs text-stone-500 mb-2">{product.product_sku}</p>
+                                <p className="text-sm text-stone-700">
+                                  {product.original_currency === 'EUR' ? '€' : '£'}{product.original_price}
+                                </p>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleEdit(product)}
+                                  className="text-blue-600 hover:bg-blue-50"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDuplicate(product)}
+                                  className="text-purple-600 hover:bg-purple-50"
+                                >
+                                  <Copy className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => markAsProcessed(product.id)}
+                                  className="bg-green-500 hover:bg-green-600"
+                                >
+                                  <CheckCircle className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDelete(product.id)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
                             </div>
-                            <div className="flex gap-2">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleEdit(product)}
-                                className="text-blue-600 hover:bg-blue-50"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDuplicate(product)}
-                                className="text-purple-600 hover:bg-purple-50"
-                              >
-                                <Copy className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                onClick={() => markAsProcessed(product.id)}
-                                className="bg-green-500 hover:bg-green-600"
-                              >
-                                <CheckCircle className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDelete(product.id)}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>
