@@ -6,9 +6,12 @@ import { InvokeLLM, UploadFile } from "@/integrations/Core";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Scan, Upload, CheckCircle, AlertCircle, ExternalLink, Trash2, Image as ImageIcon } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, Scan, Upload, CheckCircle, AlertCircle, ExternalLink, Trash2, Image as ImageIcon, Edit, Copy } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPageUrl } from "@/utils";
 
@@ -21,6 +24,11 @@ export default function ProductScanner() {
   const [categoryUrl, setCategoryUrl] = useState('');
   const [scanProgress, setScanProgress] = useState(null);
   const [uploadingImageFor, setUploadingImageFor] = useState(null);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
+  const [duplicatingProduct, setDuplicatingProduct] = useState(null);
+  const [newColor, setNewColor] = useState('');
 
   useEffect(() => {
     const init = async () => {
@@ -265,6 +273,64 @@ Return clean JSON only.`,
     }
   };
 
+  const handleEdit = (product) => {
+    setEditingProduct({ ...product });
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingProduct) return;
+    try {
+      const { id, ...updateData } = editingProduct;
+      await ScannedProduct.update(id, updateData);
+      await loadProducts();
+      setEditDialogOpen(false);
+      setEditingProduct(null);
+    } catch (error) {
+      console.error("Error updating product:", error);
+      alert('שגיאה בעדכון המוצר');
+    }
+  };
+
+  const handleDuplicate = (product) => {
+    setDuplicatingProduct(product);
+    setNewColor('');
+    setDuplicateDialogOpen(true);
+  };
+
+  const handleSaveDuplicate = async () => {
+    if (!duplicatingProduct || !newColor.trim()) {
+      alert('אנא הזיני צבע חדש');
+      return;
+    }
+    try {
+      const { id, created_date, updated_date, created_by, ...productData } = duplicatingProduct;
+      
+      // Add new color to available colors if not already there
+      const updatedColors = [...(productData.available_colors || [])];
+      if (!updatedColors.includes(newColor)) {
+        updatedColors.push(newColor);
+      }
+
+      await ScannedProduct.create({
+        ...productData,
+        product_name: `${productData.product_name} - ${newColor}`,
+        product_sku: `${productData.product_sku}-${newColor.replace(/\s+/g, '-').toUpperCase()}`,
+        available_colors: updatedColors,
+        is_processed: false,
+        scan_batch: `duplicate_${Date.now()}`
+      });
+
+      await loadProducts();
+      setDuplicateDialogOpen(false);
+      setDuplicatingProduct(null);
+      setNewColor('');
+    } catch (error) {
+      console.error("Error duplicating product:", error);
+      alert('שגיאה בשכפול המוצר');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -372,6 +438,129 @@ Return clean JSON only.`,
           </CardContent>
         </Card>
 
+        {/* Edit Dialog */}
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>עריכת מוצר</DialogTitle>
+            </DialogHeader>
+            {editingProduct && (
+              <div className="space-y-4 py-4">
+                <div>
+                  <Label>שם מוצר</Label>
+                  <Input
+                    value={editingProduct.product_name || ''}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, product_name: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label>SKU</Label>
+                  <Input
+                    value={editingProduct.product_sku || ''}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, product_sku: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label>תיאור</Label>
+                  <Textarea
+                    value={editingProduct.product_description || ''}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, product_description: e.target.value })}
+                    rows={4}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>מחיר</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={editingProduct.original_price || ''}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, original_price: parseFloat(e.target.value) })}
+                    />
+                  </div>
+                  <div>
+                    <Label>מטבע</Label>
+                    <Select
+                      value={editingProduct.original_currency || 'EUR'}
+                      onValueChange={(value) => setEditingProduct({ ...editingProduct, original_currency: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="EUR">EUR (€)</SelectItem>
+                        <SelectItem value="GBP">GBP (£)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div>
+                  <Label>קטגוריה</Label>
+                  <Select
+                    value={editingProduct.category || 'other'}
+                    onValueChange={(value) => setEditingProduct({ ...editingProduct, category: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="tops">Tops</SelectItem>
+                      <SelectItem value="bottoms">Bottoms</SelectItem>
+                      <SelectItem value="dresses">Dresses</SelectItem>
+                      <SelectItem value="accessories">Accessories</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex gap-3">
+                  <Button onClick={handleSaveEdit} className="flex-1 bg-rose-500 hover:bg-rose-600">
+                    שמור שינויים
+                  </Button>
+                  <Button variant="outline" onClick={() => setEditDialogOpen(false)} className="flex-1">
+                    ביטול
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Duplicate Dialog */}
+        <Dialog open={duplicateDialogOpen} onOpenChange={setDuplicateDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>שכפול מוצר בצבע אחר</DialogTitle>
+            </DialogHeader>
+            {duplicatingProduct && (
+              <div className="space-y-4 py-4">
+                <div className="p-3 bg-stone-50 border border-stone-200 rounded">
+                  <p className="text-sm text-stone-600 mb-1">מוצר מקורי:</p>
+                  <p className="font-semibold">{duplicatingProduct.product_name}</p>
+                </div>
+                <div>
+                  <Label>צבע חדש</Label>
+                  <Input
+                    value={newColor}
+                    onChange={(e) => setNewColor(e.target.value)}
+                    placeholder="לדוגמה: Light Blue"
+                  />
+                  <p className="text-xs text-stone-500 mt-1">
+                    המוצר החדש ייקרא: {duplicatingProduct.product_name} - {newColor || '...'}
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <Button onClick={handleSaveDuplicate} className="flex-1 bg-purple-500 hover:bg-purple-600">
+                    צור עותק
+                  </Button>
+                  <Button variant="outline" onClick={() => setDuplicateDialogOpen(false)} className="flex-1">
+                    ביטול
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
         {/* Products Tabs */}
         <Tabs defaultValue="needs_image" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
@@ -398,14 +587,32 @@ Return clean JSON only.`,
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between mb-2">
                             <AlertCircle className="w-5 h-5 text-orange-600 flex-shrink-0" />
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDelete(product.id)}
-                              className="text-stone-400 hover:text-red-600"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEdit(product)}
+                                className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDuplicate(product)}
+                                className="text-purple-600 hover:text-purple-800 hover:bg-purple-50"
+                              >
+                                <Copy className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDelete(product.id)}
+                                className="text-stone-400 hover:text-red-600"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </div>
 
                           <h3 className="font-semibold text-sm mb-2 line-clamp-2">
@@ -500,6 +707,22 @@ Return clean JSON only.`,
                             </div>
                             <div className="flex gap-2">
                               <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEdit(product)}
+                                className="text-blue-600 hover:bg-blue-50"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDuplicate(product)}
+                                className="text-purple-600 hover:bg-purple-50"
+                              >
+                                <Copy className="w-4 h-4" />
+                              </Button>
+                              <Button
                                 size="sm"
                                 onClick={() => markAsProcessed(product.id)}
                                 className="bg-green-500 hover:bg-green-600"
@@ -551,7 +774,27 @@ Return clean JSON only.`,
                           <p className="text-xs text-stone-600">
                             {product.original_currency === 'EUR' ? '€' : '£'}{product.original_price}
                           </p>
-                          <CheckCircle className="w-4 h-4 text-green-600 mt-2" />
+                          <div className="flex items-center justify-between mt-2">
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={() => handleEdit(product)}
+                              >
+                                <Edit className="w-3 h-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={() => handleDuplicate(product)}
+                              >
+                                <Copy className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
                         </CardContent>
                       </Card>
                     ))}
