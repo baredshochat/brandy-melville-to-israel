@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Trash2, ArrowLeft, ArrowRight, ShoppingBag, Heart, Minus, Edit } from 'lucide-react';
@@ -137,10 +138,10 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
   const currentSite = cart.length > 0 ? cart[0].site : null;
   const isLocalOrder = currentSite === 'local';
 
-  // Calculate subtotal with all costs included
-  const subtotalILS = cart.reduce((sum, item) => {
+  // Calculate subtotal with all costs included - ROUNDED
+  const subtotalILS = Math.round(cart.reduce((sum, item) => {
     return sum + calculateItemFullCost(item, cart);
-  }, 0);
+  }, 0));
 
   const handleRemoveItem = async (itemId) => {
     if (deletingIds.includes(itemId)) return;
@@ -249,7 +250,7 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
                              <Button size="icon" variant="outline" className="h-7 w-7 sm:h-8 sm:w-8 rounded-none" onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}><Plus className="w-3 h-3 sm:w-4 sm:h-4" /></Button>
                           </div>
                         <div className="text-left">
-                          <p className="font-medium text-stone-700 text-sm sm:text-base">₪{itemFullCost.toFixed(2)}</p>
+                          <p className="font-medium text-stone-700 text-sm sm:text-base">₪{Math.round(itemFullCost)}</p>
                           {!isLocalOrder && (
                             <p className="text-xs text-stone-400">כולל הכל</p>
                           )}
@@ -277,7 +278,7 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
                 <div className="pt-4 sm:pt-6 border-t-2 border-rose-200/50">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-stone-600 font-medium">סיכום ביניים:</span>
-                    <span className="text-xl font-bold text-stone-800">₪{subtotalILS.toFixed(2)}</span>
+                    <span className="text-xl font-bold text-stone-800">₪{subtotalILS}</span>
                   </div>
                   <p className="text-xs text-stone-500 mb-4 text-center">
                     {isLocalOrder 

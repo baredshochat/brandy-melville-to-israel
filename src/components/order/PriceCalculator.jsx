@@ -11,7 +11,9 @@ import { motion } from "framer-motion";
 const formatCurrency = (amount, currency = 'ILS') => {
   const num = Number(amount || 0);
   const symbol = currency === 'ILS' ? '₪' : currency === 'USD' ? '$' : currency === 'EUR' ? '€' : '£';
-  return `${symbol}${num.toFixed(2)}`;
+  // Round to nearest integer for ILS, keep decimals for other currencies
+  const displayAmount = currency === 'ILS' ? Math.round(num) : num.toFixed(2);
+  return `${symbol}${displayAmount}`;
 };
 
 export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) {
@@ -126,8 +128,8 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
           return sum + calculateItemFullCost(item, cart);
         }, 0);
         
-        // Final total
-        const total = itemsTotal + domesticShipCost;
+        // Final total - ROUNDED
+        const total = Math.round(itemsTotal + domesticShipCost);
 
         setTotalPrice(total);
         setTotalWeight(totalWeightKg);
@@ -215,7 +217,7 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
 
           <Separator className="my-6" />
 
-          {/* Price Summary - EXACTLY like CartSummary */}
+          {/* Price Summary */}
           <div className="space-y-3">
             <div className="flex justify-between text-stone-700">
               <span>סיכום פריטים</span>
