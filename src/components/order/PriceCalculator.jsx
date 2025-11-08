@@ -27,62 +27,6 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
   // Check if this is a local stock order
   const isLocalOrder = site === 'local' || (cart.length > 0 && cart[0].site === 'local');
 
-  // Helper function to convert price to ILS
-  const convertToILS = (price, currency) => {
-    const amount = Number(price) || 0;
-    if (currency === 'USD') return amount * rates.usd;
-    if (currency === 'EUR') return amount * rates.eur;
-    if (currency === 'GBP') return amount * rates.gbp;
-    return amount;
-  };
-
-  // Calculate full cost per item - SAME AS CartSummary
-  const calculateItemFullCost = (item, allItems) => {
-    // For local stock - simple calculation
-    if (item.site === 'local') {
-      return Number(item.original_price || 0) * (item.quantity || 1);
-    }
-
-    // For international orders - complex calculation
-    if (!settings) return convertToILS(item.original_price, item.original_currency) * (item.quantity || 1);
-
-    const priceILS = convertToILS(item.original_price, item.original_currency);
-    const itemWeight = (item.item_weight || 0.3) * (item.quantity || 1);
-    
-    // Calculate total weight
-    const totalWeight = allItems.reduce((sum, it) => sum + ((it.item_weight || 0.3) * (it.quantity || 1)), 0);
-
-    if (totalWeight === 0) {
-      return priceILS * (item.quantity || 1);
-    }
-
-    // Calculate international shipping cost
-    const weightWithPackaging = totalWeight + (settings.outer_pack_kg || 0.3);
-    const roundedWeight = Math.ceil(weightWithPackaging / (settings.carrier_rounding_kg || 0.5)) * (settings.carrier_rounding_kg || 0.5);
-    const baseShipping = roundedWeight * (settings.ship_rate_per_kg || 100);
-    const withSurcharges = baseShipping * (1 + (settings.fuel_surcharge_pct || 0) + (settings.remote_area_pct || 0));
-    
-    // Calculate fixed fees
-    const fixedFees = settings.fixed_fees_ils || 50;
-    
-    // Total overhead per order
-    const totalOverhead = withSurcharges + fixedFees;
-    
-    // Distribute overhead proportionally by item weight
-    const itemProportion = itemWeight / totalWeight;
-    const itemOverhead = totalOverhead * itemProportion;
-    
-    // Item cost before VAT
-    const itemBaseCost = priceILS * (item.quantity || 1);
-    const itemCostBeforeVAT = itemBaseCost + itemOverhead;
-    
-    // Add VAT
-    const vatRate = settings.vat_pct || 0.18;
-    const itemFullCostWithVAT = itemCostBeforeVAT * (1 + vatRate);
-    
-    return itemFullCostWithVAT;
-  };
-
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -95,21 +39,84 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
 
         // Load rates
         const ratesList = await Rates.list();
+        let loadedRates = { usd: 3.7, eur: 4.0, gbp: 4.5 };
         if (ratesList && ratesList.length > 0) {
           const latestRate = ratesList[0];
-          setRates({
+          loadedRates = {
             usd: latestRate.usd || 3.7,
             eur: latestRate.eur || 4.0,
             gbp: latestRate.gbp || 4.5
-          });
+          };
+          setRates(loadedRates);
         }
 
         // Load calculation settings
         const settingsList = await CalculationSettings.list();
+        let loadedSettings = null;
+        let domesticShipCost = 35;
+        
         if (settingsList && settingsList.length > 0) {
-          setSettings(settingsList[0]);
-          setDomesticShipping(settingsList[0].domestic_ship_ils || 30);
+          loadedSettings = settingsList[0];
+          setSettings(loadedSettings);
+          domesticShipCost = isLocalOrder ? 35 : (loadedSettings.domestic_ship_ils || 30);
+          setDomesticShipping(domesticShipCost);
         }
+
+        // Helper function to convert price to ILS
+        const convertToILS = (price, currency) => {
+          const amount = Number(price) || 0;
+          if (currency === 'USD') return amount * loadedRates.usd;
+          if (currency === 'EUR') return amount * loadedRates.eur;
+          if (currency === 'GBP') return amount * loadedRates.gbp;
+          return amount;
+        };
+
+        // Calculate full cost per item - SAME AS CartSummary
+        const calculateItemFullCost = (item, allItems) => {
+          // For local stock - simple calculation
+          if (item.site === 'local') {
+            return Number(item.original_price || 0) * (item.quantity || 1);
+          }
+
+          // For international orders - complex calculation
+          if (!loadedSettings) return convertToILS(item.original_price, item.original_currency) * (item.quantity || 1);
+
+          const priceILS = convertToILS(item.original_price, item.original_currency);
+          const itemWeight = (item.item_weight || 0.3) * (item.quantity || 1);
+          
+          // Calculate total weight
+          const totalWeight = allItems.reduce((sum, it) => sum + ((it.item_weight || 0.3) * (it.quantity || 1)), 0);
+
+          if (totalWeight === 0) {
+            return priceILS * (item.quantity || 1);
+          }
+
+          // Calculate international shipping cost
+          const weightWithPackaging = totalWeight + (loadedSettings.outer_pack_kg || 0.3);
+          const roundedWeight = Math.ceil(weightWithPackaging / (loadedSettings.carrier_rounding_kg || 0.5)) * (loadedSettings.carrier_rounding_kg || 0.5);
+          const baseShipping = roundedWeight * (loadedSettings.ship_rate_per_kg || 100);
+          const withSurcharges = baseShipping * (1 + (loadedSettings.fuel_surcharge_pct || 0) + (loadedSettings.remote_area_pct || 0));
+          
+          // Calculate fixed fees
+          const fixedFees = loadedSettings.fixed_fees_ils || 50;
+          
+          // Total overhead per order
+          const totalOverhead = withSurcharges + fixedFees;
+          
+          // Distribute overhead proportionally by item weight
+          const itemProportion = itemWeight / totalWeight;
+          const itemOverhead = totalOverhead * itemProportion;
+          
+          // Item cost before VAT
+          const itemBaseCost = priceILS * (item.quantity || 1);
+          const itemCostBeforeVAT = itemBaseCost + itemOverhead;
+          
+          // Add VAT
+          const vatRate = loadedSettings.vat_pct || 0.18;
+          const itemFullCostWithVAT = itemCostBeforeVAT * (1 + vatRate);
+          
+          return itemFullCostWithVAT;
+        };
 
         // Calculate SAME AS CartSummary
         const totalWeightKg = cart.reduce((sum, item) => sum + ((item.item_weight || 0.35) * item.quantity), 0);
@@ -118,16 +125,12 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
         const itemsTotal = cart.reduce((sum, item) => {
           return sum + calculateItemFullCost(item, cart);
         }, 0);
-
-        // Domestic shipping
-        const domesticShipCost = isLocalOrder ? 35 : (settingsList && settingsList.length > 0 ? (settingsList[0].domestic_ship_ils || 30) : 30);
         
         // Final total
         const total = itemsTotal + domesticShipCost;
 
         setTotalPrice(total);
         setTotalWeight(totalWeightKg);
-        setDomesticShipping(domesticShipCost);
         
         // Set detailed items with same calculation
         setDetailedItems(cart.map(item => ({
