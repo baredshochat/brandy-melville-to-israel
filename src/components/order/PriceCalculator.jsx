@@ -15,7 +15,6 @@ const formatCurrency = (amount, currency = 'ILS') => {
 };
 
 export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) {
-  const [breakdown, setBreakdown] = useState(null);
   const [totalPrice, setTotalPrice] = useState(0);
   const [totalWeight, setTotalWeight] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -23,6 +22,7 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
   const [labels, setLabels] = useState({});
   const [rates, setRates] = useState({ usd: 3.7, eur: 4.0, gbp: 4.5 });
   const [settings, setSettings] = useState(null);
+  const [domesticShipping, setDomesticShipping] = useState(35);
 
   // Check if this is a local stock order
   const isLocalOrder = site === 'local' || (cart.length > 0 && cart[0].site === 'local');
@@ -36,7 +36,7 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
     return amount;
   };
 
-  // Calculate full cost per item (including proportional shipping, fees, and VAT)
+  // Calculate full cost per item - SAME AS CartSummary
   const calculateItemFullCost = (item, allItems) => {
     // For local stock - simple calculation
     if (item.site === 'local') {
@@ -108,62 +108,33 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
         const settingsList = await CalculationSettings.list();
         if (settingsList && settingsList.length > 0) {
           setSettings(settingsList[0]);
+          setDomesticShipping(settingsList[0].domestic_ship_ils || 30);
         }
 
-        if (isLocalOrder) {
-          // LOCAL STOCK CALCULATION - Simple pricing
-          const itemsTotal = cart.reduce((sum, item) => {
-            const price = Number(item.original_price || 0);
-            const qty = Number(item.quantity || 1);
-            return sum + (price * qty);
-          }, 0);
+        // Calculate SAME AS CartSummary
+        const totalWeightKg = cart.reduce((sum, item) => sum + ((item.item_weight || 0.35) * item.quantity), 0);
 
-          const shippingCost = 35; // Fixed shipping for local stock
-          const total = itemsTotal + shippingCost;
+        // Calculate items total using the SAME function as CartSummary
+        const itemsTotal = cart.reduce((sum, item) => {
+          return sum + calculateItemFullCost(item, cart);
+        }, 0);
 
-          setBreakdown({
-            items_total_ils: itemsTotal,
-            domestic_ship_ils: shippingCost,
-            final_total_ils: total,
-            is_local: true
-          });
+        // Domestic shipping
+        const domesticShipCost = isLocalOrder ? 35 : (settingsList && settingsList.length > 0 ? (settingsList[0].domestic_ship_ils || 30) : 30);
+        
+        // Final total
+        const total = itemsTotal + domesticShipCost;
 
-          setTotalPrice(total);
-          setTotalWeight(0); // Not relevant for local stock
-          setDetailedItems(cart.map(item => ({
-            ...item,
-            priceILS: Number(item.original_price || 0) * Number(item.quantity || 1)
-          })));
-        } else {
-          // INTERNATIONAL ORDER CALCULATION
-          // Calculate total weight
-          const totalWeightKg = cart.reduce((sum, item) => sum + ((item.item_weight || 0.35) * item.quantity), 0);
+        setTotalPrice(total);
+        setTotalWeight(totalWeightKg);
+        setDomesticShipping(domesticShipCost);
+        
+        // Set detailed items with same calculation
+        setDetailedItems(cart.map(item => ({
+          ...item,
+          priceILS: calculateItemFullCost(item, cart)
+        })));
 
-          // Calculate items total (already includes international shipping, fees, VAT distributed)
-          const itemsTotal = cart.reduce((sum, item) => {
-            return sum + calculateItemFullCost(item, cart);
-          }, 0);
-
-          // Domestic shipping
-          const domesticShipILS = settingsList && settingsList.length > 0 ? (settingsList[0].domestic_ship_ils || 30) : 30;
-          
-          // Final total
-          const total = itemsTotal + domesticShipILS;
-
-          setBreakdown({
-            items_total_ils: itemsTotal,
-            domestic_ship_ils: domesticShipILS,
-            final_total_ils: total,
-            is_local: false
-          });
-
-          setTotalPrice(total);
-          setTotalWeight(totalWeightKg);
-          setDetailedItems(cart.map(item => ({
-            ...item,
-            priceILS: calculateItemFullCost(item, cart)
-          })));
-        }
       } catch (error) {
         console.error("Error calculating price:", error);
       } finally {
@@ -177,6 +148,16 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
   }, [cart, site, isLocalOrder]);
 
   const handleContinue = () => {
+    // Calculate items subtotal
+    const itemsSubtotal = detailedItems.reduce((sum, item) => sum + item.priceILS, 0);
+    
+    const breakdown = {
+      items_total_ils: itemsSubtotal,
+      domestic_ship_ils: domesticShipping,
+      final_total_ils: totalPrice,
+      is_local: isLocalOrder
+    };
+    
     onConfirm(totalPrice, totalWeight, breakdown);
   };
 
@@ -187,6 +168,9 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
       </div>
     );
   }
+
+  // Calculate subtotal from items
+  const itemsSubtotal = detailedItems.reduce((sum, item) => sum + item.priceILS, 0);
 
   return (
     <motion.div
@@ -228,16 +212,16 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
 
           <Separator className="my-6" />
 
-          {/* Price Summary - Simple like cart */}
+          {/* Price Summary - EXACTLY like CartSummary */}
           <div className="space-y-3">
             <div className="flex justify-between text-stone-700">
               <span>סיכום פריטים</span>
-              <span className="font-semibold">{formatCurrency(breakdown.items_total_ils, 'ILS')}</span>
+              <span className="font-semibold">{formatCurrency(itemsSubtotal, 'ILS')}</span>
             </div>
             
             <div className="flex justify-between text-stone-700">
               <span>משלוח עד הבית</span>
-              <span className="font-semibold">{formatCurrency(breakdown.domestic_ship_ils, 'ILS')}</span>
+              <span className="font-semibold">{formatCurrency(domesticShipping, 'ILS')}</span>
             </div>
 
             <Separator className="my-4" />
@@ -247,7 +231,7 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
                 {labels.final_total_label || 'סה״כ לתשלום'}
               </span>
               <span className="text-2xl font-bold text-rose-600">
-                {formatCurrency(breakdown.final_total_ils, 'ILS')}
+                {formatCurrency(totalPrice, 'ILS')}
               </span>
             </div>
 
