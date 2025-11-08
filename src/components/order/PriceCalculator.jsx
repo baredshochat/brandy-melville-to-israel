@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { PricingLabels } from "@/entities/PricingLabels";
 import { Rates } from "@/entities/Rates";
+import { CalculationSettings } from "@/entities/CalculationSettings";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Calculator, ArrowRight, ArrowLeft, Info } from "lucide-react";
+import { Loader2, Calculator, ArrowRight, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const formatCurrency = (amount, currency = 'ILS') => {
   const num = Number(amount || 0);
@@ -21,9 +21,67 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
   const [loading, setLoading] = useState(true);
   const [detailedItems, setDetailedItems] = useState([]);
   const [labels, setLabels] = useState({});
+  const [rates, setRates] = useState({ usd: 3.7, eur: 4.0, gbp: 4.5 });
+  const [settings, setSettings] = useState(null);
 
   // Check if this is a local stock order
   const isLocalOrder = site === 'local' || (cart.length > 0 && cart[0].site === 'local');
+
+  // Helper function to convert price to ILS
+  const convertToILS = (price, currency) => {
+    const amount = Number(price) || 0;
+    if (currency === 'USD') return amount * rates.usd;
+    if (currency === 'EUR') return amount * rates.eur;
+    if (currency === 'GBP') return amount * rates.gbp;
+    return amount;
+  };
+
+  // Calculate full cost per item (including proportional shipping, fees, and VAT)
+  const calculateItemFullCost = (item, allItems) => {
+    // For local stock - simple calculation
+    if (item.site === 'local') {
+      return Number(item.original_price || 0) * (item.quantity || 1);
+    }
+
+    // For international orders - complex calculation
+    if (!settings) return convertToILS(item.original_price, item.original_currency) * (item.quantity || 1);
+
+    const priceILS = convertToILS(item.original_price, item.original_currency);
+    const itemWeight = (item.item_weight || 0.3) * (item.quantity || 1);
+    
+    // Calculate total weight
+    const totalWeight = allItems.reduce((sum, it) => sum + ((it.item_weight || 0.3) * (it.quantity || 1)), 0);
+
+    if (totalWeight === 0) {
+      return priceILS * (item.quantity || 1);
+    }
+
+    // Calculate international shipping cost
+    const weightWithPackaging = totalWeight + (settings.outer_pack_kg || 0.3);
+    const roundedWeight = Math.ceil(weightWithPackaging / (settings.carrier_rounding_kg || 0.5)) * (settings.carrier_rounding_kg || 0.5);
+    const baseShipping = roundedWeight * (settings.ship_rate_per_kg || 100);
+    const withSurcharges = baseShipping * (1 + (settings.fuel_surcharge_pct || 0) + (settings.remote_area_pct || 0));
+    
+    // Calculate fixed fees
+    const fixedFees = settings.fixed_fees_ils || 50;
+    
+    // Total overhead per order
+    const totalOverhead = withSurcharges + fixedFees;
+    
+    // Distribute overhead proportionally by item weight
+    const itemProportion = itemWeight / totalWeight;
+    const itemOverhead = totalOverhead * itemProportion;
+    
+    // Item cost before VAT
+    const itemBaseCost = priceILS * (item.quantity || 1);
+    const itemCostBeforeVAT = itemBaseCost + itemOverhead;
+    
+    // Add VAT
+    const vatRate = settings.vat_pct || 0.18;
+    const itemFullCostWithVAT = itemCostBeforeVAT * (1 + vatRate);
+    
+    return itemFullCostWithVAT;
+  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -33,6 +91,23 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
         const labelsList = await PricingLabels.list();
         if (labelsList.length > 0) {
           setLabels(labelsList[0]);
+        }
+
+        // Load rates
+        const ratesList = await Rates.list();
+        if (ratesList && ratesList.length > 0) {
+          const latestRate = ratesList[0];
+          setRates({
+            usd: latestRate.usd || 3.7,
+            eur: latestRate.eur || 4.0,
+            gbp: latestRate.gbp || 4.5
+          });
+        }
+
+        // Load calculation settings
+        const settingsList = await CalculationSettings.list();
+        if (settingsList && settingsList.length > 0) {
+          setSettings(settingsList[0]);
         }
 
         if (isLocalOrder) {
@@ -60,35 +135,23 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
             priceILS: Number(item.original_price || 0) * Number(item.quantity || 1)
           })));
         } else {
-          // INTERNATIONAL ORDER CALCULATION - Complex pricing
-          const ratesList = await Rates.list();
-          let fxRates = { usd: 3.7, eur: 4.0, gbp: 4.5 };
-          if (ratesList.length > 0) {
-            fxRates = ratesList[0];
-          }
-
-          const currencyMap = { us: 'USD', eu: 'EUR', uk: 'GBP' };
-          const currency = currencyMap[site] || 'USD';
-          const fxRate = currency === 'EUR' ? fxRates.eur : currency === 'GBP' ? fxRates.gbp : fxRates.usd;
-
-          // Calculate totals
-          const productTotal = cart.reduce((sum, item) => sum + (item.original_price * item.quantity), 0);
+          // INTERNATIONAL ORDER CALCULATION
+          // Calculate total weight
           const totalWeightKg = cart.reduce((sum, item) => sum + ((item.item_weight || 0.35) * item.quantity), 0);
 
-          // Basic calculation (simplified - in production use full pricing engine)
-          const productILS = productTotal * fxRate;
-          const shippingILS = totalWeightKg * 70; // ₪70 per kg
-          const customsILS = productTotal > 75 ? (productILS + shippingILS) * 0.12 : 0;
-          const feesILS = 50;
-          const subtotal = productILS + shippingILS + customsILS + feesILS;
-          const domesticShipILS = 30;
-          const total = subtotal + domesticShipILS;
+          // Calculate items total (already includes international shipping, fees, VAT distributed)
+          const itemsTotal = cart.reduce((sum, item) => {
+            return sum + calculateItemFullCost(item, cart);
+          }, 0);
+
+          // Domestic shipping
+          const domesticShipILS = settingsList && settingsList.length > 0 ? (settingsList[0].domestic_ship_ils || 30) : 30;
+          
+          // Final total
+          const total = itemsTotal + domesticShipILS;
 
           setBreakdown({
-            items_total_ils: productILS,
-            intl_ship_ils: shippingILS,
-            customs_ils: customsILS,
-            fees_ils: feesILS,
+            items_total_ils: itemsTotal,
             domestic_ship_ils: domesticShipILS,
             final_total_ils: total,
             is_local: false
@@ -98,7 +161,7 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
           setTotalWeight(totalWeightKg);
           setDetailedItems(cart.map(item => ({
             ...item,
-            priceILS: (item.original_price * fxRate) * item.quantity
+            priceILS: calculateItemFullCost(item, cart)
           })));
         }
       } catch (error) {
@@ -136,7 +199,7 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
           <div className="flex items-center gap-3 mb-6">
             <Calculator className="w-6 h-6 text-rose-500" />
             <h2 className="text-2xl font-semibold text-stone-900">
-              {isLocalOrder ? 'סיכום הזמנה - מלאי מקומי' : 'חישוב מחיר סופי'}
+              {isLocalOrder ? 'סיכום הזמנה - מלאי מקומי' : 'סיכום הזמנה'}
             </h2>
           </div>
 
@@ -152,6 +215,9 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
                   <p className="text-sm text-stone-500">
                     {[item.color, item.size].filter(Boolean).join(' • ')} • כמות: {item.quantity}
                   </p>
+                  {!isLocalOrder && (
+                    <p className="text-xs text-stone-400 mt-1">כולל משלוח בינלאומי, עמלות ומע״ם</p>
+                  )}
                 </div>
                 <p className="font-semibold text-stone-900">
                   {formatCurrency(item.priceILS, 'ILS')}
@@ -162,59 +228,17 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
 
           <Separator className="my-6" />
 
-          {/* Price Breakdown */}
+          {/* Price Summary - Simple like cart */}
           <div className="space-y-3">
-            {isLocalOrder ? (
-              // LOCAL STOCK BREAKDOWN
-              <>
-                <div className="flex justify-between text-stone-700">
-                  <span>סכום פריטים</span>
-                  <span className="font-semibold">{formatCurrency(breakdown.items_total_ils, 'ILS')}</span>
-                </div>
-                <div className="flex justify-between text-stone-700">
-                  <div className="flex items-center gap-2">
-                    <span>משלוח עד הבית</span>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <Info className="w-4 h-4 text-stone-400" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="text-sm">משלוח מהמלאי שלנו בישראל - 3-7 ימי עסקים</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  <span className="font-semibold">{formatCurrency(breakdown.domestic_ship_ils, 'ILS')}</span>
-                </div>
-              </>
-            ) : (
-              // INTERNATIONAL BREAKDOWN
-              <>
-                <div className="flex justify-between text-stone-700">
-                  <span>{labels.product_ils_label || 'עלות מוצרים בש״ח'}</span>
-                  <span className="font-semibold">{formatCurrency(breakdown.items_total_ils, 'ILS')}</span>
-                </div>
-                <div className="flex justify-between text-stone-700">
-                  <span>{labels.intl_shipping_label || 'משלוח בינלאומי'}</span>
-                  <span className="font-semibold">{formatCurrency(breakdown.intl_ship_ils, 'ILS')}</span>
-                </div>
-                {breakdown.customs_ils > 0 && (
-                  <div className="flex justify-between text-stone-700">
-                    <span>{labels.customs_and_fees_label || 'מכס ועמלות'}</span>
-                    <span className="font-semibold text-orange-600">{formatCurrency(breakdown.customs_ils, 'ILS')}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-stone-700">
-                  <span>עמלות טיפול קבועות</span>
-                  <span className="font-semibold">{formatCurrency(breakdown.fees_ils, 'ILS')}</span>
-                </div>
-                <div className="flex justify-between text-stone-700">
-                  <span>{labels.domestic_shipping_label || 'משלוח עד הבית'}</span>
-                  <span className="font-semibold">{formatCurrency(breakdown.domestic_ship_ils, 'ILS')}</span>
-                </div>
-              </>
-            )}
+            <div className="flex justify-between text-stone-700">
+              <span>סיכום פריטים</span>
+              <span className="font-semibold">{formatCurrency(breakdown.items_total_ils, 'ILS')}</span>
+            </div>
+            
+            <div className="flex justify-between text-stone-700">
+              <span>משלוח עד הבית</span>
+              <span className="font-semibold">{formatCurrency(breakdown.domestic_ship_ils, 'ILS')}</span>
+            </div>
 
             <Separator className="my-4" />
 
