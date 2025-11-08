@@ -1,10 +1,10 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Trash2, ArrowLeft, ArrowRight, ShoppingBag, Heart, Minus, Edit } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ColorDisplay from './ColorDisplay';
 import CartValueTip from './CartValueTip';
+import { Rates } from '@/entities/Rates';
 
 const getSiteName = (siteCode) => {
   const names = {
@@ -47,16 +47,47 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
   };
 
   const [deletingIds, setDeletingIds] = React.useState([]); // מניעת מחיקה כפולה
+  const [rates, setRates] = React.useState({ usd: 3.7, eur: 4.0, gbp: 4.5 });
+  const [loading, setLoading] = React.useState(true);
+
+  // Fetch exchange rates
+  React.useEffect(() => {
+    const fetchRates = async () => {
+      try {
+        const ratesList = await Rates.list();
+        if (ratesList && ratesList.length > 0) {
+          const latestRate = ratesList[0];
+          setRates({
+            usd: latestRate.usd || 3.7,
+            eur: latestRate.eur || 4.0,
+            gbp: latestRate.gbp || 4.5
+          });
+        }
+      } catch (error) {
+        console.error("Failed to load rates:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRates();
+  }, []);
+
+  // Helper function to convert price to ILS
+  const convertToILS = (price, currency) => {
+    const amount = Number(price) || 0;
+    if (currency === 'USD') return amount * rates.usd;
+    if (currency === 'EUR') return amount * rates.eur;
+    if (currency === 'GBP') return amount * rates.gbp;
+    return amount;
+  };
 
   const currentSite = cart.length > 0 ? cart[0].site : null;
 
-  const currencySymbol = cart.length > 0 ?
-  cart[0]?.original_currency === 'USD' ? '$' :
-  cart[0]?.original_currency === 'EUR' ? '€' :
-  cart[0]?.original_currency === 'GBP' ? '£' : '' :
-  '';
-
-  const subtotal = cart.reduce((sum, item) => sum + (Number(item.original_price) || 0) * (item.quantity || 1), 0);
+  // Calculate subtotal in ILS
+  const subtotalILS = cart.reduce((sum, item) => {
+    const priceILS = convertToILS(item.original_price, item.original_currency);
+    return sum + (priceILS * (item.quantity || 1));
+  }, 0);
 
   const handleRemoveItem = async (itemId) => {
     if (deletingIds.includes(itemId)) return; // אם כבר מוחק — אל תפעל שוב
@@ -114,13 +145,13 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
                 </div>
                 
                 {cart.map((item) => {
-              const itemCurrencySymbol = item.original_currency === 'USD' ? '$' :
-              item.original_currency === 'EUR' ? '€' :
-              item.original_currency === 'GBP' ? '£' : '';
-
               const displayName = (item.product_name && item.product_name.trim())
                 ? item.product_name
                 : getNameFromUrl(item.product_url);
+
+              // Convert to ILS
+              const itemPriceILS = convertToILS(item.original_price, item.original_currency);
+              const itemTotalILS = itemPriceILS * (item.quantity || 1);
 
               return (
                 <div key={item.id} className="flex items-start justify-between p-3 sm:p-4 bg-white/80 border border-rose-100 shadow-sm flex-col gap-3 sm:flex-row sm:gap-4">
@@ -130,6 +161,11 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
                           <ColorDisplay colorName={item.color} size="sm" />
                           <span className="text-stone-400">•</span>
                           <span className="text-xs sm:text-sm text-stone-500 ltr text-left">{item.size}</span>
+                        </div>
+                        <div className="mt-1">
+                          <span className="text-xs text-stone-400">
+                            {item.original_currency} {Number(item.original_price).toFixed(2)} × {rates[item.original_currency.toLowerCase()].toFixed(2)} = ₪{itemPriceILS.toFixed(2)}
+                          </span>
                         </div>
                         {item.item_notes &&
                     <div className="mt-2 p-2 bg-stone-50 border border-stone-200">
@@ -156,7 +192,7 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
                               <span className="w-6 sm:w-8 text-center font-medium text-sm sm:text-base">{item.quantity}</span>
                              <Button size="icon" variant="outline" className="h-7 w-7 sm:h-8 sm:w-8 rounded-none" onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}><Plus className="w-3 h-3 sm:w-4 sm:h-4" /></Button>
                           </div>
-                        <p className="font-medium text-stone-700 ltr text-sm sm:text-base">{itemCurrencySymbol}{((Number(item.original_price) || 0) * (item.quantity || 1)).toFixed(2)}</p>
+                        <p className="font-medium text-stone-700 text-sm sm:text-base">₪{itemTotalILS.toFixed(2)}</p>
                         <div className="flex items-center">
                           <Button variant="ghost" size="icon" onClick={() => onEdit(item)} className="text-stone-400 hover:text-blue-500 hover:bg-blue-50 w-8 h-8">
                               <Edit className="w-4 h-4" />
@@ -178,6 +214,13 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
                 <CartValueTip count={cart.length} onAddAnother={onAddAnother} />
 
                 <div className="pt-4 sm:pt-6 border-t-2 border-rose-200/50">
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-stone-600 font-medium">סיכום ביניים:</span>
+                    <span className="text-xl font-bold text-stone-800">₪{subtotalILS.toFixed(2)}</span>
+                  </div>
+                  <p className="text-xs text-stone-500 mb-4 text-center">
+                    המחיר הסופי יחושב בשלב הבא ויכלול משלוח בינלאומי, עמלות ומע״ם
+                  </p>
                   <Button
                     onClick={onCheckout}
                     disabled={cart.length === 0}
