@@ -5,12 +5,14 @@ import { motion } from 'framer-motion';
 import ColorDisplay from './ColorDisplay';
 import CartValueTip from './CartValueTip';
 import { Rates } from '@/entities/Rates';
+import { CalculationSettings } from '@/entities/CalculationSettings';
 
 const getSiteName = (siteCode) => {
   const names = {
     'us': 'ארצות הברית',
     'eu': 'אירופה',
-    'uk': 'בריטניה'
+    'uk': 'בריטניה',
+    'local': 'ישראל'
   };
   return names[siteCode] || siteCode;
 };
@@ -21,39 +23,37 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
     try {
       if (!url) return "";
       const u = new URL(url);
-      let path = u.pathname.replace(/\/+$/, ""); // Remove trailing slashes
+      let path = u.pathname.replace(/\/+$/, "");
       let slug = path.includes("/products/")
-        ? path.split("/products/")[1] // Get slug after /products/
-        : path.split("/").filter(Boolean).pop(); // Get last segment if not a product URL
+        ? path.split("/products/")[1]
+        : path.split("/").filter(Boolean).pop();
       
       if (!slug) return "";
-      
-      // Remove query parameters or hash fragments
       slug = slug.split("?")[0].split("#")[0];
+      slug = decodeURIComponent(slug);
       
-      slug = decodeURIComponent(slug); // Decode URL-encoded characters
-      
-      // Replace hyphens with spaces, capitalize each word
       return slug
-        .replace(/-/g, ' ') // Replace hyphens with spaces
-        .split(" ") // Split by space
-        .filter(Boolean) // Remove empty strings
-        .map((w) => w.charAt(0).toUpperCase() + w.slice(1)) // Capitalize first letter of each word
-        .join(" "); // Join back with spaces
+        .replace(/-/g, ' ')
+        .split(" ")
+        .filter(Boolean)
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ");
     } catch (e) {
       console.warn("Could not parse URL for product name:", url, e);
       return "";
     }
   };
 
-  const [deletingIds, setDeletingIds] = React.useState([]); // מניעת מחיקה כפולה
+  const [deletingIds, setDeletingIds] = React.useState([]);
   const [rates, setRates] = React.useState({ usd: 3.7, eur: 4.0, gbp: 4.5 });
+  const [settings, setSettings] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
 
-  // Fetch exchange rates
+  // Fetch exchange rates and calculation settings
   React.useEffect(() => {
-    const fetchRates = async () => {
+    const fetchData = async () => {
       try {
+        // Fetch rates
         const ratesList = await Rates.list();
         if (ratesList && ratesList.length > 0) {
           const latestRate = ratesList[0];
@@ -63,13 +63,19 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
             gbp: latestRate.gbp || 4.5
           });
         }
+
+        // Fetch calculation settings
+        const settingsList = await CalculationSettings.list();
+        if (settingsList && settingsList.length > 0) {
+          setSettings(settingsList[0]);
+        }
       } catch (error) {
-        console.error("Failed to load rates:", error);
+        console.error("Failed to load data:", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchRates();
+    fetchData();
   }, []);
 
   // Helper function to convert price to ILS
@@ -81,16 +87,63 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
     return amount;
   };
 
-  const currentSite = cart.length > 0 ? cart[0].site : null;
+  // Calculate full cost per item (including proportional shipping, fees, and VAT)
+  const calculateItemFullCost = (item, allItems) => {
+    // For local stock - simple calculation
+    if (item.site === 'local') {
+      return Number(item.original_price || 0) * (item.quantity || 1);
+    }
 
-  // Calculate subtotal in ILS
-  const subtotalILS = cart.reduce((sum, item) => {
+    // For international orders - complex calculation
+    if (!settings) return convertToILS(item.original_price, item.original_currency) * (item.quantity || 1);
+
     const priceILS = convertToILS(item.original_price, item.original_currency);
-    return sum + (priceILS * (item.quantity || 1));
+    const itemWeight = (item.item_weight || 0.3) * (item.quantity || 1);
+    
+    // Calculate total weight
+    const totalWeight = allItems.reduce((sum, it) => sum + ((it.item_weight || 0.3) * (it.quantity || 1)), 0);
+
+    if (totalWeight === 0) {
+      return priceILS * (item.quantity || 1);
+    }
+
+    // Calculate international shipping cost
+    const weightWithPackaging = totalWeight + (settings.outer_pack_kg || 0.3);
+    const roundedWeight = Math.ceil(weightWithPackaging / (settings.carrier_rounding_kg || 0.5)) * (settings.carrier_rounding_kg || 0.5);
+    const baseShipping = roundedWeight * (settings.ship_rate_per_kg || 100);
+    const withSurcharges = baseShipping * (1 + (settings.fuel_surcharge_pct || 0) + (settings.remote_area_pct || 0));
+    
+    // Calculate fixed fees
+    const fixedFees = settings.fixed_fees_ils || 50;
+    
+    // Total overhead per order
+    const totalOverhead = withSurcharges + fixedFees;
+    
+    // Distribute overhead proportionally by item weight
+    const itemProportion = itemWeight / totalWeight;
+    const itemOverhead = totalOverhead * itemProportion;
+    
+    // Item cost before VAT
+    const itemBaseCost = priceILS * (item.quantity || 1);
+    const itemCostBeforeVAT = itemBaseCost + itemOverhead;
+    
+    // Add VAT
+    const vatRate = settings.vat_pct || 0.18;
+    const itemFullCostWithVAT = itemCostBeforeVAT * (1 + vatRate);
+    
+    return itemFullCostWithVAT;
+  };
+
+  const currentSite = cart.length > 0 ? cart[0].site : null;
+  const isLocalOrder = currentSite === 'local';
+
+  // Calculate subtotal with all costs included
+  const subtotalILS = cart.reduce((sum, item) => {
+    return sum + calculateItemFullCost(item, cart);
   }, 0);
 
   const handleRemoveItem = async (itemId) => {
-    if (deletingIds.includes(itemId)) return; // אם כבר מוחק — אל תפעל שוב
+    if (deletingIds.includes(itemId)) return;
     
     setDeletingIds((prev) => [...prev, itemId]);
     try {
@@ -110,6 +163,17 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
       }
     }
   };
+
+  if (loading) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="p-8 flex justify-center items-center">
+        <div className="text-stone-500">טוען...</div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
@@ -149,9 +213,7 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
                 ? item.product_name
                 : getNameFromUrl(item.product_url);
 
-              // Convert to ILS
-              const itemPriceILS = convertToILS(item.original_price, item.original_currency);
-              const itemTotalILS = itemPriceILS * (item.quantity || 1);
+              const itemFullCost = calculateItemFullCost(item, cart);
 
               return (
                 <div key={item.id} className="flex items-start justify-between p-3 sm:p-4 bg-white/80 border border-rose-100 shadow-sm flex-col gap-3 sm:flex-row sm:gap-4">
@@ -161,11 +223,6 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
                           <ColorDisplay colorName={item.color} size="sm" />
                           <span className="text-stone-400">•</span>
                           <span className="text-xs sm:text-sm text-stone-500 ltr text-left">{item.size}</span>
-                        </div>
-                        <div className="mt-1">
-                          <span className="text-xs text-stone-400">
-                            {item.original_currency} {Number(item.original_price).toFixed(2)} × {rates[item.original_currency.toLowerCase()].toFixed(2)} = ₪{itemPriceILS.toFixed(2)}
-                          </span>
                         </div>
                         {item.item_notes &&
                     <div className="mt-2 p-2 bg-stone-50 border border-stone-200">
@@ -182,7 +239,6 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
                         loading="lazy"
                         decoding="async"
                         className="w-12 h-12 sm:w-16 sm:h-16 object-cover border border-stone-200" />
-
                           </div>
                     }
                       </div>
@@ -192,7 +248,12 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
                               <span className="w-6 sm:w-8 text-center font-medium text-sm sm:text-base">{item.quantity}</span>
                              <Button size="icon" variant="outline" className="h-7 w-7 sm:h-8 sm:w-8 rounded-none" onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}><Plus className="w-3 h-3 sm:w-4 sm:h-4" /></Button>
                           </div>
-                        <p className="font-medium text-stone-700 text-sm sm:text-base">₪{itemTotalILS.toFixed(2)}</p>
+                        <div className="text-left">
+                          <p className="font-medium text-stone-700 text-sm sm:text-base">₪{itemFullCost.toFixed(2)}</p>
+                          {!isLocalOrder && (
+                            <p className="text-xs text-stone-400">כולל הכל</p>
+                          )}
+                        </div>
                         <div className="flex items-center">
                           <Button variant="ghost" size="icon" onClick={() => onEdit(item)} className="text-stone-400 hover:text-blue-500 hover:bg-blue-50 w-8 h-8">
                               <Edit className="w-4 h-4" />
@@ -214,12 +275,14 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
                 <CartValueTip count={cart.length} onAddAnother={onAddAnother} />
 
                 <div className="pt-4 sm:pt-6 border-t-2 border-rose-200/50">
-                  <div className="flex justify-between items-center mb-4">
+                  <div className="flex justify-between items-center mb-2">
                     <span className="text-stone-600 font-medium">סיכום ביניים:</span>
                     <span className="text-xl font-bold text-stone-800">₪{subtotalILS.toFixed(2)}</span>
                   </div>
                   <p className="text-xs text-stone-500 mb-4 text-center">
-                    המחיר הסופי יחושב בשלב הבא ויכלול משלוח בינלאומי, עמלות ומע״ם
+                    {isLocalOrder 
+                      ? 'בשלב הבא יתווסף רק משלוח עד הבית (₪35) 🏠'
+                      : 'המחירים כוללים משלוח בינלאומי, עמלות ומע״ם. בשלב הבא יתווסף רק משלוח עד הבית 🏠'}
                   </p>
                   <Button
                     onClick={onCheckout}
