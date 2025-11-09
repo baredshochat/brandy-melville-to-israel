@@ -61,16 +61,10 @@ export default function ProductPreview({ productData, onConfirm, onBack }) {
       }
       
       // Log for debugging
-      console.log('🎨 ProductPreview loaded with color:', {
+      console.log('🎨 Color info:', {
         selectedColor: sanitized.color,
-        availableColors: sanitized.available_colors,
-        hasColor: !!sanitized.color
+        availableColors: sanitized.available_colors
       });
-      
-      // If editing an old item without color, trigger automatic refetch
-      if (productData.id && !sanitized.color && sanitized.product_url) {
-        console.log('⚠️ Old item without color detected - will auto-refetch');
-      }
       
       t = setTimeout(() => setItemDetails(sanitized), 60);
     } else { setItemDetails(null); }
@@ -201,9 +195,6 @@ Example output:
     return color.toLowerCase().trim().replace(/\s+/g, ' ');
   };
 
-  // Check if this is an old item without color data
-  const needsColorUpdate = isEditing && !itemDetails.color && itemDetails.available_colors && itemDetails.available_colors.length > 0;
-
   return (
     <motion.div key="step3" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.5 }} className="p-3 sm:p-8">
       <div className="max-w-3xl mx-auto">
@@ -211,21 +202,11 @@ Example output:
           <h2 className="text-xl sm:text-2xl mb-2 sm:mb-3 font-semibold">{isEditing ? 'עריכת פריט' : 'אישור פריט'}</h2>
         </div>
 
-        {needsColorUpdate && !refetchSuccess && (
-          <Alert className="mb-4 bg-blue-50 border-blue-300">
-            <AlertCircle className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-blue-800">
-              💡 <strong>שימי לב:</strong> הפריט הזה נוסף לפני שהתכונה לזיהוי צבעים הייתה זמינה. 
-              לחצי על <strong>"בדוק שוב"</strong> למעלה כדי לזהות את הצבע של המוצר מהקישור המקורי.
-            </AlertDescription>
-          </Alert>
-        )}
-
         {refetchSuccess && (
           <Alert className="mb-4 bg-green-50 border-green-200">
             <AlertCircle className="h-4 w-4 text-green-600" />
             <AlertDescription className="text-green-800">
-              ✅ הפרטים עודכנו בהצלחה! {itemDetails.color && 'הצבע זוהה וסומן בצבעים הזמינים 🎨'}
+              ✅ הפרטים עודכנו בהצלחה! בדקי שהכל נכון לפני האישור.
             </AlertDescription>
           </Alert>
         )}
@@ -250,7 +231,7 @@ Example output:
                 disabled={refetching}
                 variant="outline"
                 size="sm"
-                className={`flex items-center gap-2 ${needsColorUpdate ? 'text-blue-600 border-blue-400 hover:bg-blue-50 animate-pulse' : 'text-blue-600 border-blue-300 hover:bg-blue-50'}`}
+                className="flex items-center gap-2 text-blue-600 border-blue-300 hover:bg-blue-50"
               >
                 {refetching ? (
                   <>
@@ -260,7 +241,7 @@ Example output:
                 ) : (
                   <>
                     <RefreshCw className="w-4 h-4" />
-                    <span className="hidden sm:inline">{needsColorUpdate ? 'לחצי לזיהוי צבע!' : 'בדוק שוב'}</span>
+                    <span className="hidden sm:inline">בדוק שוב</span>
                   </>
                 )}
               </Button>
@@ -289,14 +270,25 @@ Example output:
               <div className="pt-2" dir="rtl">
                 <Label className="font-medium text-stone-700 text-sm sm:text-base block mb-3">
                   צבעים זמינים {itemDetails.color && <span className="text-rose-600 font-bold">(הצבע שלך מסומן ✓)</span>}
-                  {!itemDetails.color && needsColorUpdate && <span className="text-blue-600 font-bold animate-pulse">(לחצי "בדוק שוב" לזיהוי הצבע)</span>}
                 </Label>
+                
+                {/* Debug info - remove after testing */}
+                {itemDetails.color && (
+                  <p className="text-xs text-blue-600 mb-2">
+                    🔍 הצבע שזוהה: "{itemDetails.color}"
+                  </p>
+                )}
                 
                 <div className="flex flex-wrap gap-2">
                   {itemDetails.available_colors.map((color, idx) => {
                     const normalizedSelected = normalizeColorName(itemDetails.color);
                     const normalizedColor = normalizeColorName(color);
-                    const isSelected = normalizedSelected && normalizedColor === normalizedColor;
+                    const isSelected = normalizedSelected && normalizedColor === normalizedSelected;
+                    
+                    // Log matching for debugging
+                    if (itemDetails.color) {
+                      console.log(`🎨 Comparing: "${normalizedColor}" === "${normalizedSelected}"?`, isSelected);
+                    }
                     
                     return (
                       <span 
