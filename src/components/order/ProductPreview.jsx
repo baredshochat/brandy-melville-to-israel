@@ -2,11 +2,35 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowRight, ArrowLeft, Package, Loader2, Link as LinkIcon } from "lucide-react";
+import { ArrowRight, ArrowLeft, Package, Loader2, Link as LinkIcon, RefreshCw, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
+import { InvokeLLM } from "@/integrations/Core";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+async function normalizeLLMResult(res) {
+  try {
+    if (!res) return null;
+    if (typeof Response !== 'undefined' && res instanceof Response) {
+      return await res.json();
+    }
+    if (res && typeof res === 'object' && 'data' in res) {
+      return res.data;
+    }
+    if (typeof res === 'string') {
+      try { return JSON.parse(res); } catch { return { _raw: res }; }
+    }
+    return res;
+  } catch (e) {
+    console.error('normalizeLLMResult failed', e);
+    return res;
+  }
+}
 
 export default function ProductPreview({ productData, onConfirm, onBack }) {
   const [itemDetails, setItemDetails] = useState(null);
+  const [refetching, setRefetching] = useState(false);
+  const [refetchError, setRefetchError] = useState('');
+  const [refetchSuccess, setRefetchSuccess] = useState(false);
 
   const getNameFromUrl = (url) => {
     try {
@@ -39,6 +63,103 @@ export default function ProductPreview({ productData, onConfirm, onBack }) {
     return () => clearTimeout(t);
   }, [productData]);
 
+  const handleRefetch = async () => {
+    if (!itemDetails?.product_url) {
+      setRefetchError('אין קישור מקור לבדיקה מחדש');
+      return;
+    }
+
+    setRefetching(true);
+    setRefetchError('');
+    setRefetchSuccess(false);
+
+    try {
+      const raw = await InvokeLLM({
+        prompt: `You are extracting product data from this URL: ${itemDetails.product_url}
+
+CRITICAL - RE-VERIFICATION MODE:
+This is a second attempt to extract data. Be EXTRA careful and thorough.
+
+PRODUCT NAME:
+- Extract from: og:title meta tag OR the main <h1> product title
+- Clean any " | Brandy Melville" suffix
+- Keep the original English name
+- Double-check spelling and capitalization
+
+PRICE:
+- Find the price in £XX format (or $XX or €XX)
+- Return just the number
+- Verify this is the CURRENT price, not a crossed-out old price
+
+SKU:
+- Usually shown as "SKU: XXXXX" on the page
+- This is critical for product identification
+- Look in multiple places: product info section, meta tags, hidden fields
+
+DESCRIPTION:
+- The product description text (usually under "Product Description:")
+- Get the FULL description if available
+
+COLORS & SIZES:
+- Extract ALL available options from dropdown/selection buttons
+- Don't miss any variants
+- List all color names exactly as they appear
+
+Return complete and accurate data.
+
+Example output:
+{
+  "product_name": "Priscilla Pants",
+  "product_sku": "M065L-622PSI720000",
+  "product_description": "Soft cotton blend yoga pants with a wide pant leg.",
+  "price": 20,
+  "available_colors": ["Super Light Grey", "White", "Silver Grey", "Black"],
+  "available_sizes": ["XS/S"],
+  "currency_found": "GBP"
+}`,
+        add_context_from_internet: true,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            product_name: { type: "string" },
+            product_sku: { type: ["string", "null"] },
+            product_description: { type: ["string", "null"] },
+            price: { type: "number" },
+            available_colors: { type: "array", items: { type: "string" } },
+            available_sizes: { type: "array", items: { type: "string" } },
+            currency_found: { type: "string" }
+          },
+          required: ["product_name", "price", "currency_found"]
+        }
+      });
+
+      const result = await normalizeLLMResult(raw);
+      console.log("🔄 Refetch result:", result);
+
+      // Update item details with new data
+      const updatedItem = {
+        ...itemDetails,
+        product_name: result?.product_name || itemDetails.product_name,
+        product_sku: result?.product_sku || itemDetails.product_sku,
+        product_description: result?.product_description || itemDetails.product_description,
+        original_price: result?.price || itemDetails.original_price,
+        available_colors: Array.isArray(result?.available_colors) ? result.available_colors : itemDetails.available_colors,
+        available_sizes: Array.isArray(result?.available_sizes) ? result.available_sizes : itemDetails.available_sizes,
+        original_currency: result?.currency_found || itemDetails.original_currency
+      };
+
+      setItemDetails(updatedItem);
+      setRefetchSuccess(true);
+      setTimeout(() => setRefetchSuccess(false), 3000);
+
+    } catch (error) {
+      console.error('Error refetching product details:', error);
+      setRefetchError(`שגיאה בבדיקה מחדש: ${error.message || 'שגיאה לא ידועה'}`);
+    } finally {
+      setRefetching(false);
+    }
+  };
+
   const isEditing = !!productData?.id;
 
   if (!itemDetails) {
@@ -63,16 +184,61 @@ export default function ProductPreview({ productData, onConfirm, onBack }) {
           <h2 className="text-xl sm:text-2xl mb-2 sm:mb-3 font-semibold">{isEditing ? 'עריכת פריט' : 'אישור פריט'}</h2>
         </div>
 
+        {refetchSuccess && (
+          <Alert className="mb-4 bg-green-50 border-green-200">
+            <AlertCircle className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-800">
+              ✅ הפרטים עודכנו בהצלחה! בדקי שהכל נכון לפני האישור.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {refetchError && (
+          <Alert className="mb-4 bg-red-50 border-red-200">
+            <AlertCircle className="h-4 w-4 text-red-600" />
+            <AlertDescription className="text-red-800">
+              {refetchError}
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="bg-white p-4 sm:p-8 border border-stone-200">
           <div className="space-y-4 sm:space-y-6" dir="ltr">
-            <h3 className="text-xl sm:text-3xl font-medium text-stone-900 text-left">{displayName}</h3>
+            <div className="flex justify-between items-start gap-4">
+              <div className="flex-1">
+                <h3 className="text-xl sm:text-3xl font-medium text-stone-900 text-left">{displayName}</h3>
+              </div>
+              <Button
+                onClick={handleRefetch}
+                disabled={refetching}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2 text-blue-600 border-blue-300 hover:bg-blue-50"
+              >
+                {refetching ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="hidden sm:inline">מעדכן...</span>
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-4 h-4" />
+                    <span className="hidden sm:inline">בדוק שוב</span>
+                  </>
+                )}
+              </Button>
+            </div>
+
             <p className="text-xs sm:text-sm text-stone-500 text-left">מק"ט: {itemDetails.product_sku || 'לא זוהה'}</p>
+            
             <div className="text-sm sm:text-base text-stone-600 max-w-none pt-2 text-left prose prose-sm">
               <p>{itemDetails.product_description || 'לא זוהה תיאור'}</p>
             </div>
+            
             <div className="text-xl sm:text-3xl font-medium text-stone-900 pt-2 text-left">
               <span className="text-left text-lg sm:text-2xl">{currencySymbol}{Number(itemDetails.original_price || 0).toFixed(2)}</span>
             </div>
+            
             <div className="pt-4">
               <Label className="font-medium text-stone-700 flex items-center gap-2 text-sm sm:text-base">
                 <LinkIcon className="w-4 h-4 text-stone-500" /> קישור מקור
@@ -81,12 +247,42 @@ export default function ProductPreview({ productData, onConfirm, onBack }) {
                 {itemDetails.product_url}
               </a>
             </div>
+
+            {itemDetails.available_colors && itemDetails.available_colors.length > 0 && (
+              <div className="pt-2">
+                <Label className="font-medium text-stone-700 text-sm sm:text-base text-left block mb-2">
+                  צבעים זמינים
+                </Label>
+                <div className="flex flex-wrap gap-2">
+                  {itemDetails.available_colors.map((color, idx) => (
+                    <span key={idx} className="px-3 py-1 bg-stone-100 text-stone-700 text-sm rounded-full border border-stone-200">
+                      {color}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {itemDetails.available_sizes && itemDetails.available_sizes.length > 0 && (
+              <div className="pt-2">
+                <Label className="font-medium text-stone-700 text-sm sm:text-base text-left block mb-2">
+                  מידות זמינות
+                </Label>
+                <div className="flex flex-wrap gap-2">
+                  {itemDetails.available_sizes.map((size, idx) => (
+                    <span key={idx} className="px-3 py-1 bg-stone-100 text-stone-700 text-sm rounded-full border border-stone-200">
+                      {size}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="mt-6 sm:mt-8 space-y-4 sm:space-y-6">
             <div className="p-3 sm:p-4 bg-amber-50 border border-amber-200 text-amber-900">
               <p className="text-sm sm:text-base font-semibold">
-                שימי לב: הפריט שיגיע הוא בדיוק לפי הקישור המקורי שהדבקת.
+                ⚠️ שימי לב: הפריט שיגיע הוא בדיוק לפי הקישור המקורי. אם יש טעות בפרטים, לחצי על "בדוק שוב" למעלה.
               </p>
             </div>
 
@@ -111,8 +307,8 @@ export default function ProductPreview({ productData, onConfirm, onBack }) {
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0 mt-6 sm:mt-8">
           <Button
             onClick={handleConfirm}
-            disabled={!canConfirm}
-            className="order-1 sm:order-none h-10 sm:h-12 px-6 sm:px-8 bg-black hover:bg-stone-800 active:bg-stone-700 text-white font-medium transition-all duration-300 flex items-center justify-center gap-2 text-sm sm:text-base"
+            disabled={!canConfirm || refetching}
+            className="order-1 sm:order-none h-10 sm:h-12 px-6 sm:px-8 bg-black hover:bg-stone-800 active:bg-stone-700 text-white font-medium transition-all duration-300 flex items-center justify-center gap-2 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
           >
             הוספה לסל <ArrowRight className="w-4 h-4" />
           </Button>
