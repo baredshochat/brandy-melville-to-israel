@@ -283,7 +283,7 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
                   <p className="text-xs text-stone-500 mb-4 text-center">
                     {isLocalOrder 
                       ? 'בשלב הבא יתווסף רק משלוח עד הבית (₪35) 🏠'
-                      : 'המחירים כוללים משלוח בינלאומי, עמלות ומע״ם. בשלב הבא יתווסף רק משלוח עד הבית 🏠'}
+                      : 'המחירים כוללים משלוח בינלאומי, עמלות ומע״מ. בשלב הבא יתווסף רק משלוח עד הבית 🏠'}
                   </p>
                   <Button
                     onClick={onCheckout}
