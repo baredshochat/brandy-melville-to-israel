@@ -396,8 +396,6 @@ DESCRIPTION:
 
 COLORS & SIZES:
 - Extract all available options from dropdown/selection buttons
-- IMPORTANT: Also identify which specific color THIS product URL is showing (from URL parameters, selected option, or product title)
-- The "selected_color" should match one of the available colors if possible
 
 Return ONLY what you find.
 
@@ -408,7 +406,6 @@ Example output for the Priscilla Pants:
   "product_description": "Soft cotton blend yoga pants with a wide pant leg.",
   "price": 20,
   "available_colors": ["Super Light Grey", "White", "Silver Grey", "Black"],
-  "selected_color": "Super Light Grey",
   "available_sizes": ["XS/S"],
   "currency_found": "GBP"
 }`,
@@ -421,7 +418,6 @@ Example output for the Priscilla Pants:
             product_description: { type: ["string", "null"] },
             price: { type: "number" },
             available_colors: { type: "array", items: { type: "string" } },
-            selected_color: { type: ["string", "null"] },
             available_sizes: { type: "array", items: { type: "string" } },
             currency_found: { type: "string" }
           },
@@ -462,7 +458,7 @@ Example output for the Priscilla Pants:
         product_sku: extractedSku,
         product_description: result?.product_description || 'תיאור לא זמין',
         original_price: priceNum,
-        color: result?.selected_color || '', // Use selected_color from LLM result
+        color: '',
         size: '',
         quantity: 1,
         original_currency: expectedCurrency,

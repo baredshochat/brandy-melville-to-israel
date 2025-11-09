@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -105,7 +104,6 @@ COLORS & SIZES:
 - Extract ALL available options from dropdown/selection buttons
 - Don't miss any variants
 - List all color names exactly as they appear
-- IMPORTANT: Also identify which specific color THIS product URL is showing (from URL parameters, selected option, or product title)
 
 Return complete and accurate data.
 
@@ -116,7 +114,6 @@ Example output:
   "product_description": "Soft cotton blend yoga pants with a wide pant leg.",
   "price": 20,
   "available_colors": ["Super Light Grey", "White", "Silver Grey", "Black"],
-  "selected_color": "Super Light Grey",
   "available_sizes": ["XS/S"],
   "currency_found": "GBP"
 }`,
@@ -129,7 +126,6 @@ Example output:
             product_description: { type: ["string", "null"] },
             price: { type: "number" },
             available_colors: { type: "array", items: { type: "string" } },
-            selected_color: { type: ["string", "null"] },
             available_sizes: { type: "array", items: { type: "string" } },
             currency_found: { type: "string" }
           },
@@ -147,7 +143,6 @@ Example output:
         product_sku: result?.product_sku || itemDetails.product_sku,
         product_description: result?.product_description || itemDetails.product_description,
         original_price: result?.price || itemDetails.original_price,
-        color: result?.selected_color || itemDetails.color,
         available_colors: Array.isArray(result?.available_colors) ? result.available_colors : itemDetails.available_colors,
         available_sizes: Array.isArray(result?.available_sizes) ? result.available_sizes : itemDetails.available_sizes,
         original_currency: result?.currency_found || itemDetails.original_currency
@@ -256,30 +251,15 @@ Example output:
             {itemDetails.available_colors && itemDetails.available_colors.length > 0 && (
               <div className="pt-2">
                 <Label className="font-medium text-stone-700 text-sm sm:text-base text-left block mb-2">
-                  צבעים זמינים {itemDetails.color && <span className="text-rose-600">(הצבע שלך מסומן ✓)</span>}
+                  צבעים זמינים
                 </Label>
                 <div className="flex flex-wrap gap-2">
-                  {itemDetails.available_colors.map((color, idx) => {
-                    const isSelected = itemDetails.color && color.toLowerCase() === itemDetails.color.toLowerCase();
-                    return (
-                      <span 
-                        key={idx} 
-                        className={`px-3 py-1 text-sm rounded-full border transition-all ${
-                          isSelected 
-                            ? 'bg-rose-500 text-white border-rose-600 font-semibold shadow-md ring-2 ring-rose-300' 
-                            : 'bg-stone-100 text-stone-700 border-stone-200'
-                        }`}
-                      >
-                        {color} {isSelected && '✓'}
-                      </span>
-                    );
-                  })}
+                  {itemDetails.available_colors.map((color, idx) => (
+                    <span key={idx} className="px-3 py-1 bg-stone-100 text-stone-700 text-sm rounded-full border border-stone-200">
+                      {color}
+                    </span>
+                  ))}
                 </div>
-                {itemDetails.color && !itemDetails.available_colors.some(c => c.toLowerCase() === itemDetails.color.toLowerCase()) && (
-                  <p className="text-xs text-amber-600 mt-2 text-left">
-                    ⚠️ הצבע שזוהה ({itemDetails.color}) לא נמצא ברשימת הצבעים הזמינים
-                  </p>
-                )}
               </div>
             )}
 
