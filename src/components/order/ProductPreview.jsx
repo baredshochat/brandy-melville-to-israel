@@ -18,7 +18,7 @@ async function normalizeLLMResult(res) {
       return res.data;
     }
     if (typeof res === 'string') {
-      try { return JSON.parse(res); } catch { return { _raw: res }; }
+      try {return JSON.parse(res);} catch {return { _raw: res };}
     }
     return res;
   } catch (e) {
@@ -41,8 +41,8 @@ export default function ProductPreview({ productData, onConfirm, onBack }) {
       const slug = afterProducts ? afterProducts.split("/")[0] : pathname.split("/").filter(Boolean).pop() || "";
       if (!slug) return "";
       const clean = decodeURIComponent(slug).split("?")[0].split("#")[0].replace(/-/g, " ").trim();
-      return clean.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
-    } catch { return ""; }
+      return clean.split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+    } catch {return "";}
   };
 
   useEffect(() => {
@@ -60,7 +60,7 @@ export default function ProductPreview({ productData, onConfirm, onBack }) {
         if (n) sanitized.product_name = n;
       }
       t = setTimeout(() => setItemDetails(sanitized), 60);
-    } else { setItemDetails(null); }
+    } else {setItemDetails(null);}
     return () => clearTimeout(t);
   }, [productData]);
 
@@ -167,26 +167,26 @@ Example output:
     return (
       <motion.div className="p-4 md:p-8 flex justify-center items-center" style={{ minHeight: '400px' }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
         <Loader2 className="w-8 h-8 animate-spin text-stone-400" />
-      </motion.div>
-    );
+      </motion.div>);
+
   }
 
   const handleConfirm = () => onConfirm(itemDetails);
 
   const currencySymbol = itemDetails.original_currency === 'USD' ? '$' : itemDetails.original_currency === 'EUR' ? '€' : itemDetails.original_currency === 'GBP' ? '£' : '';
-  const displayName = (itemDetails.product_name && String(itemDetails.product_name).trim()) ? itemDetails.product_name : (getNameFromUrl(itemDetails.product_url) || 'שם לא זוהה');
+  const displayName = itemDetails.product_name && String(itemDetails.product_name).trim() ? itemDetails.product_name : getNameFromUrl(itemDetails.product_url) || 'שם לא זוהה';
 
   const canConfirm = (itemDetails.quantity || 1) > 0;
 
   const handleColorSelect = (color) => {
-    setItemDetails(prev => ({
+    setItemDetails((prev) => ({
       ...prev,
       color: prev.color === color ? '' : color
     }));
   };
 
   const handleSizeSelect = (size) => {
-    setItemDetails(prev => ({
+    setItemDetails((prev) => ({
       ...prev,
       size: prev.size === size ? '' : size
     }));
@@ -199,23 +199,23 @@ Example output:
           <h2 className="text-xl sm:text-2xl mb-2 sm:mb-3 font-semibold">{isEditing ? 'עריכת פריט' : 'אישור פריט'}</h2>
         </div>
 
-        {refetchSuccess && (
-          <Alert className="mb-4 bg-green-50 border-green-200">
+        {refetchSuccess &&
+        <Alert className="mb-4 bg-green-50 border-green-200">
             <AlertCircle className="h-4 w-4 text-green-600" />
             <AlertDescription className="text-green-800">
               ✅ הפרטים עודכנו בהצלחה! בדקי שהכל נכון לפני האישור.
             </AlertDescription>
           </Alert>
-        )}
+        }
 
-        {refetchError && (
-          <Alert className="mb-4 bg-red-50 border-red-200">
+        {refetchError &&
+        <Alert className="mb-4 bg-red-50 border-red-200">
             <AlertCircle className="h-4 w-4 text-red-600" />
             <AlertDescription className="text-red-800">
               {refetchError}
             </AlertDescription>
           </Alert>
-        )}
+        }
 
         <div className="bg-white p-4 sm:p-8 border border-stone-200">
           <div className="space-y-4 sm:space-y-6" dir="ltr">
@@ -228,19 +228,19 @@ Example output:
                 disabled={refetching}
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-2 text-blue-600 border-blue-300 hover:bg-blue-50"
-              >
-                {refetching ? (
-                  <>
+                className="flex items-center gap-2 text-blue-600 border-blue-300 hover:bg-blue-50">
+
+                {refetching ?
+                <>
                     <Loader2 className="w-4 h-4 animate-spin" />
                     <span className="hidden sm:inline">מעדכן...</span>
-                  </>
-                ) : (
-                  <>
+                  </> :
+
+                <>
                     <RefreshCw className="w-4 h-4" />
                     <span className="hidden sm:inline">בדוק שוב</span>
                   </>
-                )}
+                }
               </Button>
             </div>
 
@@ -258,64 +258,64 @@ Example output:
               <Label className="font-medium text-stone-700 flex items-center gap-2 text-sm sm:text-base">
                 <LinkIcon className="w-4 h-4 text-stone-500" /> קישור מקור
               </Label>
-              <a href={itemDetails.product_url} target="_blank" rel="noopener noreferrer" className="text-xs sm:text-sm text-rose-600 hover:underline text-left block break-all mt-2" dir="ltr">
+              <a href={itemDetails.product_url} target="_blank" rel="noopener noreferrer" className="text-blue-900 mt-2 text-xs text-left sm:text-sm hover:underline block break-all" dir="ltr">
                 {itemDetails.product_url}
               </a>
             </div>
 
-            {itemDetails.available_colors && itemDetails.available_colors.length > 0 && (
-              <div className="pt-2">
+            {itemDetails.available_colors && itemDetails.available_colors.length > 0 &&
+            <div className="pt-2">
                 <Label className="font-medium text-stone-700 text-sm sm:text-base text-left block mb-2">
-                  צבעים זמינים {itemDetails.color && <span className="text-rose-500 font-normal">(נבחר: {itemDetails.color})</span>}
+                  צבעים זמינים {itemDetails.color && <span className="text-blue-900 text-sm font-normal">(נבחר: {itemDetails.color})</span>}
                 </Label>
                 <div className="flex flex-wrap gap-2">
                   {itemDetails.available_colors.map((color, idx) => {
-                    const isSelected = itemDetails.color === color;
-                    return (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => handleColorSelect(color)}
-                        className={`px-3 py-1 text-sm rounded-full transition-all duration-200 ${
-                          isSelected 
-                            ? 'bg-rose-100 text-rose-800 border-2 border-rose-400 font-semibold shadow-md scale-105' 
-                            : 'bg-stone-100 text-stone-700 border border-stone-200 hover:bg-stone-200'
-                        }`}
-                      >
+                  const isSelected = itemDetails.color === color;
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleColorSelect(color)}
+                      className={`px-3 py-1 text-sm rounded-full transition-all duration-200 ${
+                      isSelected ?
+                      'bg-rose-100 text-rose-800 border-2 border-rose-400 font-semibold shadow-md scale-105' :
+                      'bg-stone-100 text-stone-700 border border-stone-200 hover:bg-stone-200'}`
+                      }>
+
                         {color}
-                      </button>
-                    );
-                  })}
+                      </button>);
+
+                })}
                 </div>
               </div>
-            )}
+            }
 
-            {itemDetails.available_sizes && itemDetails.available_sizes.length > 0 && (
-              <div className="pt-2">
+            {itemDetails.available_sizes && itemDetails.available_sizes.length > 0 &&
+            <div className="pt-2">
                 <Label className="font-medium text-stone-700 text-sm sm:text-base text-left block mb-2">
-                  מידות זמינות {itemDetails.size && <span className="text-rose-500 font-normal">(נבחרה: {itemDetails.size})</span>}
+                  מידות זמינות {itemDetails.size && <span className="text-blue-900 text-sm font-normal">(נבחרה: {itemDetails.size})</span>}
                 </Label>
                 <div className="flex flex-wrap gap-2">
                   {itemDetails.available_sizes.map((size, idx) => {
-                    const isSelected = itemDetails.size === size;
-                    return (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => handleSizeSelect(size)}
-                        className={`px-3 py-1 text-sm rounded-full transition-all duration-200 ${
-                          isSelected 
-                            ? 'bg-rose-100 text-rose-800 border-2 border-rose-400 font-semibold shadow-md scale-105' 
-                            : 'bg-stone-100 text-stone-700 border border-stone-200 hover:bg-stone-200'
-                        }`}
-                      >
+                  const isSelected = itemDetails.size === size;
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleSizeSelect(size)}
+                      className={`px-3 py-1 text-sm rounded-full transition-all duration-200 ${
+                      isSelected ?
+                      'bg-rose-100 text-rose-800 border-2 border-rose-400 font-semibold shadow-md scale-105' :
+                      'bg-stone-100 text-stone-700 border border-stone-200 hover:bg-stone-200'}`
+                      }>
+
                         {size}
-                      </button>
-                    );
-                  })}
+                      </button>);
+
+                })}
                 </div>
               </div>
-            )}
+            }
           </div>
 
           <div className="mt-6 sm:mt-8 space-y-4 sm:space-y-6">
@@ -334,9 +334,9 @@ Example output:
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {[1, 2, 3, 4, 5].map((num) => (
-                    <SelectItem key={num} value={String(num)}>{num}</SelectItem>
-                  ))}
+                  {[1, 2, 3, 4, 5].map((num) =>
+                  <SelectItem key={num} value={String(num)}>{num}</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -347,8 +347,8 @@ Example output:
           <Button
             onClick={handleConfirm}
             disabled={!canConfirm || refetching}
-            className="order-1 sm:order-none h-10 sm:h-12 px-6 sm:px-8 bg-black hover:bg-stone-800 active:bg-stone-700 text-white font-medium transition-all duration-300 flex items-center justify-center gap-2 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+            className="order-1 sm:order-none h-10 sm:h-12 px-6 sm:px-8 bg-black hover:bg-stone-800 active:bg-stone-700 text-white font-medium transition-all duration-300 flex items-center justify-center gap-2 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed">
+
             הוספה לסל <ArrowRight className="w-4 h-4" />
           </Button>
           <Button variant="ghost" onClick={onBack} className="order-2 sm:order-none flex items-center justify-center gap-2 h-10 sm:h-12 px-4 sm:px-6 text-stone-600 hover:text-black hover:bg-stone-100 text-sm sm:text-base">
@@ -356,6 +356,6 @@ Example output:
           </Button>
         </div>
       </div>
-    </motion.div>
-  );
+    </motion.div>);
+
 }
