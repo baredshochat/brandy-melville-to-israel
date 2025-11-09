@@ -59,13 +59,6 @@ export default function ProductPreview({ productData, onConfirm, onBack }) {
         const n = getNameFromUrl(sanitized.product_url);
         if (n) sanitized.product_name = n;
       }
-      
-      // Log for debugging
-      console.log('🎨 Color info:', {
-        selectedColor: sanitized.color,
-        availableColors: sanitized.available_colors
-      });
-      
       t = setTimeout(() => setItemDetails(sanitized), 60);
     } else { setItemDetails(null); }
     return () => clearTimeout(t);
@@ -189,12 +182,6 @@ Example output:
 
   const canConfirm = (itemDetails.quantity || 1) > 0;
 
-  // Helper function for better color matching
-  const normalizeColorName = (color) => {
-    if (!color) return '';
-    return color.toLowerCase().trim().replace(/\s+/g, ' ');
-  };
-
   return (
     <motion.div key="step3" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.5 }} className="p-3 sm:p-8">
       <div className="max-w-3xl mx-auto">
@@ -267,64 +254,43 @@ Example output:
             </div>
 
             {itemDetails.available_colors && itemDetails.available_colors.length > 0 && (
-              <div className="pt-2" dir="rtl">
-                <Label className="font-medium text-stone-700 text-sm sm:text-base block mb-3">
-                  צבעים זמינים {itemDetails.color && <span className="text-rose-600 font-bold">(הצבע שלך מסומן ✓)</span>}
+              <div className="pt-2">
+                <Label className="font-medium text-stone-700 text-sm sm:text-base text-left block mb-2">
+                  צבעים זמינים {itemDetails.color && <span className="text-rose-600">(הצבע שלך מסומן ✓)</span>}
                 </Label>
-                
-                {/* Debug info - remove after testing */}
-                {itemDetails.color && (
-                  <p className="text-xs text-blue-600 mb-2">
-                    🔍 הצבע שזוהה: "{itemDetails.color}"
-                  </p>
-                )}
-                
                 <div className="flex flex-wrap gap-2">
                   {itemDetails.available_colors.map((color, idx) => {
-                    const normalizedSelected = normalizeColorName(itemDetails.color);
-                    const normalizedColor = normalizeColorName(color);
-                    const isSelected = normalizedSelected && normalizedColor === normalizedSelected;
-                    
-                    // Log matching for debugging
-                    if (itemDetails.color) {
-                      console.log(`🎨 Comparing: "${normalizedColor}" === "${normalizedSelected}"?`, isSelected);
-                    }
-                    
+                    const isSelected = itemDetails.color && color.toLowerCase() === itemDetails.color.toLowerCase();
                     return (
                       <span 
                         key={idx} 
-                        className={`px-4 py-2 text-sm font-medium transition-all duration-200 ${
+                        className={`px-3 py-1 text-sm rounded-full border transition-all ${
                           isSelected 
-                            ? 'bg-rose-500 text-white border-2 border-rose-600 shadow-lg ring-4 ring-rose-200 scale-105' 
-                            : 'bg-stone-100 text-stone-700 border border-stone-200 hover:bg-stone-200'
+                            ? 'bg-rose-500 text-white border-rose-600 font-semibold shadow-md ring-2 ring-rose-300' 
+                            : 'bg-stone-100 text-stone-700 border-stone-200'
                         }`}
-                        style={{ borderRadius: '6px' }}
                       >
-                        {isSelected && '✓ '}{color}
+                        {color} {isSelected && '✓'}
                       </span>
                     );
                   })}
                 </div>
-                
-                {itemDetails.color && !itemDetails.available_colors.some(c => normalizeColorName(c) === normalizeColorName(itemDetails.color)) && (
-                  <Alert className="mt-3 bg-amber-50 border-amber-300">
-                    <AlertCircle className="h-4 w-4 text-amber-600" />
-                    <AlertDescription className="text-amber-800">
-                      ⚠️ הצבע "{itemDetails.color}" לא נמצא ברשימת הצבעים הזמינים. אנא בדקי את הקישור או לחצי על "בדוק שוב".
-                    </AlertDescription>
-                  </Alert>
+                {itemDetails.color && !itemDetails.available_colors.some(c => c.toLowerCase() === itemDetails.color.toLowerCase()) && (
+                  <p className="text-xs text-amber-600 mt-2 text-left">
+                    ⚠️ הצבע שזוהה ({itemDetails.color}) לא נמצא ברשימת הצבעים הזמינים
+                  </p>
                 )}
               </div>
             )}
 
             {itemDetails.available_sizes && itemDetails.available_sizes.length > 0 && (
-              <div className="pt-2" dir="rtl">
-                <Label className="font-medium text-stone-700 text-sm sm:text-base block mb-2">
+              <div className="pt-2">
+                <Label className="font-medium text-stone-700 text-sm sm:text-base text-left block mb-2">
                   מידות זמינות
                 </Label>
                 <div className="flex flex-wrap gap-2">
                   {itemDetails.available_sizes.map((size, idx) => (
-                    <span key={idx} className="px-3 py-1 bg-stone-100 text-stone-700 text-sm border border-stone-200" style={{ borderRadius: '6px' }}>
+                    <span key={idx} className="px-3 py-1 bg-stone-100 text-stone-700 text-sm rounded-full border border-stone-200">
                       {size}
                     </span>
                   ))}
