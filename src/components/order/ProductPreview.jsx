@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { ArrowRight, ArrowLeft, Package, Loader2, Link as LinkIcon, Image as ImageIcon, Upload, AlertCircle } from "lucide-react";
+import { ArrowRight, ArrowLeft, Package, Loader2, Link as LinkIcon, Image as ImageIcon, Upload, AlertCircle, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { UploadFile } from "@/integrations/Core";
 import { SkuImage } from "@/entities/SkuImage";
@@ -108,6 +108,12 @@ export default function ProductPreview({ productData, onConfirm, onBack }) {
     }
   };
 
+  const handleDeleteImage = () => {
+    if (confirm('בטוחה שרוצה למחוק את התמונה?')) {
+      setItemDetails(prev => ({ ...prev, item_image_url: null }));
+    }
+  };
+
   const isEditing = !!productData?.id;
 
   if (!itemDetails) {
@@ -165,13 +171,20 @@ export default function ProductPreview({ productData, onConfirm, onBack }) {
                       `;
                     }}
                   />
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
                     <label htmlFor="image-upload-existing" className="cursor-pointer">
                       <div className="bg-white text-stone-800 px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 hover:bg-stone-50 transition-colors">
                         {uploadingImage ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
-                        <span className="font-medium">העלי תמונה אחרת</span>
+                        <span className="font-medium">החלף תמונה</span>
                       </div>
                     </label>
+                    <button
+                      onClick={handleDeleteImage}
+                      className="bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 hover:bg-red-600 transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                      <span className="font-medium">מחק תמונה</span>
+                    </button>
                     <input 
                       id="image-upload-existing"
                       type="file" 
