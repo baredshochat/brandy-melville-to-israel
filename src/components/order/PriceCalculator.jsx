@@ -26,7 +26,7 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
   const [rates, setRates] = useState({ usd: 3.7, eur: 4.0, gbp: 4.5 });
   const [settings, setSettings] = useState(null);
   const [domesticShipping, setDomesticShipping] = useState(35);
-  
+
   // Coupon state
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState(null);
@@ -34,7 +34,7 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
   const [checkingCoupon, setCheckingCoupon] = useState(false);
   const [discount, setDiscount] = useState(0);
 
-  const isLocalOrder = site === 'local' || (cart.length > 0 && cart[0].site === 'local');
+  const isLocalOrder = site === 'local' || cart.length > 0 && cart[0].site === 'local';
 
   useEffect(() => {
     const loadData = async () => {
@@ -60,11 +60,11 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
         const settingsList = await CalculationSettings.list();
         let loadedSettings = null;
         let domesticShipCost = 35;
-        
+
         if (settingsList && settingsList.length > 0) {
           loadedSettings = settingsList[0];
           setSettings(loadedSettings);
-          domesticShipCost = isLocalOrder ? 35 : (loadedSettings.domestic_ship_ils || 30);
+          domesticShipCost = isLocalOrder ? 35 : loadedSettings.domestic_ship_ils || 30;
           setDomesticShipping(domesticShipCost);
         }
 
@@ -85,8 +85,8 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
 
           const priceILS = convertToILS(item.original_price, item.original_currency);
           const itemWeight = (item.item_weight || 0.3) * (item.quantity || 1);
-          
-          const totalWeight = allItems.reduce((sum, it) => sum + ((it.item_weight || 0.3) * (it.quantity || 1)), 0);
+
+          const totalWeight = allItems.reduce((sum, it) => sum + (it.item_weight || 0.3) * (it.quantity || 1), 0);
 
           if (totalWeight === 0) {
             return priceILS * (item.quantity || 1);
@@ -96,7 +96,7 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
           const roundedWeight = Math.ceil(weightWithPackaging / (loadedSettings.carrier_rounding_kg || 0.5)) * (loadedSettings.carrier_rounding_kg || 0.5);
           const baseShipping = roundedWeight * (loadedSettings.ship_rate_per_kg || 100);
           const withSurcharges = baseShipping * (1 + (loadedSettings.fuel_surcharge_pct || 0) + (loadedSettings.remote_area_pct || 0));
-          
+
           const fixedFees = loadedSettings.fixed_fees_ils || 50;
           const totalOverhead = withSurcharges + fixedFees;
           const itemProportion = itemWeight / totalWeight;
@@ -105,22 +105,22 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
           const itemCostBeforeVAT = itemBaseCost + itemOverhead;
           const vatRate = loadedSettings.vat_pct || 0.18;
           const itemFullCostWithVAT = itemCostBeforeVAT * (1 + vatRate);
-          
+
           return itemFullCostWithVAT;
         };
 
-        const totalWeightKg = cart.reduce((sum, item) => sum + ((item.item_weight || 0.35) * item.quantity), 0);
+        const totalWeightKg = cart.reduce((sum, item) => sum + (item.item_weight || 0.35) * item.quantity, 0);
 
         const itemsTotal = cart.reduce((sum, item) => {
           return sum + calculateItemFullCost(item, cart);
         }, 0);
-        
+
         const total = Math.round(itemsTotal + domesticShipCost);
 
         setTotalPrice(total);
         setTotalWeight(totalWeightKg);
-        
-        setDetailedItems(cart.map(item => ({
+
+        setDetailedItems(cart.map((item) => ({
           ...item,
           priceILS: calculateItemFullCost(item, cart)
         })));
@@ -139,52 +139,52 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
 
   const validateCoupon = async () => {
     if (!couponCode.trim()) return;
-    
+
     setCheckingCoupon(true);
     setCouponError('');
-    
+
     try {
       const coupons = await Coupon.filter({ code: couponCode.toUpperCase().trim() });
-      
+
       if (coupons.length === 0) {
         setCouponError('קוד קופון לא תקין');
         return;
       }
-      
+
       const coupon = coupons[0];
-      
+
       // Validate coupon
       if (!coupon.is_active) {
         setCouponError('קופון זה אינו פעיל');
         return;
       }
-      
+
       const now = new Date();
       const validFrom = new Date(coupon.valid_from);
       const validUntil = new Date(coupon.valid_until);
-      
+
       if (now < validFrom || now > validUntil) {
         setCouponError('קופון זה אינו בתוקף');
         return;
       }
-      
+
       if (coupon.usage_limit && coupon.times_used >= coupon.usage_limit) {
         setCouponError('קופון זה מוגבל בשימוש והגיע למכסה');
         return;
       }
-      
+
       const itemsSubtotal = detailedItems.reduce((sum, item) => sum + item.priceILS, 0);
-      
+
       if (coupon.minimum_order_amount && itemsSubtotal < coupon.minimum_order_amount) {
         setCouponError(`קופון זה תקף רק להזמנות מעל ₪${coupon.minimum_order_amount}`);
         return;
       }
-      
+
       if (coupon.applies_to_site !== 'all' && coupon.applies_to_site !== site) {
         setCouponError('קופון זה לא תקף לאתר שנבחר');
         return;
       }
-      
+
       // Calculate discount
       let discountAmount = 0;
       if (coupon.discount_type === 'percentage') {
@@ -192,14 +192,14 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
       } else {
         discountAmount = Math.round(coupon.discount_value);
       }
-      
+
       // Don't allow discount to exceed total
       const maxDiscount = itemsSubtotal + domesticShipping;
       discountAmount = Math.min(discountAmount, maxDiscount);
-      
+
       setAppliedCoupon(coupon);
       setDiscount(discountAmount);
-      
+
     } catch (error) {
       console.error("Error validating coupon:", error);
       setCouponError('שגיאה בבדיקת הקופון');
@@ -218,7 +218,7 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
   const handleContinue = () => {
     const itemsSubtotal = detailedItems.reduce((sum, item) => sum + item.priceILS, 0);
     const finalTotal = totalPrice - discount;
-    
+
     const breakdown = {
       items_total_ils: itemsSubtotal,
       domestic_ship_ils: domesticShipping,
@@ -227,7 +227,7 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
       final_total_ils: finalTotal,
       is_local: isLocalOrder
     };
-    
+
     onConfirm(finalTotal, totalWeight, breakdown);
   };
 
@@ -235,8 +235,8 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
     return (
       <div className="flex justify-center items-center min-h-[400px]">
         <Loader2 className="w-8 h-8 animate-spin text-stone-400" />
-      </div>
-    );
+      </div>);
+
   }
 
   const itemsSubtotal = detailedItems.reduce((sum, item) => sum + item.priceILS, 0);
@@ -246,8 +246,8 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="max-w-2xl mx-auto p-6"
-    >
+      className="max-w-2xl mx-auto p-6">
+
       <Card className="bg-white border-2 border-stone-200">
         <CardContent className="p-6">
           <div className="flex items-center gap-3 mb-6">
@@ -262,22 +262,22 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
             <h3 className="font-medium text-stone-700 mb-3">
               {labels.items_section_title || 'הפריטים שלך'}
             </h3>
-            {detailedItems.map((item, idx) => (
-              <div key={idx} className="flex justify-between items-center p-3 bg-stone-50 rounded">
+            {detailedItems.map((item, idx) =>
+            <div key={idx} className="flex justify-between items-center p-3 bg-stone-50 rounded">
                 <div className="flex-1">
                   <p className="font-medium text-stone-800">{item.product_name}</p>
                   <p className="text-sm text-stone-500">
                     {[item.color, item.size].filter(Boolean).join(' • ')} • כמות: {item.quantity}
                   </p>
-                  {!isLocalOrder && (
-                    <p className="text-xs text-stone-400 mt-1">כולל משלוח בינלאומי, עמלות ומע״ם</p>
-                  )}
+                  {!isLocalOrder &&
+                <p className="text-xs text-stone-400 mt-1">כולל משלוח בינלאומי, עמלות ומע״מ</p>
+                }
                 </div>
                 <p className="font-semibold text-stone-900">
                   {formatCurrency(item.priceILS, 'ILS')}
                 </p>
               </div>
-            ))}
+            )}
           </div>
 
           <Separator className="my-6" />
@@ -289,54 +289,54 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
               קוד הנחה
             </h3>
             
-            {!appliedCoupon ? (
-              <div className="space-y-2">
+            {!appliedCoupon ?
+            <div className="space-y-2">
                 <div className="flex gap-2">
                   <Input
-                    value={couponCode}
-                    onChange={(e) => {
-                      setCouponCode(e.target.value.toUpperCase());
-                      setCouponError('');
-                    }}
-                    placeholder="הזן קוד קופון"
-                    className="font-mono"
-                    onKeyPress={(e) => e.key === 'Enter' && validateCoupon()}
-                  />
+                  value={couponCode}
+                  onChange={(e) => {
+                    setCouponCode(e.target.value.toUpperCase());
+                    setCouponError('');
+                  }}
+                  placeholder="הזן קוד קופון"
+                  className="font-mono"
+                  onKeyPress={(e) => e.key === 'Enter' && validateCoupon()} />
+
                   <Button
-                    onClick={validateCoupon}
-                    disabled={!couponCode.trim() || checkingCoupon}
-                    className="bg-rose-500 hover:bg-rose-600 text-white"
-                  >
+                  onClick={validateCoupon}
+                  disabled={!couponCode.trim() || checkingCoupon}
+                  className="bg-rose-500 hover:bg-rose-600 text-white">
+
                     {checkingCoupon ? <Loader2 className="w-4 h-4 animate-spin" /> : 'החל'}
                   </Button>
                 </div>
-                {couponError && (
-                  <p className="text-sm text-red-600">{couponError}</p>
-                )}
-              </div>
-            ) : (
-              <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded">
+                {couponError &&
+              <p className="text-sm text-red-600">{couponError}</p>
+              }
+              </div> :
+
+            <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded">
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-5 h-5 text-green-600" />
                   <div>
                     <p className="font-semibold text-green-800 font-mono">{appliedCoupon.code}</p>
                     <p className="text-sm text-green-700">
-                      {appliedCoupon.discount_type === 'percentage' 
-                        ? `${appliedCoupon.discount_value}% הנחה` 
-                        : `₪${appliedCoupon.discount_value} הנחה`}
+                      {appliedCoupon.discount_type === 'percentage' ?
+                    `${appliedCoupon.discount_value}% הנחה` :
+                    `₪${appliedCoupon.discount_value} הנחה`}
                     </p>
                   </div>
                 </div>
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={removeCoupon}
-                  className="text-green-600 hover:bg-green-100"
-                >
+                variant="ghost"
+                size="icon"
+                onClick={removeCoupon}
+                className="text-green-600 hover:bg-green-100">
+
                   <X className="w-4 h-4" />
                 </Button>
               </div>
-            )}
+            }
           </div>
 
           <Separator className="my-6" />
@@ -353,12 +353,12 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
               <span className="font-semibold">{formatCurrency(domesticShipping, 'ILS')}</span>
             </div>
 
-            {discount > 0 && (
-              <div className="flex justify-between text-green-700">
+            {discount > 0 &&
+            <div className="flex justify-between text-green-700">
                 <span>הנחה ({appliedCoupon?.code})</span>
                 <span className="font-semibold">-{formatCurrency(discount, 'ILS')}</span>
               </div>
-            )}
+            }
 
             <Separator className="my-4" />
 
@@ -372,9 +372,9 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
             </div>
 
             <p className="text-sm text-stone-500 text-center pt-2">
-              {isLocalOrder 
-                ? 'מחיר סופי, כולל הכל. זמן אספקה: 3-7 ימי עסקים.'
-                : 'מחיר סופי, כולל הכל. ברנדי מחו״ל עד אלייך.'}
+              {isLocalOrder ?
+              'מחיר סופי, כולל הכל. זמן אספקה: 3-7 ימי עסקים.' :
+              'מחיר סופי, כולל הכל. ברנדי מחו״ל עד אלייך.'}
             </p>
           </div>
 
@@ -383,21 +383,21 @@ export default function PriceCalculator({ cart = [], site, onConfirm, onBack }) 
             <Button
               variant="outline"
               onClick={onBack}
-              className="flex-1 h-12"
-            >
+              className="flex-1 h-12">
+
               <ArrowRight className="w-4 h-4 ml-2" />
               חזור לעגלה
             </Button>
             <Button
               onClick={handleContinue}
-              className="flex-1 h-12 bg-rose-500 hover:bg-rose-600 text-white"
-            >
+              className="flex-1 h-12 bg-rose-500 hover:bg-rose-600 text-white">
+
               המשך לתשלום
               <ArrowLeft className="w-4 h-4 mr-2" />
             </Button>
           </div>
         </CardContent>
       </Card>
-    </motion.div>
-  );
+    </motion.div>);
+
 }
