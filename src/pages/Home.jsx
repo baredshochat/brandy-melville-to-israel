@@ -379,34 +379,49 @@ export default function Home() {
       const raw = await InvokeLLM({
         prompt: `You are extracting product data from this URL: ${url}
 
+CRITICAL INSTRUCTIONS:
+This is a Brandy Melville product page. Extract data carefully.
+
 PRODUCT NAME:
-- Extract from: og:title meta tag OR the main <h1> product title
-- Clean any " | Brandy Melville" suffix
+- Look for: page title, <h1>, og:title meta tag, or product heading
+- Remove any " | Brandy Melville" suffix
 - Keep the original English name
+- Examples: "Duffel Bag", "Priscilla Pants", "Rosa Top"
 
 PRICE:
-- Find the price in £XX format (or $XX or €XX)
-- Return just the number
+- Find the CURRENT price (not crossed-out old prices)
+- Look for: £XX.XX, $XX.XX, €XX.XX format
+- Return ONLY the numeric value (e.g., 20 for £20.00)
+- Check multiple places: main price display, add-to-cart section, product info
 
-SKU:
-- Usually shown as "SKU: XXXXX" on the page
+SKU (Product Code):
+- Usually shown as "SKU: XXXXX" or similar
+- May be in product details section or hidden in page data
+- If not found, return null
 
 DESCRIPTION:
-- The product description text (usually under "Product Description:")
+- Find the product description text
+- Usually under "Product Description:", "Details:", or similar heading
+- If not found, return null
 
 COLORS & SIZES:
-- Extract all available options from dropdown/selection buttons
+- Extract ALL available options from:
+  * Dropdown menus
+  * Radio buttons
+  * Selection buttons
+- Look for labels like "Color:", "Size:", "Options:"
+- Return complete lists
 
-Return ONLY what you find.
+IMPORTANT: Return valid data for at least product_name and price.
 
-Example output for the Priscilla Pants:
+Example output:
 {
-  "product_name": "Priscilla Pants",
-  "product_sku": "M065L-622PSI720000",
-  "product_description": "Soft cotton blend yoga pants with a wide pant leg.",
-  "price": 20,
-  "available_colors": ["Super Light Grey", "White", "Silver Grey", "Black"],
-  "available_sizes": ["XS/S"],
+  "product_name": "Duffel Bag",
+  "product_sku": "M065L-622BAG720000",
+  "product_description": "Canvas duffel bag with adjustable strap.",
+  "price": 42,
+  "available_colors": ["Black", "White"],
+  "available_sizes": ["One Size"],
   "currency_found": "GBP"
 }`,
         add_context_from_internet: true,
@@ -430,11 +445,13 @@ Example output for the Priscilla Pants:
 
       // Fallback name from URL if needed
       let productName = (typeof result?.product_name === 'string' ? result.product_name.trim() : '') || nameFromUrl(url) || '';
-      if (!productName) throw new Error("שם המוצר לא זוהה. אנא וודאי שהקישור תקין.");
+      if (!productName) {
+        throw new Error("לא הצלחנו לזהות את שם המוצר. אנא נסי שוב או בחרי מוצר אחר.");
+      }
 
       const priceNum = parseFloat(result?.price);
       if (!Number.isFinite(priceNum) || priceNum <= 0) {
-        throw new Error(`מחיר לא תקין נשלף מהאתר: ${result?.price}`);
+        throw new Error(`לא הצלחנו לזהות את המחיר של המוצר. המידע שנמצא: ${result?.price || 'לא זמין'}. אנא נסי שוב או בחרי מוצר אחר.`);
       }
 
       const expectedCurrency = siteInfo[selectedSite]?.currency || 'USD';
@@ -470,7 +487,7 @@ Example output for the Priscilla Pants:
       setStep(3);
     } catch (error) {
       console.error('Error fetching product details:', error);
-      alert(`שגיאה בשליפת פרטי המוצר: ${error.message}`);
+      alert(`שגיאה בשליפת פרטי המוצר:\n\n${error.message}\n\nטיפ: וודאי שהקישור מוביל לעמוד מוצר בודד ושהמוצר זמין לרכישה.`);
     } finally { setLoading(false); }
   };
 
