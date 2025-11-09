@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { ScannedProduct } from "@/entities/ScannedProduct";
 import { LocalStockItem } from "@/entities/LocalStockItem";
@@ -16,8 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge"; // Added Badge
-import { Loader2, Scan, Upload, CheckCircle, AlertCircle, ExternalLink, Trash2, Image as ImageIcon, Edit, Copy, Package, Check, Palette, Ruler, Grid3x3 } from "lucide-react"; // Added Palette, Ruler, Grid3x3
+import { Loader2, Scan, Upload, CheckCircle, AlertCircle, ExternalLink, Trash2, Image as ImageIcon, Edit, Copy, Package, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPageUrl } from "@/utils";
 
@@ -36,15 +34,7 @@ export default function ProductScanner() {
   const [duplicatingProduct, setDuplicatingProduct] = useState(null);
   const [newColor, setNewColor] = useState('');
   
-  // New state for variations
-  const [variationsDialogOpen, setVariationsDialogOpen] = useState(false);
-  const [variationsProduct, setVariationsProduct] = useState(null);
-  const [selectedColors, setSelectedColors] = useState(new Set());
-  const [selectedSizes, setSelectedSizes] = useState(new Set());
-  const [creatingVariations, setCreatingVariations] = useState(false);
-  const [variationTarget, setVariationTarget] = useState('scanned'); // 'scanned' or 'local'
-  
-  // State for batch conversion
+  // New state for batch conversion
   const [selectedProducts, setSelectedProducts] = useState(new Set());
   const [converting, setConverting] = useState(false);
   const [conversionProgress, setConversionProgress] = useState(null);
@@ -107,6 +97,7 @@ export default function ProductScanner() {
     setScanProgress({ stage: 'מחלץ קישורים מהדף...', current: 0, total: 0 });
 
     try {
+      // Step 1: Extract product links from category page
       const linksResponse = await InvokeLLM({
         prompt: `Extract ALL product links from this Brandy Melville category/collection page: ${categoryUrl}
 
@@ -147,17 +138,20 @@ Example format:
       const batchId = `scan_${Date.now()}`;
       let successCount = 0;
 
+      // Step 2: Scan each product
       for (let i = 0; i < productLinks.length; i++) {
         const url = productLinks[i];
         setScanProgress({ stage: 'סורק מוצרים...', current: i + 1, total: productLinks.length });
 
         try {
+          // Check if already scanned
           const existing = await ScannedProduct.filter({ product_url: url });
           if (existing && existing.length > 0) {
             console.log('Product already scanned:', url);
             continue;
           }
 
+          // Extract product details
           const productResponse = await InvokeLLM({
             prompt: `Extract product data from: ${url}
 
@@ -213,6 +207,7 @@ Return clean JSON only.`,
             successCount++;
           }
 
+          // Small delay to avoid rate limiting
           await new Promise(resolve => setTimeout(resolve, 1000));
 
         } catch (error) {
@@ -238,11 +233,13 @@ Return clean JSON only.`,
       const result = await UploadFile({ file });
       const imageUrl = result.file_url;
 
+      // Update ScannedProduct
       await ScannedProduct.update(productId, {
         uploaded_image_url: imageUrl,
         needs_image: false
       });
 
+      // Save to SkuImage for future use
       if (sku && sku !== 'SKU לא נמצא') {
         const existing = await SkuImage.filter({ product_sku: sku });
         if (existing && existing.length > 0) {
@@ -318,6 +315,7 @@ Return clean JSON only.`,
     try {
       const { id, created_date, updated_date, created_by, ...productData } = duplicatingProduct;
       
+      // Add new color to available colors if not already there
       const updatedColors = [...(productData.available_colors || [])];
       if (!updatedColors.includes(newColor)) {
         updatedColors.push(newColor);
@@ -342,154 +340,7 @@ Return clean JSON only.`,
     }
   };
 
-  // NEW: Variations handling
-  const handleCreateVariations = (product) => {
-    setVariationsProduct(product);
-    setSelectedColors(new Set(product.available_colors || [])); // Pre-select all available colors
-    setSelectedSizes(new Set(product.available_sizes || []));   // Pre-select all available sizes
-    setVariationTarget('scanned'); // Default target
-    setVariationsDialogOpen(true);
-  };
-
-  const toggleColorSelection = (color) => {
-    setSelectedColors(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(color)) {
-        newSet.delete(color);
-      } else {
-        newSet.add(color);
-      }
-      return newSet;
-    });
-  };
-
-  const toggleSizeSelection = (size) => {
-    setSelectedSizes(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(size)) {
-        newSet.delete(size);
-      } else {
-        newSet.add(size);
-      }
-      return newSet;
-    });
-  };
-
-  const createVariations = async () => {
-    if (!variationsProduct) return;
-    
-    const colors = Array.from(selectedColors);
-    const sizes = Array.from(selectedSizes);
-    
-    if (colors.length === 0 && sizes.length === 0) {
-      alert('אנא בחרי לפחות צבע אחד או מידה אחת');
-      setCreatingVariations(false); // Ensure button is re-enabled
-      return;
-    }
-
-    setCreatingVariations(true);
-
-    try {
-      const { id, created_date, updated_date, created_by, ...baseProduct } = variationsProduct;
-      
-      const combinations = [];
-      
-      if (colors.length > 0 && sizes.length > 0) {
-        // Both colors and sizes explicitly selected: full cross-product of selected
-        for (const color of colors) {
-          for (const size of sizes) {
-            combinations.push({ color, size });
-          }
-        }
-      } else if (colors.length > 0) {
-        // Only colors explicitly selected: combine each selected color with a single representative size
-        const representativeSize = baseProduct.available_sizes?.[0] || 'One Size';
-        for (const color of colors) {
-          combinations.push({ color, size: representativeSize });
-        }
-      } else if (sizes.length > 0) {
-        // Only sizes explicitly selected: combine each selected size with a single representative color
-        const representativeColor = baseProduct.available_colors?.[0] || '';
-        for (const size of sizes) {
-          combinations.push({ color: representativeColor, size });
-        }
-      }
-      // If neither colors nor sizes are selected, `combinations` remains empty, and the initial alert handles it.
-
-      if (variationTarget === 'scanned') {
-        // Create ScannedProduct variations
-        for (const combo of combinations) {
-          // Construct product name: "Original Name - Color - Size"
-          const variantNameParts = [baseProduct.product_name];
-          if (combo.color) variantNameParts.push(combo.color);
-          if (combo.size && combo.size !== 'One Size') variantNameParts.push(combo.size);
-          const variantName = variantNameParts.join(' - ');
-          
-          // Construct SKU: "Original SKU-COL-SIZ"
-          const skuSuffixParts = [];
-          if (combo.color) skuSuffixParts.push(combo.color.replace(/\s+/g, '').toUpperCase().slice(0, 3));
-          if (combo.size) skuSuffixParts.push(combo.size.replace(/\s+/g, '').toUpperCase());
-          const variantSku = `${baseProduct.product_sku}-${skuSuffixParts.filter(Boolean).join('-')}`;
-          
-          await ScannedProduct.create({
-            ...baseProduct,
-            product_name: variantName,
-            product_sku: variantSku,
-            available_colors: combo.color ? [combo.color] : [], // Each variation has only its own color/size
-            available_sizes: combo.size ? [combo.size] : [],
-            is_processed: false,
-            scan_batch: `variation_${Date.now()}`
-          });
-        }
-      } else {
-        // Create LocalStockItem variations
-        const priceILS = await calculateLocalPrice(baseProduct.original_price, baseProduct.original_currency);
-        const imageUrl = baseProduct.uploaded_image_url || baseProduct.ai_image_url || '';
-        
-        for (const combo of combinations) {
-          // Construct product name: "Original Name - Color - Size"
-          const variantNameParts = [baseProduct.product_name];
-          if (combo.color) variantNameParts.push(combo.color);
-          if (combo.size && combo.size !== 'One Size') variantNameParts.push(combo.size);
-          const variantName = variantNameParts.join(' - ');
-          
-          // Construct SKU: "Original SKU-COL-SIZ"
-          const skuSuffixParts = [];
-          if (combo.color) skuSuffixParts.push(combo.color.replace(/\s+/g, '').toUpperCase().slice(0, 3));
-          if (combo.size) skuSuffixParts.push(combo.size.replace(/\s+/g, '').toUpperCase());
-          const variantSku = `${baseProduct.product_sku}-${skuSuffixParts.filter(Boolean).join('-')}`;
-
-          await LocalStockItem.create({
-            product_name: variantName,
-            product_description: baseProduct.product_description || '',
-            image_url: imageUrl,
-            price_ils: priceILS,
-            color: combo.color,
-            size: combo.size,
-            quantity_available: 1,
-            is_available: true,
-            category: baseProduct.category || 'other',
-            internal_sku: variantSku,
-            source_url: baseProduct.product_url,
-            weight_kg: 0.3
-          });
-        }
-      }
-
-      await loadProducts();
-      setVariationsDialogOpen(false);
-      setVariationsProduct(null);
-      alert(`${combinations.length} וריאציות נוצרו בהצלחה!`);
-      
-    } catch (error) {
-      console.error("Error creating variations:", error);
-      alert('שגיאה ביצירת הוריאציות');
-    } finally {
-      setCreatingVariations(false);
-    }
-  };
-
-  // Batch conversion functions
+  // NEW: Batch conversion functions
   const toggleProductSelection = (productId) => {
     setSelectedProducts(prev => {
       const newSet = new Set(prev);
@@ -507,12 +358,14 @@ Return clean JSON only.`,
     const allSelected = allIds.every(id => selectedProducts.has(id));
     
     if (allSelected) {
+      // Deselect all
       setSelectedProducts(prev => {
         const newSet = new Set(prev);
         allIds.forEach(id => newSet.delete(id));
         return newSet;
       });
     } else {
+      // Select all
       setSelectedProducts(prev => {
         const newSet = new Set(prev);
         allIds.forEach(id => newSet.add(id));
@@ -523,6 +376,7 @@ Return clean JSON only.`,
 
   const calculateLocalPrice = async (originalPrice, currency) => {
     try {
+      // Load exchange rates and calculation settings
       const [ratesList, settingsList] = await Promise.all([
         Rates.list(),
         CalculationSettings.list()
@@ -531,6 +385,7 @@ Return clean JSON only.`,
       const rates = ratesList && ratesList.length > 0 ? ratesList[0] : { eur: 4.0, gbp: 4.5, usd: 3.7 };
       const settings = settingsList && settingsList.length > 0 ? settingsList[0] : null;
 
+      // Convert to ILS
       let priceILS = originalPrice;
       if (currency === 'EUR') {
         priceILS = originalPrice * (rates.eur || 4.0);
@@ -540,6 +395,7 @@ Return clean JSON only.`,
         priceILS = originalPrice * (rates.usd || 3.7);
       }
 
+      // Apply margin and fees if settings exist
       if (settings) {
         const commissionMultiplier = 1 + (settings.commission_pct || 0.1);
         const fxFeeMultiplier = 1 + (settings.fx_fee_pct || 0.027);
@@ -547,16 +403,20 @@ Return clean JSON only.`,
         
         priceILS = priceILS * commissionMultiplier * fxFeeMultiplier * bufferMultiplier;
         
+        // Add VAT
         const vatMultiplier = 1 + (settings.vat_pct || 0.18);
         priceILS = priceILS * vatMultiplier;
       } else {
+        // Default multiplier if no settings (approximately 1.5x for margin + VAT)
         priceILS = priceILS * 1.5;
       }
 
+      // Round to nearest 10
       return Math.round(priceILS / 10) * 10;
     } catch (error) {
       console.error("Error calculating price:", error);
-      return Math.round(originalPrice * 5 / 10) * 10;
+      // Fallback calculation
+      return Math.round(originalPrice * 5 / 10) * 10; // Simple 5x conversion + rounding
     }
   };
 
@@ -584,9 +444,13 @@ Return clean JSON only.`,
         const product = productsToConvert[i];
         
         try {
+          // Calculate local price
           const priceILS = await calculateLocalPrice(product.original_price, product.original_currency);
+          
+          // Get best available image
           const imageUrl = product.uploaded_image_url || product.ai_image_url || '';
           
+          // Create LocalStockItem
           await LocalStockItem.create({
             product_name: product.product_name,
             product_description: product.product_description || '',
@@ -602,6 +466,7 @@ Return clean JSON only.`,
             weight_kg: 0.3
           });
           
+          // Mark scanned product as processed
           await ScannedProduct.update(product.id, { is_processed: true });
           
           setConversionProgress(prev => ({
@@ -620,9 +485,11 @@ Return clean JSON only.`,
         }
       }
       
+      // Reload products and clear selection
       await loadProducts();
       setSelectedProducts(new Set());
       
+      // Show success message
       setTimeout(() => {
         setConversionProgress(prev => ({ ...prev, done: true }));
         setTimeout(() => setConversionProgress(null), 3000);
@@ -866,165 +733,6 @@ Return clean JSON only.`,
           </DialogContent>
         </Dialog>
 
-        {/* NEW: Variations Dialog */}
-        <Dialog open={variationsDialogOpen} onOpenChange={setVariationsDialogOpen}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>יצירת וריאציות מוצר</DialogTitle>
-            </DialogHeader>
-            {variationsProduct && (
-              <div className="space-y-6 py-4">
-                <div className="p-4 bg-stone-50 border border-stone-200 rounded">
-                  <p className="text-sm text-stone-600 mb-1">מוצר בסיס:</p>
-                  <p className="font-semibold text-lg">{variationsProduct.product_name}</p>
-                  <p className="text-sm text-stone-500 mt-1">SKU: {variationsProduct.product_sku}</p>
-                </div>
-
-                {/* Target Selection */}
-                <div>
-                  <Label className="text-base font-semibold mb-3 block">היכן ליצור את הוריאציות?</Label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button
-                      variant={variationTarget === 'scanned' ? 'default' : 'outline'}
-                      onClick={() => setVariationTarget('scanned')}
-                      className={`h-auto py-4 ${variationTarget === 'scanned' ? 'bg-blue-500 hover:bg-blue-600' : ''}`}
-                    >
-                      <div className="text-center">
-                        <Scan className="w-6 h-6 mx-auto mb-2" />
-                        <div className="font-semibold">מוצרים סרוקים</div>
-                        <div className="text-xs mt-1 opacity-80">ליצירה והמשך עריכה</div>
-                      </div>
-                    </Button>
-                    <Button
-                      variant={variationTarget === 'local' ? 'default' : 'outline'}
-                      onClick={() => setVariationTarget('local')}
-                      className={`h-auto py-4 ${variationTarget === 'local' ? 'bg-green-500 hover:bg-green-600' : ''}`}
-                    >
-                      <div className="text-center">
-                        <Package className="w-6 h-6 mx-auto mb-2" />
-                        <div className="font-semibold">מלאי מקומי</div>
-                        <div className="text-xs mt-1 opacity-80">ישר למכירה</div>
-                      </div>
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Colors Selection */}
-                {variationsProduct.available_colors && variationsProduct.available_colors.length > 0 && (
-                  <div>
-                    <Label className="text-base font-semibold mb-3 flex items-center gap-2">
-                      <Palette className="w-5 h-5" />
-                      בחרי צבעים ({variationsProduct.available_colors.length} זמינים)
-                    </Label>
-                    <div className="flex flex-wrap gap-2">
-                      {variationsProduct.available_colors.map((color) => (
-                        <div
-                          key={color}
-                          onClick={() => toggleColorSelection(color)}
-                          className={`px-4 py-2 border-2 rounded cursor-pointer transition-all ${
-                            selectedColors.has(color)
-                              ? 'border-blue-500 bg-blue-50 text-blue-900'
-                              : 'border-stone-300 hover:border-blue-300'
-                          }`}
-                        >
-                          {color}
-                        </div>
-                      ))}
-                    </div>
-                    <p className="text-xs text-stone-500 mt-2">
-                      {selectedColors.size} צבעים נבחרו
-                    </p>
-                  </div>
-                )}
-
-                {/* Sizes Selection */}
-                {variationsProduct.available_sizes && variationsProduct.available_sizes.length > 0 && (
-                  <div>
-                    <Label className="text-base font-semibold mb-3 flex items-center gap-2">
-                      <Ruler className="w-5 h-5" />
-                      בחרי מידות ({variationsProduct.available_sizes.length} זמינות)
-                    </Label>
-                    <div className="flex flex-wrap gap-2">
-                      {variationsProduct.available_sizes.map((size) => (
-                        <div
-                          key={size}
-                          onClick={() => toggleSizeSelection(size)}
-                          className={`px-4 py-2 border-2 rounded cursor-pointer transition-all ${
-                            selectedSizes.has(size)
-                              ? 'border-green-500 bg-green-50 text-green-900'
-                              : 'border-stone-300 hover:border-green-300'
-                          }`}
-                        >
-                          {size}
-                        </div>
-                      ))}
-                    </div>
-                    <p className="text-xs text-stone-500 mt-2">
-                      {selectedSizes.size} מידות נבחרו
-                    </p>
-                  </div>
-                )}
-
-                {/* Preview */}
-                {(selectedColors.size > 0 || selectedSizes.size > 0) && (
-                  <div className="p-4 bg-blue-50 border border-blue-200 rounded">
-                    <p className="font-semibold text-blue-900 mb-2">תצוגה מקדימה:</p>
-                    <p className="text-sm text-blue-800">
-                      {selectedColors.size > 0 && selectedSizes.size > 0
-                        ? `ייווצרו ${selectedColors.size * selectedSizes.size} וריאציות (${selectedColors.size} צבעים × ${selectedSizes.size} מידות)`
-                        : selectedColors.size > 0
-                        ? `ייווצרו ${selectedColors.size} וריאציות צבע (מידה בסיסית: ${variationsProduct.available_sizes?.[0] || 'One Size'})`
-                        : `ייווצרו ${selectedSizes.size} וריאציות מידה (צבע בסיסי: ${variationsProduct.available_colors?.[0] || 'Original'})`}
-                    </p>
-                    <div className="mt-3 text-xs text-blue-700">
-                      <p className="font-semibold mb-1">פורמט SKU חדש:</p>
-                      <p className="font-mono">
-                        {variationsProduct.product_sku}-
-                        {selectedColors.size > 0 ? 'XXX' : (variationsProduct.available_colors?.length > 0 ? 'XXX' : '')}
-                        {(selectedColors.size > 0 || variationsProduct.available_colors?.length > 0) && (selectedSizes.size > 0 || variationsProduct.available_sizes?.length > 0) ? '-' : ''}
-                        {selectedSizes.size > 0 ? 'YYYY' : (variationsProduct.available_sizes?.length > 0 ? 'YYYY' : '')}
-                      </p>
-                      <p className="text-xs text-stone-500 mt-1">
-                        (XXX = 3 אותיות ראשונות של צבע, YYYY = שם המידה)
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex gap-3 pt-4">
-                  <Button
-                    onClick={createVariations}
-                    disabled={creatingVariations || (selectedColors.size === 0 && selectedSizes.size === 0)}
-                    className="flex-1 bg-purple-500 hover:bg-purple-600 text-white h-12"
-                  >
-                    {creatingVariations ? (
-                      <>
-                        <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                        יוצר וריאציות...
-                      </>
-                    ) : (
-                      <>
-                        <Grid3x3 className="w-4 h-4 ml-2" />
-                        צור וריאציות
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setVariationsDialogOpen(false);
-                      setVariationsProduct(null);
-                    }}
-                    className="flex-1 h-12"
-                  >
-                    ביטול
-                  </Button>
-                </div>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
-
         {/* Conversion Progress Dialog */}
         {conversionProgress && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -1089,6 +797,7 @@ Return clean JSON only.`,
           <TabsContent value="needs_image">
             <Card>
               <CardContent className="pt-6">
+                {/* Batch Actions Bar */}
                 {selectedProducts.size > 0 && (
                   <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -1139,136 +848,104 @@ Return clean JSON only.`,
                       </Label>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {needsImageProducts.map((product) => {
-                        const totalOptions = Math.max(1, product.available_colors?.length || 0) * Math.max(1, product.available_sizes?.length || 0);
-                        const hasMultipleVariations = totalOptions > 1;
-                        
-                        return (
-                          <Card key={product.id} className="border-orange-200">
-                            <CardContent className="p-4">
-                              <div className="flex items-start justify-between mb-2">
-                                <div className="flex items-center gap-2">
-                                  <Checkbox
-                                    checked={selectedProducts.has(product.id)}
-                                    onCheckedChange={() => toggleProductSelection(product.id)}
-                                  />
-                                  <AlertCircle className="w-5 h-5 text-orange-600 flex-shrink-0" />
-                                </div>
-                                <div className="flex gap-1">
-                                  {hasMultipleVariations && (
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => handleCreateVariations(product)}
-                                      className="text-purple-600 hover:text-purple-800 hover:bg-purple-50"
-                                      title="צור וריאציות"
-                                    >
-                                      <Grid3x3 className="w-4 h-4" />
-                                    </Button>
-                                  )}
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleEdit(product)}
-                                    className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleDuplicate(product)}
-                                    className="text-purple-600 hover:text-purple-800 hover:bg-purple-50"
-                                  >
-                                    <Copy className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleDelete(product.id)}
-                                    className="text-stone-400 hover:text-red-600"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              </div>
-
-                              <h3 className="font-semibold text-sm mb-2 line-clamp-2">
-                                {product.product_name}
-                              </h3>
-                              
-                              <p className="text-xs text-stone-500 mb-2">
-                                {product.product_sku}
-                              </p>
-
-                              {/* NEW: Display available variations */}
-                              <div className="flex flex-wrap gap-1 mb-3">
-                                {product.available_colors && product.available_colors.length > 0 && (
-                                  <Badge variant="outline" className="text-xs flex items-center gap-1">
-                                    <Palette className="w-3 h-3" />
-                                    {product.available_colors.length} צבעים
-                                  </Badge>
-                                )}
-                                {product.available_sizes && product.available_sizes.length > 0 && (
-                                  <Badge variant="outline" className="text-xs flex items-center gap-1">
-                                    <Ruler className="w-3 h-3" />
-                                    {product.available_sizes.length} מידות
-                                  </Badge>
-                                )}
-                              </div>
-
-                              <p className="text-sm font-medium text-stone-800 mb-3">
-                                {product.original_currency === 'EUR' ? '€' : '£'}{product.original_price}
-                              </p>
-
-                              <div className="space-y-2">
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  id={`upload-${product.id}`}
-                                  className="hidden"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) handleImageUpload(product.id, product.product_sku, file);
-                                  }}
-                                  disabled={uploadingImageFor === product.id}
+                      {needsImageProducts.map((product) => (
+                        <Card key={product.id} className="border-orange-200">
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <Checkbox
+                                  checked={selectedProducts.has(product.id)}
+                                  onCheckedChange={() => toggleProductSelection(product.id)}
                                 />
-                                <label htmlFor={`upload-${product.id}`}>
-                                  <Button
-                                    asChild
-                                    className="w-full bg-orange-500 hover:bg-orange-600 text-white"
-                                    disabled={uploadingImageFor === product.id}
-                                  >
-                                    <span className="cursor-pointer flex items-center justify-center">
-                                      {uploadingImageFor === product.id ? (
-                                        <>
-                                          <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                                          מעלה...
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Upload className="w-4 h-4 ml-2" />
-                                          העלה תמונה
-                                        </>
-                                      )}
-                                    </span>
-                                  </Button>
-                                </label>
-
+                                <AlertCircle className="w-5 h-5 text-orange-600 flex-shrink-0" />
+                              </div>
+                              <div className="flex gap-1">
                                 <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="w-full"
-                                  onClick={() => window.open(product.product_url, '_blank')}
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleEdit(product)}
+                                  className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
                                 >
-                                  <ExternalLink className="w-3 h-3 ml-1" />
-                                  פתח באתר
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDuplicate(product)}
+                                  className="text-purple-600 hover:text-purple-800 hover:bg-purple-50"
+                                >
+                                  <Copy className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDelete(product.id)}
+                                  className="text-stone-400 hover:text-red-600"
+                                >
+                                  <Trash2 className="w-4 h-4" />
                                 </Button>
                               </div>
-                            </CardContent>
-                          </Card>
-                        );
-                      })}
+                            </div>
+
+                            <h3 className="font-semibold text-sm mb-2 line-clamp-2">
+                              {product.product_name}
+                            </h3>
+                            
+                            <p className="text-xs text-stone-500 mb-2">
+                              {product.product_sku}
+                            </p>
+
+                            <p className="text-sm font-medium text-stone-800 mb-3">
+                              {product.original_currency === 'EUR' ? '€' : '£'}{product.original_price}
+                            </p>
+
+                            <div className="space-y-2">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                id={`upload-${product.id}`}
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleImageUpload(product.id, product.product_sku, file);
+                                }}
+                                disabled={uploadingImageFor === product.id}
+                              />
+                              <label htmlFor={`upload-${product.id}`}>
+                                <Button
+                                  asChild
+                                  className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                                  disabled={uploadingImageFor === product.id}
+                                >
+                                  <span className="cursor-pointer flex items-center justify-center">
+                                    {uploadingImageFor === product.id ? (
+                                      <>
+                                        <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                                        מעלה...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Upload className="w-4 h-4 ml-2" />
+                                        העלה תמונה
+                                      </>
+                                    )}
+                                  </span>
+                                </Button>
+                              </label>
+
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full"
+                                onClick={() => window.open(product.product_url, '_blank')}
+                              >
+                                <ExternalLink className="w-3 h-3 ml-1" />
+                                פתח באתר
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
                     </div>
                   </>
                 )}
@@ -1279,6 +956,7 @@ Return clean JSON only.`,
           <TabsContent value="pending">
             <Card>
               <CardContent className="pt-6">
+                {/* Batch Actions Bar */}
                 {selectedProducts.size > 0 && (
                   <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -1329,98 +1007,65 @@ Return clean JSON only.`,
                       </Label>
                     </div>
                     <div className="space-y-3">
-                      {pendingProducts.map((product) => {
-                        const totalOptions = Math.max(1, product.available_colors?.length || 0) * Math.max(1, product.available_sizes?.length || 0);
-                        const hasMultipleVariations = totalOptions > 1;
-
-                        return (
-                          <Card key={product.id} className="border-blue-200">
-                            <CardContent className="p-4">
-                              <div className="flex items-start gap-4">
-                                <Checkbox
-                                  checked={selectedProducts.has(product.id)}
-                                  onCheckedChange={() => toggleProductSelection(product.id)}
-                                  className="mt-1"
+                      {pendingProducts.map((product) => (
+                        <Card key={product.id} className="border-blue-200">
+                          <CardContent className="p-4">
+                            <div className="flex items-start gap-4">
+                              <Checkbox
+                                checked={selectedProducts.has(product.id)}
+                                onCheckedChange={() => toggleProductSelection(product.id)}
+                                className="mt-1"
+                              />
+                              {(product.uploaded_image_url || product.ai_image_url) && (
+                                <img
+                                  src={product.uploaded_image_url || product.ai_image_url}
+                                  alt={product.product_name}
+                                  className="w-20 h-20 object-cover"
                                 />
-                                {(product.uploaded_image_url || product.ai_image_url) && (
-                                  <img
-                                    src={product.uploaded_image_url || product.ai_image_url}
-                                    alt={product.product_name}
-                                    className="w-20 h-20 object-cover"
-                                  />
-                                )}
-                                <div className="flex-1">
-                                  <h3 className="font-semibold mb-1">{product.product_name}</h3>
-                                  <p className="text-xs text-stone-500 mb-2">{product.product_sku}</p>
-                                  
-                                  {/* Display variations */}
-                                  <div className="flex flex-wrap gap-1 mb-2">
-                                    {product.available_colors && product.available_colors.length > 0 && (
-                                      <Badge variant="outline" className="text-xs">
-                                        <Palette className="w-3 h-3 mr-1" />
-                                        {product.available_colors.length} צבעים
-                                      </Badge>
-                                    )}
-                                    {product.available_sizes && product.available_sizes.length > 0 && (
-                                      <Badge variant="outline" className="text-xs">
-                                        <Ruler className="w-3 h-3 mr-1" />
-                                        {product.available_sizes.length} מידות
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  
-                                  <p className="text-sm text-stone-700">
-                                    {product.original_currency === 'EUR' ? '€' : '£'}{product.original_price}
-                                  </p>
-                                </div>
-                                <div className="flex gap-2">
-                                  {hasMultipleVariations && (
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => handleCreateVariations(product)}
-                                      className="text-purple-600 hover:bg-purple-50"
-                                      title="צור וריאציות"
-                                    >
-                                      <Grid3x3 className="w-4 h-4" />
-                                    </Button>
-                                  )}
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleEdit(product)}
-                                    className="text-blue-600 hover:bg-blue-50"
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleDuplicate(product)}
-                                    className="text-purple-600 hover:bg-purple-50"
-                                  >
-                                    <Copy className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    onClick={() => markAsProcessed(product.id)}
-                                    className="bg-green-500 hover:bg-green-600"
-                                  >
-                                    <CheckCircle className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleDelete(product.id)}
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </div>
+                              )}
+                              <div className="flex-1">
+                                <h3 className="font-semibold mb-1">{product.product_name}</h3>
+                                <p className="text-xs text-stone-500 mb-2">{product.product_sku}</p>
+                                <p className="text-sm text-stone-700">
+                                  {product.original_currency === 'EUR' ? '€' : '£'}{product.original_price}
+                                </p>
                               </div>
-                            </CardContent>
-                          </Card>
-                        );
-                      })}
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleEdit(product)}
+                                  className="text-blue-600 hover:bg-blue-50"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDuplicate(product)}
+                                  className="text-purple-600 hover:bg-purple-50"
+                                >
+                                  <Copy className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => markAsProcessed(product.id)}
+                                  className="bg-green-500 hover:bg-green-600"
+                                >
+                                  <CheckCircle className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDelete(product.id)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
                     </div>
                   </>
                 )}
