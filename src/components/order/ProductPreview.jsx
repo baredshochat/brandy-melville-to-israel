@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowRight, ArrowLeft, Package, Loader2, Link as LinkIcon, RefreshCw, AlertCircle } from "lucide-react";
+import { ArrowRight, ArrowLeft, Package, Loader2, Link as LinkIcon, RefreshCw, AlertCircle, Palette, Ruler } from "lucide-react";
 import { motion } from "framer-motion";
 import { InvokeLLM } from "@/integrations/Core";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -175,7 +176,13 @@ Example output:
   const currencySymbol = itemDetails.original_currency === 'USD' ? '$' : itemDetails.original_currency === 'EUR' ? '€' : itemDetails.original_currency === 'GBP' ? '£' : '';
   const displayName = (itemDetails.product_name && String(itemDetails.product_name).trim()) ? itemDetails.product_name : (getNameFromUrl(itemDetails.product_url) || 'שם לא זוהה');
 
-  const canConfirm = (itemDetails.quantity || 1) > 0;
+  const hasColors = itemDetails.available_colors && itemDetails.available_colors.length > 0;
+  const hasSizes = itemDetails.available_sizes && itemDetails.available_sizes.length > 0;
+  
+  // Require color and size selection if available options exist
+  const canConfirm = (itemDetails.quantity || 1) > 0 && 
+                     (!hasColors || itemDetails.color) && 
+                     (!hasSizes || itemDetails.size);
 
   return (
     <motion.div key="step3" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.5 }} className="p-3 sm:p-8">
@@ -247,42 +254,66 @@ Example output:
                 {itemDetails.product_url}
               </a>
             </div>
-
-            {itemDetails.available_colors && itemDetails.available_colors.length > 0 && (
-              <div className="pt-2">
-                <Label className="font-medium text-stone-700 text-sm sm:text-base text-left block mb-2">
-                  צבעים זמינים
-                </Label>
-                <div className="flex flex-wrap gap-2">
-                  {itemDetails.available_colors.map((color, idx) => (
-                    <span key={idx} className="px-3 py-1 bg-stone-100 text-stone-700 text-sm rounded-full border border-stone-200">
-                      {color}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {itemDetails.available_sizes && itemDetails.available_sizes.length > 0 && (
-              <div className="pt-2">
-                <Label className="font-medium text-stone-700 text-sm sm:text-base text-left block mb-2">
-                  מידות זמינות
-                </Label>
-                <div className="flex flex-wrap gap-2">
-                  {itemDetails.available_sizes.map((size, idx) => (
-                    <span key={idx} className="px-3 py-1 bg-stone-100 text-stone-700 text-sm rounded-full border border-stone-200">
-                      {size}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
           <div className="mt-6 sm:mt-8 space-y-4 sm:space-y-6">
+            {/* Color Selection */}
+            {hasColors && (
+              <div>
+                <Label className="font-medium text-stone-700 flex items-center gap-2 text-sm sm:text-base mb-3">
+                  <Palette className="w-4 h-4 text-stone-500" /> בחירת צבע {itemDetails.color ? '' : '*'}
+                </Label>
+                <Select 
+                  value={itemDetails.color || ''} 
+                  onValueChange={(value) => setItemDetails((p) => ({ ...p, color: value }))}
+                >
+                  <SelectTrigger className="h-10 sm:h-12 border-stone-300">
+                    <SelectValue placeholder="בחרי צבע..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {itemDetails.available_colors.map((color, idx) => (
+                      <SelectItem key={idx} value={color} className="text-left ltr">
+                        {color}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!itemDetails.color && (
+                  <p className="text-xs text-amber-600 mt-1">יש לבחור צבע לפני המשך</p>
+                )}
+              </div>
+            )}
+
+            {/* Size Selection */}
+            {hasSizes && (
+              <div>
+                <Label className="font-medium text-stone-700 flex items-center gap-2 text-sm sm:text-base mb-3">
+                  <Ruler className="w-4 h-4 text-stone-500" /> בחירת מידה {itemDetails.size ? '' : '*'}
+                </Label>
+                <Select 
+                  value={itemDetails.size || ''} 
+                  onValueChange={(value) => setItemDetails((p) => ({ ...p, size: value }))}
+                >
+                  <SelectTrigger className="h-10 sm:h-12 border-stone-300">
+                    <SelectValue placeholder="בחרי מידה..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {itemDetails.available_sizes.map((size, idx) => (
+                      <SelectItem key={idx} value={size} className="text-left ltr">
+                        {size}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!itemDetails.size && (
+                  <p className="text-xs text-amber-600 mt-1">יש לבחור מידה לפני המשך</p>
+                )}
+              </div>
+            )}
+
             <div className="p-3 sm:p-4 bg-amber-50 border border-amber-200 text-amber-900">
               <p className="text-sm sm:text-base font-semibold">
-                ⚠️ שימי לב: הפריט שיגיע הוא בדיוק לפי הקישור המקורי. אם יש טעות בפרטים, לחצי על "בדוק שוב" למעלה.
+                ⚠️ שימי לב: הפריט שיגיע הוא בדיוק לפי הקישור המקורי והבחירות שלך. אם יש טעות בפרטים, לחצי על "בדוק שוב" למעלה.
               </p>
             </div>
 
