@@ -196,21 +196,19 @@ export default function ProductPreview({ productData, onConfirm, onBack }) {
                     onChange={handleImageUpload}
                     disabled={uploadingImage}
                   />
-                  <label htmlFor="image-upload-new" className="cursor-pointer">
-                    <div className="flex items-center gap-2 bg-stone-800 hover:bg-stone-900 text-white px-4 py-2 rounded transition-colors">
-                      {uploadingImage ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>מעלה...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="w-4 h-4" />
-                          <span>בחרי תמונה</span>
-                        </>
-                      )}
-                    </div>
-                  </label>
+                  <div className="flex items-center gap-2 bg-stone-800 hover:bg-stone-900 text-white px-4 py-2 rounded transition-colors cursor-pointer" onClick={() => document.getElementById('image-upload-new').click()}>
+                    {uploadingImage ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>מעלה...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4" />
+                        <span>בחרי תמונה</span>
+                      </>
+                    )}
+                  </div>
                   
                   <div className="mt-6 p-3 bg-rose-50 border border-rose-200 rounded-lg max-w-sm">
                     <p className="text-xs text-rose-800 text-center font-medium">
