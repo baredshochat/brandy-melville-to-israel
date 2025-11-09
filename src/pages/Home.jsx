@@ -377,31 +377,55 @@ export default function Home() {
       const siteInfo = { us: { currency: 'USD' }, eu: { currency: 'EUR' }, uk: { currency: 'GBP' } };
 
       const raw = await InvokeLLM({
-        prompt: `You are extracting product data from this URL: ${url}
+        prompt: `You are extracting product data from Brandy Melville website: ${url}
 
-PRODUCT NAME:
-- Extract from: og:title meta tag OR the main <h1> product title
-- Clean any " | Brandy Melville" suffix
-- Keep the original English name
+CRITICAL INSTRUCTIONS - READ CAREFULLY:
 
-PRICE:
-- Find the price in £XX format (or $XX or €XX)
-- Return just the number
+1. PRODUCT NAME:
+   - Look at the page <title> tag or og:title meta tag
+   - Or find the main <h1> heading
+   - Remove " | Brandy Melville" or similar suffixes
+   - Keep the EXACT English name as it appears
 
-SKU:
-- Usually shown as "SKU: XXXXX" on the page
+2. PRICE:
+   - Find the CURRENT selling price (not crossed-out prices)
+   - Look for formats like: £20, $20, €20, 20.00
+   - Return ONLY the numeric value
 
-DESCRIPTION:
-- The product description text (usually under "Product Description:")
+3. SKU (VERY IMPORTANT):
+   - Brandy Melville SKUs are usually in format: M065L-622PSI720000 or similar
+   - Look in these locations (in order of priority):
+     a) In the URL itself after /products/ (e.g., /products/M065L-622PSI720000/)
+     b) In a <span> or <div> with text "SKU:" followed by the code
+     c) In JSON-LD structured data (@type: Product, sku:)
+     d) In meta tags (og:product:retailer_item_id or similar)
+     e) In hidden input fields or data attributes
+   - If you can't find it anywhere, return null (do NOT make up a SKU)
 
-COLORS & SIZES:
-- Extract all available options from dropdown/selection buttons
-- IMPORTANT: Also identify which specific color THIS product URL is showing (from URL parameters, selected option, or product title)
-- The "selected_color" should match one of the available colors if possible
+4. DESCRIPTION:
+   - Find the product description section
+   - Usually under "Product Description:" or in a description paragraph
+   - Return the full text
 
-Return ONLY what you find.
+5. COLORS - THIS IS CRITICAL:
+   a) AVAILABLE COLORS: Find ALL color options in dropdowns/buttons
+      - Look for <select>, <option>, color swatches, or variant buttons
+      - Extract ALL available color names EXACTLY as shown
+   
+   b) SELECTED COLOR (the color of THIS specific URL):
+      - FIRST: Check the URL for color in the path or query parameters
+        Example: /products/priscilla-pants-light-grey → "Light Grey"
+      - SECOND: Look for a selected/active color button or swatch
+      - THIRD: Check for "selected" attribute in <select> options
+      - FOURTH: Look at the product title if it includes the color
+      - The selected_color MUST be one of the available_colors
+      - Match it case-insensitively but return the exact name from available_colors
 
-Example output for the Priscilla Pants:
+6. SIZES:
+   - Extract ALL available size options from dropdowns or buttons
+   - Common Brandy sizes: XS, S, M, L, XL, XS/S, M/L, One Size
+
+EXAMPLE OUTPUT:
 {
   "product_name": "Priscilla Pants",
   "product_sku": "M065L-622PSI720000",
@@ -409,9 +433,15 @@ Example output for the Priscilla Pants:
   "price": 20,
   "available_colors": ["Super Light Grey", "White", "Silver Grey", "Black"],
   "selected_color": "Super Light Grey",
-  "available_sizes": ["XS/S"],
+  "available_sizes": ["XS/S", "M/L"],
   "currency_found": "GBP"
-}`,
+}
+
+IMPORTANT: 
+- Return ONLY real data you find on the page
+- Do NOT invent or guess SKUs
+- The selected_color must match one of the available_colors EXACTLY
+- Be very careful to extract the correct SKU from the page structure`,
         add_context_from_internet: true,
         response_json_schema: {
           type: "object",
@@ -430,7 +460,7 @@ Example output for the Priscilla Pants:
       });
 
       const result = await normalizeLLMResult(raw);
-      console.log("Product extraction result (normalized):", result);
+      console.log("🔍 Product extraction result:", result);
 
       // Fallback name from URL if needed
       let productName = (typeof result?.product_name === 'string' ? result.product_name.trim() : '') || nameFromUrl(url) || '';
@@ -443,6 +473,13 @@ Example output for the Priscilla Pants:
 
       const expectedCurrency = siteInfo[selectedSite]?.currency || 'USD';
       const extractedSku = result?.product_sku || 'SKU לא נמצא';
+
+      // Log SKU for debugging
+      console.log('📦 SKU extracted:', extractedSku);
+      console.log('🎨 Colors:', {
+        available: result?.available_colors,
+        selected: result?.selected_color
+      });
 
       // PRIORITY: Check our databases first for uploaded images
       console.log('🔍 Checking for existing image for SKU:', extractedSku);
@@ -462,7 +499,7 @@ Example output for the Priscilla Pants:
         product_sku: extractedSku,
         product_description: result?.product_description || 'תיאור לא זמין',
         original_price: priceNum,
-        color: result?.selected_color || '', // Use selected_color from LLM result
+        color: result?.selected_color || '',
         size: '',
         quantity: 1,
         original_currency: expectedCurrency,
