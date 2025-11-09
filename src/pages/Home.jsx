@@ -379,18 +379,6 @@ export default function Home() {
       const raw = await InvokeLLM({
         prompt: `You are extracting product data from this URL: ${url}
 
-CRITICAL - PRODUCT IMAGE EXTRACTION:
-This is a Brandy Melville/Shopify store. Images follow this pattern:
-- Main image URL format: https://[domain]/cdn/shop/files/[product-code]-[number]_1500x.jpg
-- Example: https://uk.brandymelville.com/cdn/shop/files/M065L-622PSI720000-1_1500x.jpg
-
-TO FIND THE IMAGE:
-1. Look for the FIRST <img> tag in the product gallery section
-2. The src attribute will contain the image URL
-3. Make sure to get the version ending with _1500x.jpg (NOT _750x.jpg or other smaller sizes)
-4. Convert relative URLs to absolute by prepending the domain
-5. ALTERNATIVELY: Look for og:image meta tag: <meta property="og:image" content="[URL]">
-
 PRODUCT NAME:
 - Extract from: og:title meta tag OR the main <h1> product title
 - Clean any " | Brandy Melville" suffix
@@ -409,8 +397,7 @@ DESCRIPTION:
 COLORS & SIZES:
 - Extract all available options from dropdown/selection buttons
 
-Return ONLY what you find. If image is not found, return null for image_url.
-Be extremely careful to return the FULL, COMPLETE image URL starting with https://
+Return ONLY what you find.
 
 Example output for the Priscilla Pants:
 {
@@ -418,7 +405,6 @@ Example output for the Priscilla Pants:
   "product_sku": "M065L-622PSI720000",
   "product_description": "Soft cotton blend yoga pants with a wide pant leg.",
   "price": 20,
-  "image_url": "https://uk.brandymelville.com/cdn/shop/files/M065L-622PSI720000-1_1500x.jpg",
   "available_colors": ["Super Light Grey", "White", "Silver Grey", "Black"],
   "available_sizes": ["XS/S"],
   "currency_found": "GBP"
@@ -431,7 +417,6 @@ Example output for the Priscilla Pants:
             product_sku: { type: ["string", "null"] },
             product_description: { type: ["string", "null"] },
             price: { type: "number" },
-            image_url: { type: ["string", "null"] },
             available_colors: { type: "array", items: { type: "string" } },
             available_sizes: { type: "array", items: { type: "string" } },
             currency_found: { type: "string" }
@@ -465,12 +450,6 @@ Example output for the Priscilla Pants:
           console.log('✅ Using existing image from database for SKU:', extractedSku, existingImage);
           finalImageUrl = existingImage;
         }
-      }
-      
-      // Only if no image found in our databases, use the AI-extracted image
-      if (!finalImageUrl) {
-        console.log('⚠️ No existing image found, using AI-extracted image');
-        finalImageUrl = result?.image_url || null;
       }
 
       setCurrentItem({
