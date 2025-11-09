@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -177,6 +178,20 @@ Example output:
 
   const canConfirm = (itemDetails.quantity || 1) > 0;
 
+  const handleColorSelect = (color) => {
+    setItemDetails(prev => ({
+      ...prev,
+      color: prev.color === color ? '' : color
+    }));
+  };
+
+  const handleSizeSelect = (size) => {
+    setItemDetails(prev => ({
+      ...prev,
+      size: prev.size === size ? '' : size
+    }));
+  };
+
   return (
     <motion.div key="step3" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.5 }} className="p-3 sm:p-8">
       <div className="max-w-3xl mx-auto">
@@ -251,14 +266,26 @@ Example output:
             {itemDetails.available_colors && itemDetails.available_colors.length > 0 && (
               <div className="pt-2">
                 <Label className="font-medium text-stone-700 text-sm sm:text-base text-left block mb-2">
-                  צבעים זמינים
+                  צבעים זמינים {itemDetails.color && <span className="text-rose-500 font-normal">(נבחר: {itemDetails.color})</span>}
                 </Label>
                 <div className="flex flex-wrap gap-2">
-                  {itemDetails.available_colors.map((color, idx) => (
-                    <span key={idx} className="px-3 py-1 bg-stone-100 text-stone-700 text-sm rounded-full border border-stone-200">
-                      {color}
-                    </span>
-                  ))}
+                  {itemDetails.available_colors.map((color, idx) => {
+                    const isSelected = itemDetails.color === color;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleColorSelect(color)}
+                        className={`px-3 py-1 text-sm rounded-full transition-all duration-200 ${
+                          isSelected 
+                            ? 'bg-rose-100 text-rose-800 border-2 border-rose-400 font-semibold shadow-md scale-105' 
+                            : 'bg-stone-100 text-stone-700 border border-stone-200 hover:bg-stone-200'
+                        }`}
+                      >
+                        {color}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -266,14 +293,26 @@ Example output:
             {itemDetails.available_sizes && itemDetails.available_sizes.length > 0 && (
               <div className="pt-2">
                 <Label className="font-medium text-stone-700 text-sm sm:text-base text-left block mb-2">
-                  מידות זמינות
+                  מידות זמינות {itemDetails.size && <span className="text-rose-500 font-normal">(נבחרה: {itemDetails.size})</span>}
                 </Label>
                 <div className="flex flex-wrap gap-2">
-                  {itemDetails.available_sizes.map((size, idx) => (
-                    <span key={idx} className="px-3 py-1 bg-stone-100 text-stone-700 text-sm rounded-full border border-stone-200">
-                      {size}
-                    </span>
-                  ))}
+                  {itemDetails.available_sizes.map((size, idx) => {
+                    const isSelected = itemDetails.size === size;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleSizeSelect(size)}
+                        className={`px-3 py-1 text-sm rounded-full transition-all duration-200 ${
+                          isSelected 
+                            ? 'bg-rose-100 text-rose-800 border-2 border-rose-400 font-semibold shadow-md scale-105' 
+                            : 'bg-stone-100 text-stone-700 border border-stone-200 hover:bg-stone-200'
+                        }`}
+                      >
+                        {size}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
