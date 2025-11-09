@@ -83,66 +83,48 @@ export default function ProductPreview({ productData, onConfirm, onBack }) {
 
     try {
       const raw = await InvokeLLM({
-        prompt: `CRITICAL RE-VERIFICATION - Brandy Melville Product: ${itemDetails.product_url}
+        prompt: `You are extracting product data from this URL: ${itemDetails.product_url}
 
-This is a SECOND ATTEMPT - be EXTRA thorough and accurate!
+CRITICAL - RE-VERIFICATION MODE:
+This is a second attempt to extract data. Be EXTRA careful and thorough.
 
-1. PRODUCT NAME:
-   - Check <title> tag, og:title meta, or main <h1>
-   - Remove " | Brandy Melville" suffix
-   - Return EXACT English name
+PRODUCT NAME:
+- Extract from: og:title meta tag OR the main <h1> product title
+- Clean any " | Brandy Melville" suffix
+- Keep the original English name
+- Double-check spelling and capitalization
 
-2. PRICE:
-   - Current selling price only (not strikethrough/old prices)
-   - Formats: £20, $20, €20
-   - Return numeric value only
+PRICE:
+- Find the price in £XX format (or $XX or €XX)
+- Return just the number
+- Verify this is the CURRENT price, not a crossed-out old price
 
-3. SKU - CRITICAL PRIORITY:
-   Brandy Melville SKUs: M065L-622PSI720000 format
-   Search IN ORDER:
-   a) URL path: /products/M065L-622PSI720000/
-   b) "SKU:" label on page
-   c) JSON-LD structured data (sku field)
-   d) Meta tags: og:product:retailer_item_id
-   e) Hidden inputs or data-* attributes
-   f) JavaScript variables (window.product, etc.)
-   
-   ⚠️ ONLY return if you find it - DO NOT guess or make up!
+SKU:
+- Usually shown as "SKU: XXXXX" on the page
+- This is critical for product identification
+- Look in multiple places: product info section, meta tags, hidden fields
 
-4. DESCRIPTION:
-   - Full product description text
-   - Look under "Product Description:" heading
+DESCRIPTION:
+- The product description text (usually under "Product Description:")
+- Get the FULL description if available
 
-5. COLORS - TWO PARTS:
-   
-   A) AVAILABLE COLORS (all options):
-      - Color dropdowns, swatches, variant buttons
-      - Extract EXACT names as displayed
-      - Include ALL available colors
-   
-   B) SELECTED COLOR (this specific URL):
-      Priority order:
-      1. URL itself: /products/item-name-COLOR/
-         Example: /priscilla-pants-light-grey → "Light Grey"
-      2. Active/selected color swatch
-      3. Selected <option> in dropdown
-      4. Product title if color is mentioned
-      
-      ⚠️ Must match one of available_colors EXACTLY!
+COLORS & SIZES:
+- Extract ALL available options from dropdown/selection buttons
+- Don't miss any variants
+- List all color names exactly as they appear
+- IMPORTANT: Also identify which specific color THIS product URL is showing (from URL parameters, selected option, or product title)
 
-6. SIZES:
-   - All available sizes from dropdowns/buttons
-   - Brandy common sizes: XS, S, M, L, XL, XS/S, M/L, One Size
+Return complete and accurate data.
 
-RETURN ONLY VERIFIED DATA:
+Example output:
 {
-  "product_name": "Exact Product Name",
-  "product_sku": "M065L-622PSI720000 or null if not found",
-  "product_description": "Full description",
+  "product_name": "Priscilla Pants",
+  "product_sku": "M065L-622PSI720000",
+  "product_description": "Soft cotton blend yoga pants with a wide pant leg.",
   "price": 20,
-  "available_colors": ["Color1", "Color2"],
-  "selected_color": "Color1 (must be in available_colors)",
-  "available_sizes": ["XS/S", "M/L"],
+  "available_colors": ["Super Light Grey", "White", "Silver Grey", "Black"],
+  "selected_color": "Super Light Grey",
+  "available_sizes": ["XS/S"],
   "currency_found": "GBP"
 }`,
         add_context_from_internet: true,
@@ -164,11 +146,6 @@ RETURN ONLY VERIFIED DATA:
 
       const result = await normalizeLLMResult(raw);
       console.log("🔄 Refetch result:", result);
-      console.log("📦 New SKU:", result?.product_sku);
-      console.log("🎨 New colors:", {
-        available: result?.available_colors,
-        selected: result?.selected_color
-      });
 
       // Update item details with new data
       const updatedItem = {
