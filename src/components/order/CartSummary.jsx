@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Trash2, ArrowLeft, ArrowRight, ShoppingBag, Heart, Minus, Edit } from 'lucide-react';
@@ -6,7 +5,6 @@ import { motion } from 'framer-motion';
 import ColorDisplay from './ColorDisplay';
 import CartValueTip from './CartValueTip';
 import { Rates } from '@/entities/Rates';
-import { CalculationSettings } from '@/entities/CalculationSettings';
 
 const getSiteName = (siteCode) => {
   const names = {
@@ -19,7 +17,6 @@ const getSiteName = (siteCode) => {
 };
 
 export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAnother, onCheckout, onBack, onEdit }) {
-  // Helper: derive product name from URL if missing
   const getNameFromUrl = (url) => {
     try {
       if (!url) return "";
@@ -47,14 +44,11 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
 
   const [deletingIds, setDeletingIds] = React.useState([]);
   const [rates, setRates] = React.useState({ usd: 3.7, eur: 4.0, gbp: 4.5 });
-  const [settings, setSettings] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
 
-  // Fetch exchange rates and calculation settings
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch rates
         const ratesList = await Rates.list();
         if (ratesList && ratesList.length > 0) {
           const latestRate = ratesList[0];
@@ -63,12 +57,6 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
             eur: latestRate.eur || 4.0,
             gbp: latestRate.gbp || 4.5
           });
-        }
-
-        // Fetch calculation settings
-        const settingsList = await CalculationSettings.list();
-        if (settingsList && settingsList.length > 0) {
-          setSettings(settingsList[0]);
         }
       } catch (error) {
         console.error("Failed to load data:", error);
@@ -79,7 +67,6 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
     fetchData();
   }, []);
 
-  // Helper function to convert price to ILS
   const convertToILS = (price, currency) => {
     const amount = Number(price) || 0;
     if (currency === 'USD') return amount * rates.usd;
@@ -88,59 +75,16 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
     return amount;
   };
 
-  // Calculate full cost per item (including proportional shipping, fees, and VAT)
-  const calculateItemFullCost = (item, allItems) => {
-    // For local stock - simple calculation
-    if (item.site === 'local') {
-      return Number(item.original_price || 0) * (item.quantity || 1);
-    }
-
-    // For international orders - complex calculation
-    if (!settings) return convertToILS(item.original_price, item.original_currency) * (item.quantity || 1);
-
+  const calculateItemSimplePrice = (item) => {
     const priceILS = convertToILS(item.original_price, item.original_currency);
-    const itemWeight = (item.item_weight || 0.3) * (item.quantity || 1);
-    
-    // Calculate total weight
-    const totalWeight = allItems.reduce((sum, it) => sum + ((it.item_weight || 0.3) * (it.quantity || 1)), 0);
-
-    if (totalWeight === 0) {
-      return priceILS * (item.quantity || 1);
-    }
-
-    // Calculate international shipping cost
-    const weightWithPackaging = totalWeight + (settings.outer_pack_kg || 0.3);
-    const roundedWeight = Math.ceil(weightWithPackaging / (settings.carrier_rounding_kg || 0.5)) * (settings.carrier_rounding_kg || 0.5);
-    const baseShipping = roundedWeight * (settings.ship_rate_per_kg || 100);
-    const withSurcharges = baseShipping * (1 + (settings.fuel_surcharge_pct || 0) + (settings.remote_area_pct || 0));
-    
-    // Calculate fixed fees
-    const fixedFees = settings.fixed_fees_ils || 50;
-    
-    // Total overhead per order
-    const totalOverhead = withSurcharges + fixedFees;
-    
-    // Distribute overhead proportionally by item weight
-    const itemProportion = itemWeight / totalWeight;
-    const itemOverhead = totalOverhead * itemProportion;
-    
-    // Item cost before VAT
-    const itemBaseCost = priceILS * (item.quantity || 1);
-    const itemCostBeforeVAT = itemBaseCost + itemOverhead;
-    
-    // Add VAT
-    const vatRate = settings.vat_pct || 0.18;
-    const itemFullCostWithVAT = itemCostBeforeVAT * (1 + vatRate);
-    
-    return itemFullCostWithVAT;
+    return Math.round(priceILS * (item.quantity || 1));
   };
 
   const currentSite = cart.length > 0 ? cart[0].site : null;
   const isLocalOrder = currentSite === 'local';
 
-  // Calculate subtotal with all costs included - ROUNDED
   const subtotalILS = Math.round(cart.reduce((sum, item) => {
-    return sum + calculateItemFullCost(item, cart);
+    return sum + calculateItemSimplePrice(item);
   }, 0));
 
   const handleRemoveItem = async (itemId) => {
@@ -175,6 +119,8 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
       </motion.div>
     );
   }
+
+  const canCheckout = cart.length >= 3;
 
   return (
     <motion.div
@@ -214,7 +160,7 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
                 ? item.product_name
                 : getNameFromUrl(item.product_url);
 
-              const itemFullCost = calculateItemFullCost(item, cart);
+              const itemPrice = calculateItemSimplePrice(item);
 
               return (
                 <div key={item.id} className="flex items-start justify-between p-3 sm:p-4 bg-white/80 border border-rose-100 shadow-sm flex-col gap-3 sm:flex-row sm:gap-4">
@@ -250,10 +196,8 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
                              <Button size="icon" variant="outline" className="h-7 w-7 sm:h-8 sm:w-8 rounded-none" onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}><Plus className="w-3 h-3 sm:w-4 sm:h-4" /></Button>
                           </div>
                         <div className="text-left">
-                          <p className="font-medium text-stone-700 text-sm sm:text-base">₪{Math.round(itemFullCost)}</p>
-                          {!isLocalOrder && (
-                            <p className="text-xs text-stone-400">כולל הכל</p>
-                          )}
+                          <p className="font-medium text-stone-700 text-sm sm:text-base">₪{itemPrice}</p>
+                          <p className="text-xs text-stone-400">מחיר פריט</p>
                         </div>
                         <div className="flex items-center">
                           <Button variant="ghost" size="icon" onClick={() => onEdit(item)} className="text-stone-400 hover:text-blue-500 hover:bg-blue-50 w-8 h-8">
@@ -272,7 +216,15 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
                     </div>);
 
             })}
-                {/* Upsell tip when cart has 1–2 items */}
+                {cart.length < 3 && (
+                  <div className="mt-4 p-3 bg-amber-50 border border-amber-200 text-amber-900 text-center">
+                    <p className="text-sm font-medium">
+                      💡 יש להוסיף לפחות 3 פריטים לסל כדי להמשיך לסיכום ההזמנה
+                    </p>
+                    <p className="text-xs mt-1">נותרו {3 - cart.length} פריטים</p>
+                  </div>
+                )}
+
                 <CartValueTip count={cart.length} onAddAnother={onAddAnother} />
 
                 <div className="pt-4 sm:pt-6 border-t-2 border-rose-200/50">
@@ -281,17 +233,20 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
                     <span className="text-xl font-bold text-stone-800">₪{subtotalILS}</span>
                   </div>
                   <p className="text-xs text-stone-500 mb-4 text-center">
-                    {isLocalOrder 
-                      ? 'בשלב הבא יתווסף רק משלוח עד הבית (₪35) 🏠'
-                      : 'המחירים כוללים משלוח בינלאומי, עמלות ומע״מ. בשלב הבא יתווסף רק משלוח עד הבית 🏠'}
+                    מחיר הפריטים בלבד. עלויות משלוח ומסים יתווספו בשלב הבא 📦
                   </p>
                   <Button
                     onClick={onCheckout}
-                    disabled={cart.length === 0}
+                    disabled={!canCheckout}
                     className="w-full h-12 sm:h-14 px-6 sm:px-8 bg-black hover:bg-stone-800 active:bg-stone-700 text-white font-medium transition-all duration-300 flex items-center justify-center gap-2 shadow-lg text-base sm:text-lg disabled:opacity-50 disabled:cursor-not-allowed">
                     סיכום הזמנה
                     <ArrowRight className="w-5 h-5" />
                   </Button>
+                  {!canCheckout && (
+                    <p className="text-xs text-center text-stone-500 mt-2">
+                      הוסיפי עוד {3 - cart.length} פריטים להמשך
+                    </p>
+                  )}
                 </div>
                  
               </div> :

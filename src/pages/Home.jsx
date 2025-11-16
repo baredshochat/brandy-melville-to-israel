@@ -9,17 +9,15 @@ import { InvokeLLM, SendEmail } from "@/integrations/Core";
 import { AnimatePresence } from "framer-motion";
 import { createPageUrl } from "@/utils";
 
-// Import new step components
+// Import step components
 import SiteSelector from '../components/order/SiteSelector';
 import ProductPreview from '../components/order/ProductPreview';
 import CartSummary from '../components/order/CartSummary';
 import PriceCalculator from "../components/order/PriceCalculator";
 import CustomerForm from "../components/order/CustomerForm";
+import LoadingCalculation from "../components/order/LoadingCalculation";
 import { Heart } from "lucide-react";
-
-// Import new component
 import CartImport from '../components/order/CartImport';
-// Removed: OrderCheckoutSummary (no longer used)
 
 // ---- Helpers ----
 async function normalizeLLMResult(res) {
@@ -724,7 +722,8 @@ Example output:
       case 1: return <SiteSelector onSiteSelect={handleSiteSelect} />;
       case 2: return <CartImport site={selectedSite} onImportComplete={handleCartImported} onBack={() => setStep(1)} loading={loading} />;
       case 3: return <ProductPreview productData={currentItem} onConfirm={handleProductConfirm} onBack={() => { setStep(2); setEditingItem(null); }} />;
-      case 4: return <CartSummary cart={safeCart} onRemove={handleRemoveFromCart} onUpdateQuantity={handleUpdateCartQuantity} onEdit={handleEditItem} onAddAnother={() => setStep(2)} onCheckout={() => setStep(5)} onBack={() => setStep(1)} />;
+      case 4: return <CartSummary cart={safeCart} onRemove={handleRemoveFromCart} onUpdateQuantity={handleUpdateCartQuantity} onEdit={handleEditItem} onAddAnother={() => setStep(2)} onCheckout={() => setStep(4.5)} onBack={() => setStep(1)} />;
+      case 4.5: return <LoadingCalculation onComplete={() => setStep(5)} />;
       case 5: {
         const siteForCalculation = selectedSite || (safeCart.length > 0 ? safeCart[0].site : '');
         return <PriceCalculator cart={safeCart} site={siteForCalculation} onConfirm={handlePriceConfirm} onBack={() => setStep(4)} />;
