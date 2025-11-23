@@ -95,13 +95,16 @@ export function calculateImportCartPrice(cart, settings) {
 
   // Calculate full price for each item
   let totalFull = 0;
+  const displayPercent = settings.initial_display_percent || 0.70;
+  
   const itemsWithPrices = importItems.map(item => {
     const { totalFull: itemTotal, breakdown } = calculateImportItemFullPrice(item, settings);
     totalFull += itemTotal;
     
     return {
       ...item,
-      fullPrice: itemTotal,
+      fullPrice: itemTotal * displayPercent,  // Show 70% as item price
+      fullPriceOriginal: itemTotal,  // Keep original for internal calculations
       breakdown
     };
   });
@@ -110,9 +113,8 @@ export function calculateImportCartPrice(cart, settings) {
   const serviceFee = settings.order_service_fee_ils || 50;
   const domesticShipping = settings.domestic_ship_ils || 35;
   
-  // Calculate display price (70% of items total)
-  const displayPercent = settings.initial_display_percent || 0.70;
-  const cartDisplayPrice = totalFull * displayPercent;
+  // Calculate display price - sum of displayed item prices (already 70%)
+  const cartDisplayPrice = itemsWithPrices.reduce((sum, item) => sum + item.fullPrice, 0);
   
   // Import costs = remaining 30% + service fee
   const importCosts = (totalFull * (1 - displayPercent)) + serviceFee;
