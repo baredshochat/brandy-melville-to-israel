@@ -189,7 +189,7 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
           <Button
             onClick={handleConfirm}
             className="order-1 sm:order-none h-12 px-8 bg-black hover:bg-stone-800 text-white font-medium flex items-center justify-center gap-2">
-            המשך לתשלום
+            למילוי פרטים
             <ArrowRight className="w-4 h-4" />
           </Button>
           <Button
