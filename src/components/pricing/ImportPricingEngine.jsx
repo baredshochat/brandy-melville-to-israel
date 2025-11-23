@@ -45,8 +45,8 @@ export function calculateImportItemFullPrice(item, settings) {
   const fxFeeRate = settings.fx_fee_rate || 0.03;
   const priceILS = priceOriginal * fxRate * (1 + fxFeeRate);
 
-  // Apply margin
-  const priceWithMargin = priceILS / (1 - margin);
+  // Apply margin (correct formula: basePrice * (1 + margin))
+  const priceWithMargin = priceILS * (1 + margin);
 
   // Calculate shipping costs per item
   const forwardShippingPerItem = (settings.forward_shipping_usd_per_order || 7) * 
@@ -57,13 +57,9 @@ export function calculateImportItemFullPrice(item, settings) {
                             (settings.fx_usd_ils || 3.8) / 2;
   const intlShipping = weight * intlShippingPerKg;
 
-  // Calculate customs (tax) if applicable
-  const taxRate = settings.tax_rate || 0.17;
-  const taxableBase = priceWithMargin + intlShipping;
-  const customsTax = taxableBase * taxRate;
-
+  // NO customs tax - you get reimbursed for it
   // Total cost for single unit
-  const totalPerUnit = priceWithMargin + forwardShippingPerItem + intlShipping + customsTax;
+  const totalPerUnit = priceWithMargin + forwardShippingPerItem + intlShipping;
   
   // Total for all quantity
   const totalFull = totalPerUnit * quantity;
@@ -74,8 +70,7 @@ export function calculateImportItemFullPrice(item, settings) {
       basePrice: priceILS * quantity,
       margin: (priceWithMargin - priceILS) * quantity,
       forwardShipping: forwardShippingPerItem * quantity,
-      intlShipping: intlShipping * quantity,
-      customs: customsTax * quantity
+      intlShipping: intlShipping * quantity
     }
   };
 }
