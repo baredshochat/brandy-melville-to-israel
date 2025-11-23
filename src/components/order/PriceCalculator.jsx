@@ -117,12 +117,12 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
           
           {/* Items Section */}
           <div className="pb-4 border-b border-stone-200">
-            <h3 className="font-semibold text-stone-800 mb-3 flex items-center gap-2">
+            <h3 className="font-bold text-xl text-stone-900 mb-3 flex items-center gap-2">
               <span>{labels?.items_section_title || 'הפריטים שלך'}</span>
             </h3>
             <div className="space-y-2">
               {priceData.breakdown.items.map((item, idx) => (
-                <div key={idx} className="flex justify-between text-sm">
+                <div key={idx} className="flex justify-between text-xs">
                   <span className="text-stone-600 ltr text-left">
                     {item.product_name} × {item.quantity}
                   </span>
@@ -137,32 +137,32 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
           {/* Pricing Breakdown */}
           <div className="space-y-3">
             <div className="flex justify-between items-center py-2">
-              <span className="text-stone-700 font-medium">סל הקניות</span>
-              <span className="text-lg font-semibold text-stone-900">
+              <span className="text-sm text-stone-700 font-medium">סל הקניות</span>
+              <span className="text-base font-semibold text-stone-900">
                 {formatMoney(cartSubtotal)}
               </span>
             </div>
 
             <div className="flex justify-between items-center py-2 border-t border-stone-200">
               <div className="flex items-center gap-2">
-                <span className="text-stone-700 font-medium">עלות יבוא</span>
+                <span className="text-sm text-stone-700 font-medium">עלות יבוא</span>
                 <span className="text-xs text-stone-500">(משלוח, מכס, טיפול)</span>
               </div>
-              <span className="text-lg font-semibold text-stone-900">
+              <span className="text-base font-semibold text-stone-900">
                 {formatMoney(importCosts)}
               </span>
             </div>
 
             <div className="flex justify-between items-center py-2 border-t border-stone-200">
-              <span className="text-stone-700 font-medium">משלוח עד הבית</span>
-              <span className="text-lg font-semibold text-stone-900">
+              <span className="text-sm text-stone-700 font-medium">משלוח עד הבית</span>
+              <span className="text-base font-semibold text-stone-900">
                 {formatMoney(domesticShipping)}
               </span>
             </div>
 
             <div className="flex justify-between items-center py-2 border-t border-stone-200">
-              <span className="text-stone-700 font-medium">מע״מ (18%)</span>
-              <span className="text-lg font-semibold text-stone-900">
+              <span className="text-sm text-stone-700 font-medium">מע״מ (18%)</span>
+              <span className="text-base font-semibold text-stone-900">
                 {formatMoney(vat)}
               </span>
             </div>
