@@ -122,8 +122,8 @@ export function calculateImportCartPrice(cart, settings) {
   // Import costs = remaining 30% + service fee
   const importCosts = (totalFull * (1 - displayPercent)) + serviceFee;
 
-  // Final total = display price + import costs + domestic shipping
-  const finalTotal = cartDisplayPrice + importCosts + domesticShipping;
+  // Final total
+  const finalTotal = totalFull + serviceFee + domesticShipping;
 
   return {
     finalPriceILS: Math.round(finalTotal),

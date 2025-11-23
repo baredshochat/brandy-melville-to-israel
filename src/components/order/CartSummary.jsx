@@ -46,7 +46,6 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
   const [deletingIds, setDeletingIds] = React.useState([]);
   const [settings, setSettings] = React.useState(null);
   const [displayPrice, setDisplayPrice] = React.useState(0);
-  const [itemPrices, setItemPrices] = React.useState({});
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
@@ -70,14 +69,6 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
           if (importItems.length > 0) {
             const priceData = calculateImportCartPrice(cart, currentSettings);
             setDisplayPrice(priceData.cartDisplayPrice);
-            
-            // Create a map of item IDs to their display prices (70% of full price)
-            const prices = {};
-            priceData.breakdown.items.forEach(item => {
-              const displayPercent = currentSettings.initial_display_percent || 0.70;
-              prices[item.id] = Math.round(item.fullPrice * displayPercent);
-            });
-            setItemPrices(prices);
           }
         }
       } catch (error) {
@@ -168,14 +159,7 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
               return (
                 <div key={item.id} className="flex items-start justify-between p-3 sm:p-4 bg-white/80 border border-rose-100 shadow-sm flex-col gap-3 sm:flex-row sm:gap-4">
                       <div className="flex-1">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="font-medium text-stone-800 ltr text-left text-sm sm:text-base flex-1">{displayName}</p>
-                          {itemPrices[item.id] && (
-                            <span className="text-sm sm:text-base font-semibold text-stone-800 whitespace-nowrap">
-                              ₪{itemPrices[item.id].toLocaleString('he-IL')}
-                            </span>
-                          )}
-                        </div>
+                        <p className="font-medium text-stone-800 ltr text-left text-sm sm:text-base">{displayName}</p>
                         <div className="flex items-center gap-2 sm:gap-3 mt-1">
                           <ColorDisplay colorName={item.color} size="sm" />
                           <span className="text-stone-400">•</span>

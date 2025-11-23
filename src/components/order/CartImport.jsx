@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +9,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InvokeLLM } from "@/integrations/Core";
 import { CartItem } from "@/entities/CartItem";
 import { User } from "@/entities/User";
-import { detectItemWeight } from "../utils/WeightDetector";
 
 const siteInfo = {
   us: { name: 'ארצות הברית', flag: 'https://flagcdn.com/w160/us.png', domain: 'us.brandymelville.com', fullUrl: 'https://us.brandymelville.com' },
@@ -70,7 +70,10 @@ export default function CartImport({ site, onImportComplete, onBack, loading }) 
     return { oversized: lowerName.includes('oversized') || lowerSize.includes('oversized'), stuffed: lowerName.includes('shoulder') && (lowerName.includes('mini') || lowerName.includes('shoulder bag')), flattened: lowerName.includes('bag') && !lowerName.includes('shoulder') };
   }, []);
 
-
+  const getWeightByCategory = React.useCallback((category) => {
+    const weights = { tee: 0.15, hoodie: 1.0, sweater: 0.8, sweatpants: 0.8, skirt: 0.3, bag: 0.6, other: 0.4 };
+    return weights[category] || 0.4;
+  }, []);
 
   const updateUrl = (index, value) => { const next = [...urls]; next[index] = value; setUrls(next); };
 
@@ -185,9 +188,6 @@ Return ONLY a JSON object matching the schema; do not include extra text.
       const urlDerivedName = getNameFromUrl(product.url || validUrls[0]);
       const finalName = (product.name && String(product.name).trim()) ? product.name : (urlDerivedName || 'Product');
       const flags = detectFlags(finalName, (product.available_sizes || [])[0]);
-      
-      // Use new weight detector
-      const detectedWeight = detectItemWeight(finalName);
 
       const newItem = {
         product_name: finalName,
@@ -200,8 +200,7 @@ Return ONLY a JSON object matching the schema; do not include extra text.
         color: '',
         size: '',
         item_type: category,
-        item_weight: detectedWeight,
-        estimated_weight_kg: detectedWeight,
+        item_weight: getWeightByCategory(category),
         product_sku: product.sku || null,
         product_description: product.description || null,
         available_colors: product.available_colors || [],
