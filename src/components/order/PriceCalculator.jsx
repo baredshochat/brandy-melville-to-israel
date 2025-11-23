@@ -136,13 +136,6 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
 
           {/* Pricing Breakdown */}
           <div className="space-y-3">
-            <div className="flex justify-between items-center py-2">
-              <span className="text-xs text-stone-600 italic">סל הקניות</span>
-              <span className="text-xs italic text-stone-700">
-                {formatMoney(cartSubtotal)}
-              </span>
-            </div>
-
             <div className="flex justify-between items-center py-2 border-t border-stone-200">
               <div className="flex items-center gap-2">
                 <span className="text-xs text-stone-600 italic">עלות יבוא</span>
