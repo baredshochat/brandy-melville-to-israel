@@ -14,8 +14,18 @@ export function detectItemWeight(productName) {
       name.includes('zip') || name.includes('fleece')) {
     weight = 1.0; // 1000g
   }
-  else if (name.includes('sweater') || name.includes('knit') || name.includes('knitted') || 
-           name.includes('cardigan') || name.includes('cable')) {
+  // Cardigan first (more specific than sweater)
+  else if (name.includes('cardigan') || name.includes('ribbed cardigan') || 
+           name.includes('open knit') || name.includes('light knit')) {
+    weight = 0.55; // 550g
+  }
+  // Sweaters (heavier)
+  else if (name.includes('sweater') || name.includes('heavy knit') || name.includes('chunky') || 
+           name.includes('thick knit') || name.includes('cable knit') || name.includes('cable')) {
+    weight = 0.8; // 800g
+  }
+  // Regular knitted items
+  else if (name.includes('knit') || name.includes('knitted')) {
     weight = 0.8; // 800g
   }
   
