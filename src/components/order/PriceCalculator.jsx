@@ -122,11 +122,11 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
             </h3>
             <div className="space-y-2">
               {priceData.breakdown.items.map((item, idx) => (
-                <div key={idx} className="flex justify-between text-sm">
-                  <span className="text-stone-600 ltr text-left">
+                <div key={idx} className="flex justify-between text-base font-bold">
+                  <span className="text-stone-800 ltr text-left">
                     {item.product_name} × {item.quantity}
                   </span>
-                  <span className="text-stone-800 font-medium">
+                  <span className="text-stone-800">
                     {formatMoney(item.fullPrice)}
                   </span>
                 </div>
@@ -137,32 +137,32 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
           {/* Pricing Breakdown */}
           <div className="space-y-3">
             <div className="flex justify-between items-center py-2">
-              <span className="text-sm text-stone-700 font-medium">סל הקניות</span>
-              <span className="text-base font-semibold text-stone-900">
+              <span className="text-xs text-stone-600 italic">סל הקניות</span>
+              <span className="text-xs italic text-stone-700">
                 {formatMoney(cartSubtotal)}
               </span>
             </div>
 
             <div className="flex justify-between items-center py-2 border-t border-stone-200">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-stone-700 font-medium">עלות יבוא</span>
+                <span className="text-xs text-stone-600 italic">עלות יבוא</span>
                 <span className="text-xs text-stone-500">(משלוח, מכס, טיפול)</span>
               </div>
-              <span className="text-base font-semibold text-stone-900">
+              <span className="text-xs italic text-stone-700">
                 {formatMoney(importCosts)}
               </span>
             </div>
 
             <div className="flex justify-between items-center py-2 border-t border-stone-200">
-              <span className="text-sm text-stone-700 font-medium">משלוח עד הבית</span>
-              <span className="text-base font-semibold text-stone-900">
+              <span className="text-xs text-stone-600 italic">משלוח עד הבית</span>
+              <span className="text-xs italic text-stone-700">
                 {formatMoney(domesticShipping)}
               </span>
             </div>
 
             <div className="flex justify-between items-center py-2 border-t border-stone-200">
-              <span className="text-sm text-stone-700 font-medium">מע״מ (18%)</span>
-              <span className="text-base font-semibold text-stone-900">
+              <span className="text-xs text-stone-600 italic">מע״מ (18%)</span>
+              <span className="text-xs italic text-stone-700">
                 {formatMoney(vat)}
               </span>
             </div>
