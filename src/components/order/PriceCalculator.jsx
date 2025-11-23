@@ -122,7 +122,7 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
             </h3>
             <div className="space-y-2">
               {priceData.breakdown.items.map((item, idx) => (
-                <div key={idx} className="flex justify-between text-xs">
+                <div key={idx} className="flex justify-between text-sm">
                   <span className="text-stone-600 ltr text-left">
                     {item.product_name} × {item.quantity}
                   </span>
