@@ -6,7 +6,7 @@ export default function LoadingCalculation({ onComplete }) {
   useEffect(() => {
     const timer = setTimeout(() => {
       onComplete();
-    }, 2000);
+    }, 5000);
     
     return () => clearTimeout(timer);
   }, [onComplete]);
