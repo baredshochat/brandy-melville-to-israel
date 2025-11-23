@@ -119,20 +119,30 @@ export function calculateImportCartPrice(cart, settings) {
   // Import costs = remaining 30% + service fee
   const importCosts = (totalFull * (1 - displayPercent)) + serviceFee;
 
-  // Final total
-  const finalTotal = totalFull + serviceFee + domesticShipping;
+  // Subtotal before VAT
+  const subtotalBeforeVAT = totalFull + serviceFee + domesticShipping;
+  
+  // Calculate VAT (18%)
+  const vatRate = settings.vat_pct || 0.18;
+  const vat = subtotalBeforeVAT * vatRate;
+  
+  // Final total with VAT
+  const finalTotal = subtotalBeforeVAT + vat;
 
   return {
     finalPriceILS: Math.round(finalTotal),
     cartDisplayPrice: Math.round(cartDisplayPrice),
     importCosts: Math.round(importCosts),
     domesticShipping,
+    vat: Math.round(vat),
     breakdown: {
       items: itemsWithPrices,
       cartSubtotal: Math.round(cartDisplayPrice),
       importCosts: Math.round(importCosts),
       serviceFee,
       domesticShipping,
+      subtotalBeforeVAT: Math.round(subtotalBeforeVAT),
+      vat: Math.round(vat),
       finalTotal: Math.round(finalTotal)
     }
   };

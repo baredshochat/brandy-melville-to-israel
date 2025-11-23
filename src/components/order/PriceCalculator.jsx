@@ -94,7 +94,7 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
     return null;
   }
 
-  const { cartSubtotal, importCosts, serviceFee, domesticShipping, finalTotal } = priceData.breakdown;
+  const { cartSubtotal, importCosts, serviceFee, domesticShipping, vat, finalTotal } = priceData.breakdown;
 
   return (
     <motion.div
@@ -157,6 +157,13 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
               <span className="text-stone-700 font-medium">משלוח עד הבית</span>
               <span className="text-lg font-semibold text-stone-900">
                 {formatMoney(domesticShipping)}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center py-2 border-t border-stone-200">
+              <span className="text-stone-700 font-medium">מע״מ (18%)</span>
+              <span className="text-lg font-semibold text-stone-900">
+                {formatMoney(vat)}
               </span>
             </div>
 
