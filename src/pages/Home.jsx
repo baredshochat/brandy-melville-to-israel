@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import { Order } from "@/entities/Order";
 import { CartItem } from "@/entities/CartItem";
@@ -8,6 +7,7 @@ import { SkuImage } from "@/entities/SkuImage";
 import { InvokeLLM, SendEmail } from "@/integrations/Core";
 import { AnimatePresence } from "framer-motion";
 import { createPageUrl } from "@/utils";
+import { tranzilaPayment } from "@/functions/tranzilaPayment";
 
 // Import step components
 import SiteSelector from '../components/order/SiteSelector';
@@ -700,8 +700,25 @@ Example output:
       refreshCart();
       setCart([]);
 
-      const officialPaymentUrl = `https://payments.example.com/pay?order_id=${order.id}&amount=${totalPriceILS}&currency=ILS`;
-      window.open(officialPaymentUrl, '_blank');
+      // Initiate Tranzila payment
+      try {
+        const paymentResponse = await tranzilaPayment({
+          orderId: order.id,
+          amount: totalPriceILS,
+          orderNumber: order.order_number,
+          customerEmail: effectiveCustomer.customer_email || user?.email,
+          customerName: effectiveCustomer.customer_name,
+          customerPhone: effectiveCustomer.customer_phone
+        });
+
+        if (paymentResponse.data?.paymentUrl) {
+          window.location.href = paymentResponse.data.paymentUrl;
+          return; // Don't go to step 7 yet - wait for payment redirect
+        }
+      } catch (paymentError) {
+        console.error('Payment initiation error:', paymentError);
+        alert('שגיאה בפתיחת דף התשלום. אנא נסי שוב.');
+      }
       setStep(7);
     } catch (error) {
       console.error("Error creating order or sending email:", error);
