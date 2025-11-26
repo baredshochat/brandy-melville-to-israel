@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, Bot, User as UserIcon, Loader2, ThumbsUp, ThumbsDown } from 'lucide-react';
-import { InvokeLLM } from '@/integrations/Core';
+import { Send, Bot, User as UserIcon, Loader2, ThumbsUp, ThumbsDown, Phone } from 'lucide-react';
+import { InvokeLLM, SendEmail } from '@/integrations/Core';
 import { User } from '@/entities/User';
 import { Feedback } from '@/entities/Feedback';
 import MessageContent from '../components/chat/MessageContent';
@@ -112,6 +112,12 @@ export default function ChatPage() {
   const [feedbackState, setFeedbackState] = useState(null); // null | 'prompt_comment' | 'thank_you'
   const [feedbackComment, setFeedbackComment] = useState('');
   const [sessionID] = useState(() => `session_${Date.now()}`); // To link feedback to a session
+  
+  // Human agent state
+  const [frustrationCount, setFrustrationCount] = useState(0);
+  const [showHumanAgentOption, setShowHumanAgentOption] = useState(false);
+  const [waitingForAgent, setWaitingForAgent] = useState(false);
+  const [agentNotified, setAgentNotified] = useState(false);
 
   useEffect(() => {
     User.me().then(setUser).catch(() => console.error("User not logged in"));
@@ -150,6 +156,21 @@ export default function ChatPage() {
 
       const botMessage = { role: 'bot', content: response };
       setMessages((prev) => [...prev, botMessage]);
+      
+      // Check for frustration keywords
+      const frustrationKeywords = ['לא עזר', 'לא הבנתי', 'לא מבינה', 'לא עונה', 'נציג', 'אנושי', 'בן אדם', 'מתסכל', 'לא רלוונטי', 'שטויות', 'לא נכון', 'טעות', 'בעיה', 'לא פתר', 'עדיין לא', 'כבר שאלתי', 'שוב', 'לא מספיק'];
+      const userMsgLower = messageContent.toLowerCase();
+      const hasFrustration = frustrationKeywords.some(kw => userMsgLower.includes(kw));
+      
+      if (hasFrustration) {
+        setFrustrationCount(prev => {
+          const newCount = prev + 1;
+          if (newCount >= 2 && !agentNotified) {
+            setShowHumanAgentOption(true);
+          }
+          return newCount;
+        });
+      }
 
     } catch (error) {
       console.error("Error invoking LLM:", error);
@@ -206,6 +227,49 @@ export default function ChatPage() {
       } finally {
         setLoading(false);
       }
+  };
+
+  const handleRequestHumanAgent = async () => {
+    setShowHumanAgentOption(false);
+    setWaitingForAgent(true);
+    setAgentNotified(true);
+    
+    const waitingMessage = { role: 'bot', content: 'מעביר אותך לנציג אנושי... נציג יחזור אלייך בהקדם האפשרי 💬' };
+    setMessages(prev => [...prev, waitingMessage]);
+
+    try {
+      // Build conversation history for the email
+      const conversationText = messages
+        .map(msg => `${msg.role === 'user' ? 'לקוח/ה' : 'בוט'}: ${msg.content}`)
+        .join('\n\n');
+
+      await SendEmail({
+        to: 'Baredshochat35@gmail.com',
+        subject: `🚨 בקשה לנציג אנושי - ${user?.email || 'אנונימי'}`,
+        body: `
+היי! לקוח/ה מבקש/ת לדבר עם נציג אנושי.
+
+📧 פרטי הלקוח/ה:
+שם: ${user?.full_name || 'לא ידוע'}
+מייל: ${user?.email || 'לא ידוע'}
+
+💬 היסטוריית השיחה:
+${conversationText}
+
+---
+זמן הבקשה: ${new Date().toLocaleString('he-IL')}
+מזהה שיחה: ${sessionID}
+        `
+      });
+
+      const confirmMessage = { role: 'bot', content: 'הודעתך התקבלה! נציג יצור איתך קשר בהקדם. תודה על הסבלנות 🙏' };
+      setMessages(prev => [...prev, confirmMessage]);
+      
+    } catch (error) {
+      console.error("Failed to send email to agent:", error);
+      const errorMessage = { role: 'bot', content: 'אופס, הייתה בעיה בשליחת הבקשה. אפשר לפנות אלינו ישירות בווטסאפ: 055-7045322 📲' };
+      setMessages(prev => [...prev, errorMessage]);
+    }
   };
 
   return (
@@ -265,6 +329,19 @@ export default function ChatPage() {
       </div>
 
       <div className="p-3 sm:p-4 border-t bg-white">
+        {showHumanAgentOption && !waitingForAgent && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-3 sm:mb-4 p-3 bg-rose-50 border border-rose-200">
+                <p className="text-xs sm:text-sm text-stone-700 mb-2">נראה שאת צריכה עזרה נוספת. רוצה לדבר עם נציג אנושי?</p>
+                <div className="flex justify-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setShowHumanAgentOption(false)} className="text-xs sm:text-sm h-8 sm:h-9">
+                        לא, אמשיך עם הבוט
+                    </Button>
+                    <Button size="sm" onClick={handleRequestHumanAgent} className="text-xs sm:text-sm h-8 sm:h-9 bg-rose-500 hover:bg-rose-600">
+                        <Phone className="w-3 h-3 sm:w-4 sm:h-4 ml-2" /> כן, נציג אנושי
+                    </Button>
+                </div>
+            </motion.div>
+        )}
         {showFeedbackButtons && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-3 sm:mb-4">
                 <p className="text-xs sm:text-sm text-stone-600 mb-2">האם קיבלת מענה מלא?</p>
