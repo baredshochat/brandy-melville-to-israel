@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import { Order } from "@/entities/Order";
 import { CartItem } from "@/entities/CartItem";
@@ -18,6 +17,7 @@ import CustomerForm from "../components/order/CustomerForm";
 import LoadingCalculation from "../components/order/LoadingCalculation";
 import { Heart } from "lucide-react";
 import CartImport from '../components/order/CartImport';
+import TranzilaPayment from '../components/payment/TranzilaPayment';
 
 // ---- Helpers ----
 async function normalizeLLMResult(res) {
@@ -600,10 +600,20 @@ Example output:
 
   const handlePriceConfirm = (price, weight, breakdown) => { setTotalPriceILS(price); setTotalWeight(weight); setPriceBreakdown(breakdown); setStep(6); };
 
-  // CHANGED: on customer submit go straight to payment (skip the extra summary page)
-  const handleCustomerSubmit = (data) => {
+  // CHANGED: on customer submit create order and go to Tranzila payment
+  const handleCustomerSubmit = async (data) => {
     setCustomerData(data);
-    handlePaymentProceed(data); // go directly to payment with fresh data
+    setLoading(true);
+    try {
+      const order = await submitOrder(data);
+      setCurrentOrder(order);
+      setStep(7); // Go to Tranzila payment step
+    } catch (error) {
+      console.error("Error creating order:", error);
+      alert('שגיאה ביצירת ההזמנה. אנא נסי שוב.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // CHANGED: submitOrder accepts override customer data
@@ -637,31 +647,27 @@ Example output:
     } finally { setLoading(false); }
   };
 
-  // CHANGED: handlePaymentProceed supports override data and skips the removed summary step
-  const handlePaymentProceed = async (overrideCustomerData = null) => {
-    setLoading(true);
+  // Handle successful payment completion
+  const handlePaymentSuccess = async () => {
     try {
-      const order = await submitOrder(overrideCustomerData);
-      setCurrentOrder(order);
+      // Update order payment status
+      if (currentOrder?.id) {
+        await Order.update(currentOrder.id, { payment_status: 'completed' });
+      }
 
       const trackOrderPageUrl = new URL(createPageUrl('TrackOrder'), window.location.origin).href;
       const chatPageUrl = new URL(createPageUrl('Chat'), window.location.origin).href;
 
       // Build email values (ILS-only)
-      const effectiveCustomer = overrideCustomerData || customerData || {};
+      const effectiveCustomer = customerData || {};
       
       // Determine recipient email - prefer logged-in user's email, fallback to customer email
       const recipientEmail = (user && user.email) ? user.email : effectiveCustomer.customer_email;
-      const displayedRecipient = recipientEmail;
-
-      console.log('📧 Preparing to send email to:', recipientEmail);
-      console.log('👤 User email:', user?.email);
-      console.log('📝 Customer email:', effectiveCustomer.customer_email);
 
       const emailHtml = buildOrderConfirmationEmailHTML({
-        order,
+        order: currentOrder,
         customerName: effectiveCustomer.customer_name,
-        customerEmail: displayedRecipient,
+        customerEmail: recipientEmail,
         trackOrderUrl: trackOrderPageUrl,
         chatUrl: chatPageUrl,
         cart,
@@ -669,45 +675,30 @@ Example output:
         breakdown: priceBreakdown
       });
 
-      // Send email to the determined recipient
+      // Send confirmation email
       if (recipientEmail) {
         try {
-          console.log('✉️ Sending email to:', recipientEmail);
           await SendEmail({
             from_name: "Brandy Melville to Israel",
             to: recipientEmail,
-            subject: `אישור הזמנה #${order.order_number} • ${formatMoney(totalPriceILS, 'ILS')}`,
+            subject: `אישור הזמנה #${currentOrder?.order_number} • ${formatMoney(totalPriceILS, 'ILS')}`,
             body: emailHtml
           });
-          console.log('✅ Email sent successfully!');
         } catch (emailError) {
-          console.error('❌ Failed to send email:', emailError);
-          // Don't fail the order if email fails, just log it
-          alert('ההזמנה נוצרה בהצלחה, אך היתה בעיה בשליחת המייל. תוכלי לעקוב אחרי ההזמנה בעמוד "מעקב משלוח".');
+          console.error('Failed to send email:', emailError);
         }
-      } else {
-        console.warn('⚠️ No recipient email found - skipping email');
-        alert('ההזמנה נוצרה בהצלחה! שימי לב: לא ניתן היה לשלוח אימייל אישור מכיוון שלא סופק כתובת מייל.');
       }
       
+      // Clear cart items
       const itemsToDelete = [...cart];
-      const deletionResults = await Promise.allSettled(itemsToDelete.map(item => CartItem.delete(item.id)));
-      deletionResults.forEach((result, index) => {
-        if (result.status === 'rejected') {
-          console.warn(`Failed to delete cart item ${itemsToDelete[index].id}:`, result.reason);
-        }
-      });
+      await Promise.allSettled(itemsToDelete.map(item => CartItem.delete(item.id)));
       refreshCart();
       setCart([]);
 
-      const officialPaymentUrl = `https://payments.example.com/pay?order_id=${order.id}&amount=${totalPriceILS}&currency=ILS`;
-      window.open(officialPaymentUrl, '_blank');
-      setStep(7);
+      setStep(8); // Go to success page
     } catch (error) {
-      console.error("Error creating order or sending email:", error);
-      alert('שגיאה ביצירת ההזמנה או בשליחת מייל. אנא נסי שוב.');
-    } finally {
-      setLoading(false);
+      console.error("Error completing payment:", error);
+      setStep(8); // Still show success since payment went through Tranzila
     }
   };
 
@@ -729,15 +720,25 @@ Example output:
         return <PriceCalculator cart={safeCart} site={siteForCalculation} onConfirm={handlePriceConfirm} onBack={() => setStep(4)} />;
       }
       case 6: return <CustomerForm onSubmit={handleCustomerSubmit} onBack={() => setStep(5)} />;
-      // Removed: case 7 (OrderCheckoutSummary) — going straight to payment after CustomerForm
-      case 7: // This was originally case 8, now case 7
+      case 7: // Tranzila Payment
+        return (
+          <TranzilaPayment
+            order={currentOrder}
+            totalAmount={totalPriceILS}
+            customerData={customerData}
+            cart={cart}
+            onSuccess={handlePaymentSuccess}
+            onBack={() => setStep(6)}
+          />
+        );
+      case 8: // Success page
         return (
           <div className="text-center p-8 max-w-lg mx-auto bg-stone-50 border-2 border-rose-200/50 shadow-lg" dir="rtl">
             <div className="flex justify-center mb-6"><Heart className="w-20 h-20 text-rose-400 fill-rose-400" /></div>
             <h2 className="text-3xl font-semibold text-stone-900 mb-3">ההזמנה נשלחה בהצלחה!</h2>
             <p className="text-base text-stone-600 mb-2">מספר הזמנה: {currentOrder?.order_number}</p>
             <p className="text-base text-stone-600 mb-2">סכום לתשלום: ₪{Math.round(totalPriceILS)}</p>
-            <p className="text-base text-stone-600 mb-8">קישור לתשלום ועדכונים נשלחו למייל.</p>
+            <p className="text-base text-stone-600 mb-8">אישור הזמנה נשלח למייל.</p>
             <button onClick={resetFlow} className="bg-rose-500 hover:bg-rose-600 text-white font-medium py-3 px-8 transition-all duration-300 shadow-lg flex items-center gap-2 mx-auto">
               <Heart className="w-4 h-4 fill-white" /> בצעי הזמנה חדשה
             </button>
