@@ -116,7 +116,7 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
     );
   }
 
-  const canCheckout = cart.length >= 3;
+  const canCheckout = cart.length >= 1;
 
   return (
     <motion.div
@@ -206,14 +206,7 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
                     </div>);
 
             })}
-                {cart.length < 3 && (
-                  <div className="mt-4 p-3 bg-amber-50 border border-amber-200 text-amber-900 text-center">
-                    <p className="text-sm font-medium">
-                      💡 יש להוסיף לפחות 3 פריטים לסל כדי להמשיך לסיכום ההזמנה
-                    </p>
-                    <p className="text-xs mt-1">נותרו {3 - cart.length} פריטים</p>
-                  </div>
-                )}
+
 
                 <CartValueTip count={cart.length} onAddAnother={onAddAnother} />
 
@@ -232,11 +225,7 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
                     סיכום הזמנה
                     <ArrowRight className="w-5 h-5" />
                   </Button>
-                  {!canCheckout && (
-                    <p className="text-xs text-center text-stone-500 mt-2">
-                      הוסיפי עוד {3 - cart.length} פריטים להמשך
-                    </p>
-                  )}
+
                 </div>
                  
               </div> :
