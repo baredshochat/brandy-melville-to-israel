@@ -22,30 +22,25 @@ Deno.serve(async (req) => {
     }
 
     // Build Tranzila payment page URL
-    const baseUrl = "https://direct.tranzila.com";
-    
-    // Generate success and failure URLs
     const origin = req.headers.get('origin') || 'https://app.base44.com';
     const successUrl = `${origin}/TrackOrder?order=${orderNumber}&payment=success`;
     const failUrl = `${origin}/Home?payment=failed&order=${orderNumber}`;
 
-    // Tranzila parameters - using the standard format
+    // Tranzila parameters
     const params = new URLSearchParams({
-      supplier: terminalName,
       sum: amount.toFixed(2),
-      currency: '1', // 1 = ILS
-      cred_type: '1', // Regular transaction
-      tranmode: 'A', // Authorization + Capture
-      orderId: orderNumber,
+      currency: '1',
+      cred_type: '1',
+      tranmode: 'A',
+      order_id: orderNumber,
       contact: customerName || '',
       email: customerEmail || '',
       phone: customerPhone || '',
       success_url_address: successUrl,
       fail_url_address: failUrl,
-      lang: 'il', // Hebrew interface
     });
 
-    const paymentUrl = `${baseUrl}/${terminalName}/newiframe.php?${params.toString()}`;
+    const paymentUrl = `https://direct.tranzila.com/brandyorder/?${params.toString()}`;
 
     // Update order with pending payment status
     await base44.asServiceRole.entities.Order.update(orderId, {
