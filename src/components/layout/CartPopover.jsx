@@ -145,79 +145,78 @@ export default function CartPopover() {
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-96 p-0 rounded-none" align="end">
+      <PopoverContent className="w-[calc(100vw-24px)] sm:w-96 p-0 rounded-none" align="end">
         <div className="bg-white border border-stone-200 shadow-lg">
-          <div className="p-4 border-b border-stone-200">
+          <div className="p-3 sm:p-4 border-b border-stone-200 bg-stone-50">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-stone-800">סלי הקניות שלך</h3>
-              <button onClick={() => loadCartItems()} className="text-stone-500 hover:text-stone-700">
+              <h3 className="font-semibold text-stone-800 text-sm sm:text-base">סלי הקניות שלך</h3>
+              <button onClick={() => loadCartItems()} className="text-stone-500 hover:text-stone-700 p-1">
                 <RotateCcw className="h-4 w-4" />
               </button>
             </div>
           </div>
           
-          <div className="max-h-96 overflow-y-auto">
+          <div className="max-h-[60vh] sm:max-h-96 overflow-y-auto">
             {loading ? (
               <div className="p-6 text-center">
-                <Loader2 className="h-6 w-6 animate-spin mx-auto text-stone-400" />
+                <Loader2 className="h-5 w-5 animate-spin mx-auto text-rose-400" />
               </div>
             ) : hasError ? (
-              <div className="p-6 text-center">
-                <p className="text-stone-500 text-sm mb-3">שגיאה בטעינת הסל</p>
-                <Button variant="outline" size="sm" onClick={() => loadCartItems()}>
+              <div className="p-4 text-center">
+                <p className="text-stone-500 text-xs sm:text-sm mb-3">שגיאה בטעינת הסל</p>
+                <Button variant="outline" size="sm" onClick={() => loadCartItems()} className="text-xs">
                   נסי שוב
                 </Button>
               </div>
             ) : isEmpty ? (
               <div className="p-6 text-center">
-                <ShoppingBag className="h-12 w-12 mx-auto text-stone-300 mb-3" />
-                <p className="text-stone-500 text-sm">הסלים שלך ריקים</p>
+                <ShoppingBag className="h-10 w-10 mx-auto text-stone-300 mb-2" />
+                <p className="text-stone-500 text-xs sm:text-sm">הסלים שלך ריקים</p>
               </div>
             ) : (
               <div className="divide-y divide-stone-100">
                 {Object.entries(cartItems)
                   .sort(([siteA], [siteB]) => getSiteOrder(siteA) - getSiteOrder(siteB))
                   .map(([site, items]) => (
-                  <div key={site} className="p-4">
-                    <div className="flex items-center justify-between mb-3">
+                  <div key={site} className="p-3 sm:p-4">
+                    <div className="flex items-center justify-between mb-2 sm:mb-3">
                         <div className="flex items-center gap-2">
                             <img 
                                 src={getSiteFlag(site)} 
                                 alt={`דגל ${getSiteName(site)}`}
-                                className="w-6 h-4 object-cover border border-stone-200"
+                                className="w-5 h-3 sm:w-6 sm:h-4 object-cover border border-stone-200"
                             />
-                            <h4 className="text-sm font-medium text-stone-700">
+                            <h4 className="text-xs sm:text-sm font-medium text-stone-700">
                                 {getSiteName(site)}
                             </h4>
-                            <span className="text-xs bg-rose-100 text-rose-800 px-2 py-1 rounded-full">
-                                {items.length} פריטים
+                            <span className="text-[10px] sm:text-xs bg-rose-100 text-rose-800 px-1.5 py-0.5 sm:px-2 sm:py-1">
+                                {items.length}
                             </span>
                         </div>
-                        <Button variant="link" size="sm" onClick={() => handleGoToSiteCart(site)} className="text-xs h-auto p-0">
-                          עבור לסל
+                        <Button variant="link" size="sm" onClick={() => handleGoToSiteCart(site)} className="text-[10px] sm:text-xs h-auto p-0 text-rose-600">
+                          לסל ←
                         </Button>
                     </div>
                     
-                    <div className="space-y-3">
+                    <div className="space-y-2 sm:space-y-3">
                       {items.map((item) => (
-                        <div key={item.id} className="flex items-start gap-3">
+                        <div key={item.id} className="flex items-center gap-2 sm:gap-3 bg-stone-50 p-2">
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-stone-800 font-medium truncate">{item.product_name}</p>
-                            <div className="flex items-center gap-2 text-xs text-stone-500 mt-1">
+                            <p className="text-xs sm:text-sm text-stone-800 font-medium truncate">{item.product_name}</p>
+                            <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-stone-500 mt-0.5">
                                 <ColorDisplay colorName={item.color} size="xs" />
                                 <span>{item.size}</span>
-                                <span>•</span>
-                                <span>כמות: {item.quantity}</span>
+                                <span>×{item.quantity}</span>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center">
                             <Button variant="ghost" size="icon" className="w-7 h-7" onClick={() => handleEditItem(item)}>
-                                <Edit className="w-3 h-3 text-stone-500" />
+                                <Edit className="w-3 h-3 text-stone-400" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="w-7 h-7 text-stone-400 hover:text-stone-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="w-7 h-7 text-stone-400 hover:text-red-500 disabled:opacity-50"
                               onClick={() => handleDeleteItem(item.id)}
                               disabled={deletingIds.includes(item.id)}
                             >

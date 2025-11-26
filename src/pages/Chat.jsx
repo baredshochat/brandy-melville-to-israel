@@ -273,13 +273,20 @@ ${conversationText}
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-120px)] sm:h-[calc(100vh-150px)] max-w-2xl mx-auto bg-white border border-stone-200 shadow-lg">
-      <header className="p-3 sm:p-4 border-b text-center bg-rose-50">
-        <h1 className="text-lg sm:text-xl font-semibold text-stone-800">צ'אט עם נציגה</h1>
-        <p className="text-xs sm:text-sm text-stone-600">אני כאן כדי לענות על כל השאלות שלך </p>
+    <div className="flex flex-col h-[calc(100vh-80px)] sm:h-[calc(100vh-150px)] max-w-2xl mx-auto bg-white border-0 sm:border border-stone-200 shadow-none sm:shadow-lg -mx-3 sm:mx-auto">
+      <header className="p-3 sm:p-4 border-b text-center bg-gradient-to-r from-rose-50 to-pink-50 sticky top-0 z-10">
+        <div className="flex items-center justify-center gap-2">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-rose-400 flex items-center justify-center text-white">
+            <Bot size={18} className="sm:w-5 sm:h-5" />
+          </div>
+          <div>
+            <h1 className="text-base sm:text-xl font-semibold text-stone-800">ברנדי</h1>
+            <p className="text-[10px] sm:text-xs text-stone-500">נציגה וירטואלית • מוכנה לעזור</p>
+          </div>
+        </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-4 sm:space-y-6">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-3 sm:space-y-6 bg-stone-50/50">
         <AnimatePresence>
           {messages.map((msg, index) =>
           <motion.div
@@ -287,25 +294,25 @@ ${conversationText}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className={`flex items-end gap-2 sm:gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            className={`flex items-start gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
 
               {msg.role === 'bot' &&
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-rose-400 flex items-center justify-center text-white flex-shrink-0">
-                  <Bot size={16} className="sm:w-[18px] sm:h-[18px]" />
+            <div className="w-7 h-7 bg-rose-400 flex items-center justify-center text-white flex-shrink-0 mt-1">
+                  <Bot size={14} />
                 </div>
             }
               <div
-              className={`max-w-xs md:max-w-md p-2 sm:p-3 rounded-lg text-sm sm:text-base ${
+              className={`max-w-[85%] sm:max-w-md p-3 text-[13px] sm:text-base leading-relaxed ${
               msg.role === 'user' ?
-              'bg-stone-800 text-white rounded-br-none' :
-              'bg-stone-100 text-stone-800 rounded-bl-none'}`
+              'bg-stone-800 text-white' :
+              'bg-white text-stone-800 border border-stone-200 shadow-sm'}`
               }>
 
                 <MessageContent content={msg.content} />
               </div>
                {msg.role === 'user' &&
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-stone-200 flex items-center justify-center text-stone-600 flex-shrink-0">
-                  <UserIcon size={16} className="sm:w-[18px] sm:h-[18px]" />
+            <div className="w-7 h-7 bg-stone-700 flex items-center justify-center text-white flex-shrink-0 mt-1">
+                  <UserIcon size={14} />
                 </div>
             }
             </motion.div>
@@ -315,74 +322,74 @@ ${conversationText}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-end gap-2 sm:gap-3 justify-start">
+          className="flex items-start gap-2 justify-start">
 
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-rose-400 flex items-center justify-center text-white flex-shrink-0">
-                  <Bot size={16} className="sm:w-[18px] sm:h-[18px]" />
+              <div className="w-7 h-7 bg-rose-400 flex items-center justify-center text-white flex-shrink-0 mt-1">
+                  <Bot size={14} />
               </div>
-              <div className="p-2 sm:p-3 bg-stone-100 rounded-lg rounded-bl-none">
-                  <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin text-stone-400" />
+              <div className="p-3 bg-white border border-stone-200 shadow-sm flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-rose-400" />
+                  <span className="text-xs text-stone-500">מקלידה...</span>
               </div>
           </motion.div>
         }
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-3 sm:p-4 border-t bg-white">
+      <div className="p-2 sm:p-4 border-t bg-white safe-area-bottom">
         {showHumanAgentOption && !waitingForAgent && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-3 sm:mb-4 p-3 bg-rose-50 border border-rose-200">
-                <p className="text-xs sm:text-sm text-stone-700 mb-2">נראה שאת צריכה עזרה נוספת. רוצה לדבר עם נציג אנושי?</p>
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-2 sm:mb-4 p-2 sm:p-3 bg-rose-50 border border-rose-200">
+                <p className="text-xs text-stone-700 mb-2">צריכה עזרה נוספת?</p>
                 <div className="flex justify-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => setShowHumanAgentOption(false)} className="text-xs sm:text-sm h-8 sm:h-9">
-                        לא, אמשיך עם הבוט
+                    <Button variant="outline" size="sm" onClick={() => setShowHumanAgentOption(false)} className="text-[11px] sm:text-sm h-8 px-3">
+                        לא, תודה
                     </Button>
-                    <Button size="sm" onClick={handleRequestHumanAgent} className="text-xs sm:text-sm h-8 sm:h-9 bg-rose-500 hover:bg-rose-600">
-                        <Phone className="w-3 h-3 sm:w-4 sm:h-4 ml-2" /> כן, נציג אנושי
+                    <Button size="sm" onClick={handleRequestHumanAgent} className="text-[11px] sm:text-sm h-8 px-3 bg-rose-500 hover:bg-rose-600">
+                        <Phone className="w-3 h-3 ml-1" /> נציג אנושי
                     </Button>
                 </div>
             </motion.div>
         )}
         {showFeedbackButtons && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-3 sm:mb-4">
-                <p className="text-xs sm:text-sm text-stone-600 mb-2">האם קיבלת מענה מלא?</p>
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-2 sm:mb-4">
+                <p className="text-xs text-stone-600 mb-2">קיבלת מענה מלא?</p>
                 <div className="flex justify-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handleFeedback(1)} className="text-xs sm:text-sm h-8 sm:h-9"><ThumbsDown className="w-3 h-3 sm:w-4 sm:h-4 ml-2" /> לא בדיוק</Button>
-                    <Button variant="outline" size="sm" onClick={() => handleFeedback(5)} className="text-xs sm:text-sm h-8 sm:h-9"><ThumbsUp className="w-3 h-3 sm:w-4 sm:h-4 ml-2" /> כן, מעולה</Button>
+                    <Button variant="outline" size="sm" onClick={() => handleFeedback(1)} className="text-[11px] sm:text-sm h-8 px-3"><ThumbsDown className="w-3 h-3 ml-1" /> לא</Button>
+                    <Button variant="outline" size="sm" onClick={() => handleFeedback(5)} className="text-[11px] sm:text-sm h-8 px-3"><ThumbsUp className="w-3 h-3 ml-1" /> כן</Button>
                 </div>
             </motion.div>
         )}
         {feedbackState === 'prompt_comment' && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="relative mb-3 sm:mb-4">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="relative mb-2 sm:mb-4">
                 <Textarea 
                     placeholder="ספרי לנו מה היה חסר..." 
                     value={feedbackComment}
                     onChange={(e) => setFeedbackComment(e.target.value)}
-                    className="pl-10 sm:pl-12 text-xs sm:text-sm h-16 sm:h-20"
+                    className="pl-12 text-sm h-14 sm:h-20 resize-none"
                     onKeyPress={(e) => e.key === 'Enter' && !loading && handleCommentSubmit()}
                 />
-                <Button size="icon" onClick={handleCommentSubmit} disabled={loading || !feedbackComment.trim()} className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-9 sm:h-9 bg-stone-800 hover:bg-black rounded-full">
-                    {loading ? <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin"/> : <Send size={14} className="sm:w-[18px] sm:h-[18px]" />}
+                <Button size="icon" onClick={handleCommentSubmit} disabled={loading || !feedbackComment.trim()} className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-rose-500 hover:bg-rose-600">
+                    {loading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Send size={16} />}
                 </Button>
             </motion.div>
         )}
 
-        <div className="relative">
+        <div className="flex items-center gap-2">
           <Input
             type="text"
-            placeholder="כתבי את שאלתך כאן..."
+            placeholder="כתבי הודעה..."
             value={input}
             onChange={(e) => e.target.value.length <= 250 && setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && !loading && handleSend()}
-            className="h-10 sm:h-12 pr-10 sm:pr-12 text-sm sm:text-base rounded-full"
+            className="flex-1 h-11 sm:h-12 text-sm sm:text-base border-stone-300 focus:border-rose-300"
             disabled={loading || showFeedbackButtons || feedbackState === 'prompt_comment'} />
 
           <Button
             size="icon"
             onClick={() => handleSend()}
             disabled={loading || !input.trim() || showFeedbackButtons || feedbackState === 'prompt_comment'}
-            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-9 sm:h-9 bg-stone-800 hover:bg-black rounded-full">
-
-            <Send size={14} className="sm:w-[18px] sm:h-[18px]" />
+            className="h-11 w-11 sm:h-12 sm:w-12 bg-rose-500 hover:bg-rose-600 flex-shrink-0">
+            {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
           </Button>
         </div>
       </div>
