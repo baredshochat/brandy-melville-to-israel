@@ -17,7 +17,7 @@ import ManageLocalStock from './pages/ManageLocalStock';
 import LocalStockItemDetail from './pages/LocalStockItemDetail';
 import ExchangeRates from './pages/ExchangeRates';
 import ManageCoupons from './pages/ManageCoupons';
-import __Layout from './Layout.jsx';
+import Layout from './Layout.jsx';
 
 
 export const PAGES = {
@@ -45,5 +45,5 @@ export const PAGES = {
 export const pagesConfig = {
     mainPage: "Home",
     Pages: PAGES,
-    Layout: __Layout,
+    Layout: Layout,
 };

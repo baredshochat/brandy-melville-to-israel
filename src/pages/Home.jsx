@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from "react";
 import { Order } from "@/entities/Order";
 import { CartItem } from "@/entities/CartItem";
@@ -7,7 +8,6 @@ import { SkuImage } from "@/entities/SkuImage";
 import { InvokeLLM, SendEmail } from "@/integrations/Core";
 import { AnimatePresence } from "framer-motion";
 import { createPageUrl } from "@/utils";
-import { tranzilaPayment } from "@/functions/tranzilaPayment";
 
 // Import step components
 import SiteSelector from '../components/order/SiteSelector';
@@ -637,53 +637,79 @@ Example output:
     } finally { setLoading(false); }
   };
 
-  // CHANGED: handlePaymentProceed - email will be sent ONLY after successful payment via webhook
-    const handlePaymentProceed = async (overrideCustomerData = null) => {
-      setLoading(true);
-      try {
-        const order = await submitOrder(overrideCustomerData);
-        setCurrentOrder(order);
+  // CHANGED: handlePaymentProceed supports override data and skips the removed summary step
+  const handlePaymentProceed = async (overrideCustomerData = null) => {
+    setLoading(true);
+    try {
+      const order = await submitOrder(overrideCustomerData);
+      setCurrentOrder(order);
 
-        const effectiveCustomer = overrideCustomerData || customerData || {};
+      const trackOrderPageUrl = new URL(createPageUrl('TrackOrder'), window.location.origin).href;
+      const chatPageUrl = new URL(createPageUrl('Chat'), window.location.origin).href;
 
-        // Clear cart items
-        const itemsToDelete = [...cart];
-        const deletionResults = await Promise.allSettled(itemsToDelete.map(item => CartItem.delete(item.id)));
-        deletionResults.forEach((result, index) => {
-          if (result.status === 'rejected') {
-            console.warn(`Failed to delete cart item ${itemsToDelete[index].id}:`, result.reason);
-          }
-        });
-        refreshCart();
-        setCart([]);
+      // Build email values (ILS-only)
+      const effectiveCustomer = overrideCustomerData || customerData || {};
+      
+      // Determine recipient email - prefer logged-in user's email, fallback to customer email
+      const recipientEmail = (user && user.email) ? user.email : effectiveCustomer.customer_email;
+      const displayedRecipient = recipientEmail;
 
-        // Initiate Tranzila payment - email will be sent after successful payment
+      console.log('📧 Preparing to send email to:', recipientEmail);
+      console.log('👤 User email:', user?.email);
+      console.log('📝 Customer email:', effectiveCustomer.customer_email);
+
+      const emailHtml = buildOrderConfirmationEmailHTML({
+        order,
+        customerName: effectiveCustomer.customer_name,
+        customerEmail: displayedRecipient,
+        trackOrderUrl: trackOrderPageUrl,
+        chatUrl: chatPageUrl,
+        cart,
+        totalILS: totalPriceILS,
+        breakdown: priceBreakdown
+      });
+
+      // Send email to the determined recipient
+      if (recipientEmail) {
         try {
-          const paymentResponse = await tranzilaPayment({
-            orderId: order.id,
-            amount: totalPriceILS,
-            orderNumber: order.order_number,
-            customerEmail: effectiveCustomer.customer_email || user?.email,
-            customerName: effectiveCustomer.customer_name,
-            customerPhone: effectiveCustomer.customer_phone
+          console.log('✉️ Sending email to:', recipientEmail);
+          await SendEmail({
+            from_name: "Brandy Melville to Israel",
+            to: recipientEmail,
+            subject: `אישור הזמנה #${order.order_number} • ${formatMoney(totalPriceILS, 'ILS')}`,
+            body: emailHtml
           });
-
-          if (paymentResponse.data?.paymentUrl) {
-            window.location.href = paymentResponse.data.paymentUrl;
-            return; // Redirect to Tranzila payment page
-          }
-        } catch (paymentError) {
-          console.error('Payment initiation error:', paymentError);
-          alert('שגיאה בפתיחת דף התשלום. אנא נסי שוב.');
+          console.log('✅ Email sent successfully!');
+        } catch (emailError) {
+          console.error('❌ Failed to send email:', emailError);
+          // Don't fail the order if email fails, just log it
+          alert('ההזמנה נוצרה בהצלחה, אך היתה בעיה בשליחת המייל. תוכלי לעקוב אחרי ההזמנה בעמוד "מעקב משלוח".');
         }
-        setStep(7);
-      } catch (error) {
-        console.error("Error creating order:", error);
-        alert('שגיאה ביצירת ההזמנה. אנא נסי שוב.');
-      } finally {
-        setLoading(false);
+      } else {
+        console.warn('⚠️ No recipient email found - skipping email');
+        alert('ההזמנה נוצרה בהצלחה! שימי לב: לא ניתן היה לשלוח אימייל אישור מכיוון שלא סופק כתובת מייל.');
       }
-    };
+      
+      const itemsToDelete = [...cart];
+      const deletionResults = await Promise.allSettled(itemsToDelete.map(item => CartItem.delete(item.id)));
+      deletionResults.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          console.warn(`Failed to delete cart item ${itemsToDelete[index].id}:`, result.reason);
+        }
+      });
+      refreshCart();
+      setCart([]);
+
+      const officialPaymentUrl = `https://payments.example.com/pay?order_id=${order.id}&amount=${totalPriceILS}&currency=ILS`;
+      window.open(officialPaymentUrl, '_blank');
+      setStep(7);
+    } catch (error) {
+      console.error("Error creating order or sending email:", error);
+      alert('שגיאה ביצירת ההזמנה או בשליחת מייל. אנא נסי שוב.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const resetFlow = () => {
     setStep(1); setSelectedSite(''); setCart([]); setProductUrl(''); setCurrentItem(null); setEditingItem(null);
