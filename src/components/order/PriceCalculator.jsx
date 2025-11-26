@@ -48,8 +48,11 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
         
         if (isLocalOrder) {
           // Simple calculation for local items - just item price + shipping
-          const domesticShipping = currentSettings.domestic_ship_ils || 35;
           const itemsTotal = cart.reduce((sum, item) => sum + (item.original_price * item.quantity), 0);
+          
+          // Check if this is a test product (price <= 1) - no shipping for test products
+          const isTestProduct = itemsTotal <= 1;
+          const domesticShipping = isTestProduct ? 0 : (currentSettings.domestic_ship_ils || 35);
           const finalTotal = itemsTotal + domesticShipping;
           
           setPriceData({
