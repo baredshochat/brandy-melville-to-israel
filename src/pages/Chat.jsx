@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -147,7 +146,6 @@ export default function ChatPage() {
 
       if (typeof response === 'string' && response.includes('[END_OF_CONVERSATION]')) {
           response = response.replace('[END_OF_CONVERSATION]', '').trim();
-          setTimeout(() => setShowFeedbackButtons(true), 500); // Show feedback buttons after message appears
       }
 
       const botMessage = { role: 'bot', content: response };
