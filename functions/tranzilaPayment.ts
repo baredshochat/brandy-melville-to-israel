@@ -28,30 +28,24 @@ Deno.serve(async (req) => {
     const origin = req.headers.get('origin') || 'https://app.base44.com';
     const successUrl = `${origin}/TrackOrder?order=${orderNumber}&payment=success`;
     const failUrl = `${origin}/Home?payment=failed&order=${orderNumber}`;
-    const notifyUrl = `${origin}/api/tranzilaWebhook`;
 
-    // Tranzila parameters
+    // Tranzila parameters - using the standard format
     const params = new URLSearchParams({
       supplier: terminalName,
-      sum: amount.toString(),
+      sum: amount.toFixed(2),
       currency: '1', // 1 = ILS
       cred_type: '1', // Regular transaction
       tranmode: 'A', // Authorization + Capture
-      order_id: orderNumber,
+      orderId: orderNumber,
       contact: customerName || '',
       email: customerEmail || '',
       phone: customerPhone || '',
       success_url_address: successUrl,
       fail_url_address: failUrl,
-      notify_url_address: notifyUrl,
       lang: 'il', // Hebrew interface
-      trButtonColor: '000000', // Black button
-      buttonLabel: 'לתשלום מאובטח',
-      nologo: '1',
-      hidesum: '0',
     });
 
-    const paymentUrl = `${baseUrl}/${terminalName}/iframe.php?${params.toString()}`;
+    const paymentUrl = `${baseUrl}/${terminalName}/newiframe.php?${params.toString()}`;
 
     // Update order with pending payment status
     await base44.asServiceRole.entities.Order.update(orderId, {
