@@ -26,19 +26,20 @@ Deno.serve(async (req) => {
     const successUrl = `${origin}/TrackOrder?order=${orderNumber}&payment=success`;
     const failUrl = `${origin}/Home?payment=failed&order=${orderNumber}`;
 
-    // Tranzila parameters
-    const params = new URLSearchParams({
-      sum: amount.toFixed(2),
-      currency: '1',
-      cred_type: '1',
-      tranmode: 'A',
-      order_id: orderNumber,
-      contact: customerName || '',
-      email: customerEmail || '',
-      phone: customerPhone || '',
-      success_url_address: successUrl,
-      fail_url_address: failUrl,
-    });
+    // Tranzila parameters - sum should be a number without decimals for ILS
+    const sumInAgorot = Math.round(amount * 100) / 100;
+    
+    const params = new URLSearchParams();
+    params.append('sum', sumInAgorot.toString());
+    params.append('currency', '1'); // 1 = ILS
+    params.append('cred_type', '1'); // Regular credit
+    params.append('tranmode', 'A'); // Auth + Capture
+    params.append('myid', orderNumber);
+    if (customerName) params.append('contact', customerName);
+    if (customerEmail) params.append('email', customerEmail);
+    if (customerPhone) params.append('phone', customerPhone);
+    params.append('success_url_address', successUrl);
+    params.append('fail_url_address', failUrl);
 
     const paymentUrl = `https://direct.tranzila.com/brandyorder/?${params.toString()}`;
 
