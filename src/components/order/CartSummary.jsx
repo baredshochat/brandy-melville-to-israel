@@ -59,14 +59,16 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
         
         setSettings(currentSettings);
 
-        // Calculate display price (70% of full price)
+        // Calculate display price
         if (cart && cart.length > 0) {
-          const importItems = cart.filter(item => 
-            item.product_type === 'import' || 
-            (item.site && item.site !== 'local')
-          );
-
-          if (importItems.length > 0) {
+          const isLocalOrder = cart.every(item => item.site === 'local');
+          
+          if (isLocalOrder) {
+            // For local items, just show the item prices (no shipping in cart summary)
+            const localTotal = cart.reduce((sum, item) => sum + (item.original_price * item.quantity), 0);
+            setDisplayPrice(localTotal);
+          } else {
+            // For import items, use 70% display price
             const priceData = calculateImportCartPrice(cart, currentSettings);
             setDisplayPrice(priceData.cartDisplayPrice);
           }
