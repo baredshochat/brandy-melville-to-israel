@@ -43,9 +43,36 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
         setSettings(currentSettings);
         setLabels(currentLabels);
 
-        // Calculate prices using new engine
-        const calculatedPrice = calculateImportCartPrice(cart, currentSettings);
-        setPriceData(calculatedPrice);
+        // Check if all items are local
+        const isLocalOrder = cart.every(item => item.site === 'local');
+        
+        if (isLocalOrder) {
+          // Simple calculation for local items - just item price + shipping
+          const domesticShipping = currentSettings.domestic_ship_ils || 35;
+          const itemsTotal = cart.reduce((sum, item) => sum + (item.original_price * item.quantity), 0);
+          const finalTotal = itemsTotal + domesticShipping;
+          
+          setPriceData({
+            finalPriceILS: Math.round(finalTotal),
+            breakdown: {
+              items: cart.map(item => ({
+                ...item,
+                fullPrice: item.original_price * item.quantity
+              })),
+              cartSubtotal: itemsTotal,
+              importCosts: 0,
+              serviceFee: 0,
+              domesticShipping,
+              vat: 0,
+              finalTotal: Math.round(finalTotal),
+              isLocal: true
+            }
+          });
+        } else {
+          // Calculate prices using import engine for non-local items
+          const calculatedPrice = calculateImportCartPrice(cart, currentSettings);
+          setPriceData(calculatedPrice);
+        }
         
       } catch (err) {
         console.error('Error loading pricing data:', err);
@@ -245,15 +272,18 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
 
           {/* Pricing Breakdown */}
           <div className="space-y-3">
-            <div className="flex justify-between items-center py-2 border-t border-stone-200">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-stone-600 italic">עלות יבוא</span>
-                <span className="text-xs text-stone-500">(משלוח, מכס, טיפול)</span>
+            {/* Only show import costs for non-local orders */}
+            {!priceData.breakdown.isLocal && importCosts > 0 && (
+              <div className="flex justify-between items-center py-2 border-t border-stone-200">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-stone-600 italic">עלות יבוא</span>
+                  <span className="text-xs text-stone-500">(משלוח, מכס, טיפול)</span>
+                </div>
+                <span className="text-xs italic text-stone-700">
+                  {formatMoney(importCosts)}
+                </span>
               </div>
-              <span className="text-xs italic text-stone-700">
-                {formatMoney(importCosts)}
-              </span>
-            </div>
+            )}
 
             <div className="flex justify-between items-center py-2 border-t border-stone-200">
               <span className="text-xs text-stone-600 italic">משלוח עד הבית</span>
@@ -262,12 +292,15 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
               </span>
             </div>
 
-            <div className="flex justify-between items-center py-2 border-t border-stone-200">
-              <span className="text-xs text-stone-600 italic">מע״מ (18%)</span>
-              <span className="text-xs italic text-stone-700">
-                {formatMoney(vat)}
-              </span>
-            </div>
+            {/* Only show VAT for non-local orders */}
+            {!priceData.breakdown.isLocal && vat > 0 && (
+              <div className="flex justify-between items-center py-2 border-t border-stone-200">
+                <span className="text-xs text-stone-600 italic">מע״מ (18%)</span>
+                <span className="text-xs italic text-stone-700">
+                  {formatMoney(vat)}
+                </span>
+              </div>
+            )}
 
             {/* Coupon Section */}
             <div className="py-3 border-t-2 border-stone-200">
