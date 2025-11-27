@@ -195,6 +195,13 @@ export default function ManageLocalStock() {
             currency: result.currency,
             suggested: suggestedPrice
           });
+        } else if (result.original_price) {
+          // If we got a price but couldn't calculate (missing currency)
+          setSuggestedPriceInfo({
+            originalPrice: result.original_price,
+            currency: result.currency || '?',
+            suggested: null
+          });
         }
       }
     } catch (error) {
@@ -394,9 +401,19 @@ export default function ManageLocalStock() {
                         setSuggestedPriceInfo(null);
                       }}
                     />
-                    {suggestedPriceInfo && (
-                      <p className="text-xs text-green-600 mt-1">
-                        💡 מחיר מומלץ: ₪{suggestedPriceInfo.suggested} (מקור: {suggestedPriceInfo.originalPrice} {suggestedPriceInfo.currency})
+                    {suggestedPriceInfo && suggestedPriceInfo.suggested && (
+                      <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
+                        <p className="text-sm text-green-700 font-medium">
+                          💡 מחיר מומלץ: ₪{suggestedPriceInfo.suggested}
+                        </p>
+                        <p className="text-xs text-green-600">
+                          מקור: {suggestedPriceInfo.originalPrice} {suggestedPriceInfo.currency} • כולל מרווח אסטרטגי
+                        </p>
+                      </div>
+                    )}
+                    {suggestedPriceInfo && !suggestedPriceInfo.suggested && (
+                      <p className="text-xs text-amber-600 mt-1">
+                        ⚠️ לא הצלחנו לחשב מחיר מומלץ (מקור: {suggestedPriceInfo.originalPrice} {suggestedPriceInfo.currency})
                       </p>
                     )}
                   </div>
