@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { LocalStockItem } from "@/entities/LocalStockItem";
 import { User } from "@/entities/User";
@@ -301,14 +300,14 @@ export default function ManageLocalStock() {
 
                 {/* Additional Images Upload */}
                 <div className="space-y-2">
-                  <Label>תמונות נוספות</Label>
+                  <Label>תמונות נוספות (עד 4)</Label>
                   {formData.additional_images && formData.additional_images.length > 0 && (
                     <div className="grid grid-cols-4 gap-2 mb-2">
                       {formData.additional_images.map((img, index) => (
                         <div key={index} className="relative">
                           <img src={img} alt={`Additional ${index + 1}`} className="w-full h-24 object-cover rounded" />
                           <button
-                            type="button" // Important for preventing accidental form submission
+                            type="button"
                             onClick={() => handleRemoveAdditionalImage(index)}
                             className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
                           >
@@ -318,12 +317,17 @@ export default function ManageLocalStock() {
                       ))}
                     </div>
                   )}
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAdditionalImageUpload}
-                    disabled={uploadingImage}
-                  />
+                  {(!formData.additional_images || formData.additional_images.length < 4) && (
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAdditionalImageUpload}
+                      disabled={uploadingImage}
+                    />
+                  )}
+                  {formData.additional_images && formData.additional_images.length >= 4 && (
+                    <p className="text-sm text-stone-500">הגעת למקסימום 4 תמונות נוספות</p>
+                  )}
                 </div>
 
                 {/* Basic Info */}
@@ -455,6 +459,7 @@ export default function ManageLocalStock() {
                 <thead>
                   <tr className="border-b">
                     <th className="text-right p-2">תמונה</th>
+                    <th className="text-right p-2">תמונות</th>
                     <th className="text-right p-2">שם</th>
                     <th className="text-right p-2">מחיר</th>
                     <th className="text-right p-2">כמות</th>
@@ -474,6 +479,11 @@ export default function ManageLocalStock() {
                             <ImageIcon className="w-6 h-6 text-stone-400" />
                           </div>
                         )}
+                      </td>
+                      <td className="p-2 text-center">
+                        <span className="text-sm text-stone-600">
+                          {1 + (item.additional_images?.length || 0)}/5
+                        </span>
                       </td>
                       <td className="p-2 font-medium">{item.product_name}</td>
                       <td className="p-2">₪{item.price_ils}</td>
