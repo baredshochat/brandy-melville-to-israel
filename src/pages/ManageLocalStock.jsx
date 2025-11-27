@@ -48,6 +48,7 @@ export default function ManageLocalStock() {
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [extractingFromUrl, setExtractingFromUrl] = useState(false);
+  const [suggestedPriceInfo, setSuggestedPriceInfo] = useState(null);
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -139,6 +140,8 @@ export default function ManageLocalStock() {
         - color: צבע (אם יש)
         - size: מידה (אם יש)
         - image_url: קישור לתמונה הראשית
+        - original_price: המחיר המקורי במטבע המקורי (מספר בלבד)
+        - currency: המטבע (USD, EUR, GBP)
 
         אם משהו לא נמצא, החזר null עבור השדה הזה.`,
         add_context_from_internet: true,
@@ -149,20 +152,50 @@ export default function ManageLocalStock() {
             product_description: { type: ["string", "null"] },
             color: { type: ["string", "null"] },
             size: { type: ["string", "null"] },
-            image_url: { type: ["string", "null"] }
+            image_url: { type: ["string", "null"] },
+            original_price: { type: ["number", "null"] },
+            currency: { type: ["string", "null"] }
           }
         }
       });
 
       if (result) {
+        // Calculate suggested price
+        let suggestedPrice = null;
+        if (result.original_price && result.currency) {
+          const fxRates = { USD: 3.8, EUR: 4.0, GBP: 4.5 };
+          const rate = fxRates[result.currency] || 4.0;
+          const priceILS = result.original_price * rate;
+          
+          // Strategic pricing: 40-55% margin, round to attractive number
+          let margin = 0.45;
+          if (priceILS < 80) margin = 0.55;
+          else if (priceILS < 150) margin = 0.45;
+          else margin = 0.35;
+          
+          const rawPrice = priceILS * (1 + margin);
+          // Round to nearest 5 or 9 for attractive pricing
+          suggestedPrice = Math.round(rawPrice / 5) * 5 - 1; // e.g., 149, 199, 249
+          if (suggestedPrice < 50) suggestedPrice = Math.ceil(rawPrice / 10) * 10 - 1;
+        }
+
         setFormData(prev => ({
           ...prev,
           product_name: result.product_name || prev.product_name,
           product_description: result.product_description || prev.product_description,
           color: result.color || prev.color,
           size: result.size || prev.size,
-          image_url: result.image_url || prev.image_url
+          image_url: result.image_url || prev.image_url,
+          price_ils: suggestedPrice || prev.price_ils
         }));
+        
+        if (suggestedPrice) {
+          setSuggestedPriceInfo({
+            originalPrice: result.original_price,
+            currency: result.currency,
+            suggested: suggestedPrice
+          });
+        }
       }
     } catch (error) {
       console.error("Error extracting from URL:", error);
@@ -200,6 +233,7 @@ export default function ManageLocalStock() {
     setEditingItem(item);
     // Ensure additional_images is always an array when editing
     setFormData({ ...item, additional_images: item.additional_images || [] });
+    setSuggestedPriceInfo(null);
     setDialogOpen(true);
   };
 
@@ -217,6 +251,7 @@ export default function ManageLocalStock() {
   const handleNewItem = () => {
     setEditingItem(null);
     setFormData({ ...emptyItem });
+    setSuggestedPriceInfo(null);
     setDialogOpen(true);
   };
 
@@ -354,8 +389,16 @@ export default function ManageLocalStock() {
                     <Input
                       type="number"
                       value={formData.price_ils}
-                      onChange={(e) => setFormData({ ...formData, price_ils: parseFloat(e.target.value) || 0 })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, price_ils: parseFloat(e.target.value) || 0 });
+                        setSuggestedPriceInfo(null);
+                      }}
                     />
+                    {suggestedPriceInfo && (
+                      <p className="text-xs text-green-600 mt-1">
+                        💡 מחיר מומלץ: ₪{suggestedPriceInfo.suggested} (מקור: {suggestedPriceInfo.originalPrice} {suggestedPriceInfo.currency})
+                      </p>
+                    )}
                   </div>
 
                   <div>
