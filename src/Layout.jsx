@@ -6,6 +6,8 @@ import { User } from "@/entities/User";
 import SheetNav from './components/layout/SheetNav';
 import CartPopover from './components/layout/CartPopover';
 
+const MAINTENANCE_MODE = true; // שנה ל-false כשהאתר מוכן
+
 export default function Layout({ children }) {
   const location = useLocation();
   const [userRole, setUserRole] = useState(null);
@@ -94,7 +96,16 @@ export default function Layout({ children }) {
         </header>
 
         <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-10">
-          {children}
+          {MAINTENANCE_MODE && userRole !== 'admin' ? (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+              <Heart className="w-16 h-16 text-rose-300 mb-6" />
+              <h1 className="text-3xl font-semibold text-stone-800 mb-4">האתר בבנייה 🚧</h1>
+              <p className="text-lg text-stone-600 mb-2">אנחנו עובדים על משהו מדהים!</p>
+              <p className="text-stone-500">נחזור בקרוב עם חוויה מושלמת 💖</p>
+            </div>
+          ) : (
+            children
+          )}
         </main>
       </div>
     </>);
