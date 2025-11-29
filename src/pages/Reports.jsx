@@ -13,8 +13,9 @@ import {
 } from 'recharts';
 import { 
   TrendingUp, DollarSign, Package, Users, Calendar as CalendarIcon, 
-  Download, Filter, BarChart3 
+  Download, Filter, BarChart3, X 
 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format, subDays, subMonths, startOfDay, endOfDay, isWithinInterval } from "date-fns";
 import { he } from 'date-fns/locale';
 import { motion } from "framer-motion";
@@ -29,6 +30,7 @@ export default function ReportsPage() {
   const [dateRange, setDateRange] = useState('last30');
   const [customDateFrom, setCustomDateFrom] = useState(null);
   const [customDateTo, setCustomDateTo] = useState(null);
+  const [detailDialog, setDetailDialog] = useState({ open: false, type: null });
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -318,7 +320,10 @@ export default function ReportsPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+        <Card 
+          className="bg-gradient-to-r from-blue-500 to-blue-600 text-white cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => setDetailDialog({ open: true, type: 'orders' })}
+        >
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -327,10 +332,14 @@ export default function ReportsPage() {
               </div>
               <Package className="w-8 h-8 text-blue-200" />
             </div>
+            <p className="text-blue-200 text-xs mt-2">לחץ לפירוט →</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
+        <Card 
+          className="bg-gradient-to-r from-green-500 to-green-600 text-white cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => setDetailDialog({ open: true, type: 'revenue' })}
+        >
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -339,10 +348,14 @@ export default function ReportsPage() {
               </div>
               <DollarSign className="w-8 h-8 text-green-200" />
             </div>
+            <p className="text-green-200 text-xs mt-2">לחץ לפירוט →</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
+        <Card 
+          className="bg-gradient-to-r from-purple-500 to-purple-600 text-white cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => setDetailDialog({ open: true, type: 'average' })}
+        >
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -351,10 +364,14 @@ export default function ReportsPage() {
               </div>
               <TrendingUp className="w-8 h-8 text-purple-200" />
             </div>
+            <p className="text-purple-200 text-xs mt-2">לחץ לפירוט →</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-r from-rose-500 to-rose-600 text-white">
+        <Card 
+          className="bg-gradient-to-r from-rose-500 to-rose-600 text-white cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => setDetailDialog({ open: true, type: 'customers' })}
+        >
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -363,9 +380,176 @@ export default function ReportsPage() {
               </div>
               <Users className="w-8 h-8 text-rose-200" />
             </div>
+            <p className="text-rose-200 text-xs mt-2">לחץ לפירוט →</p>
           </CardContent>
         </Card>
       </div>
+
+      {/* Detail Dialog */}
+      <Dialog open={detailDialog.open} onOpenChange={(open) => setDetailDialog({ ...detailDialog, open })}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {detailDialog.type === 'orders' && 'פירוט הזמנות'}
+              {detailDialog.type === 'revenue' && 'פירוט הכנסות'}
+              {detailDialog.type === 'average' && 'פירוט ממוצע הזמנה'}
+              {detailDialog.type === 'customers' && 'פירוט לקוחות'}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {detailDialog.type === 'orders' && (
+            <div className="space-y-4">
+              <p className="text-stone-600">רשימת כל ההזמנות בטווח התאריכים הנבחר:</p>
+              <div className="max-h-96 overflow-y-auto">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 bg-white">
+                    <tr className="border-b">
+                      <th className="text-right p-2">מס׳ הזמנה</th>
+                      <th className="text-right p-2">תאריך</th>
+                      <th className="text-right p-2">לקוח</th>
+                      <th className="text-right p-2">סכום</th>
+                      <th className="text-right p-2">סטטוס</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredOrders.map((order) => (
+                      <tr key={order.id} className="border-b hover:bg-stone-50">
+                        <td className="p-2 font-mono text-xs">{order.order_number}</td>
+                        <td className="p-2">{format(new Date(order.created_date), 'dd/MM/yyyy')}</td>
+                        <td className="p-2">{order.customer_name}</td>
+                        <td className="p-2">₪{(order.total_price_ils || 0).toLocaleString()}</td>
+                        <td className="p-2">{order.status}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {detailDialog.type === 'revenue' && (
+            <div className="space-y-4">
+              <p className="text-stone-600">פירוט הכנסות לפי הזמנה:</p>
+              <div className="max-h-96 overflow-y-auto">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 bg-white">
+                    <tr className="border-b">
+                      <th className="text-right p-2">מס׳ הזמנה</th>
+                      <th className="text-right p-2">תאריך</th>
+                      <th className="text-right p-2">לקוח</th>
+                      <th className="text-right p-2">סכום</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredOrders
+                      .sort((a, b) => (b.total_price_ils || 0) - (a.total_price_ils || 0))
+                      .map((order) => (
+                        <tr key={order.id} className="border-b hover:bg-stone-50">
+                          <td className="p-2 font-mono text-xs">{order.order_number}</td>
+                          <td className="p-2">{format(new Date(order.created_date), 'dd/MM/yyyy')}</td>
+                          <td className="p-2">{order.customer_name}</td>
+                          <td className="p-2 font-semibold">₪{(order.total_price_ils || 0).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                  <tfoot className="bg-stone-100 font-bold">
+                    <tr>
+                      <td colSpan="3" className="p-2 text-right">סה״כ:</td>
+                      <td className="p-2">₪{kpis.totalRevenue.toLocaleString()}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {detailDialog.type === 'average' && (
+            <div className="space-y-4">
+              <p className="text-stone-600">התפלגות סכומי הזמנות:</p>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="p-4 bg-stone-50 rounded-lg">
+                  <p className="text-sm text-stone-500">הזמנה מינימלית</p>
+                  <p className="text-xl font-bold">₪{Math.min(...filteredOrders.map(o => o.total_price_ils || 0)).toLocaleString()}</p>
+                </div>
+                <div className="p-4 bg-stone-50 rounded-lg">
+                  <p className="text-sm text-stone-500">הזמנה מקסימלית</p>
+                  <p className="text-xl font-bold">₪{Math.max(...filteredOrders.map(o => o.total_price_ils || 0)).toLocaleString()}</p>
+                </div>
+              </div>
+              <div className="max-h-64 overflow-y-auto">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 bg-white">
+                    <tr className="border-b">
+                      <th className="text-right p-2">מס׳ הזמנה</th>
+                      <th className="text-right p-2">סכום</th>
+                      <th className="text-right p-2">סטייה מממוצע</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredOrders.map((order) => {
+                      const diff = (order.total_price_ils || 0) - kpis.averageOrderValue;
+                      return (
+                        <tr key={order.id} className="border-b hover:bg-stone-50">
+                          <td className="p-2 font-mono text-xs">{order.order_number}</td>
+                          <td className="p-2">₪{(order.total_price_ils || 0).toLocaleString()}</td>
+                          <td className={`p-2 ${diff >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {diff >= 0 ? '+' : ''}₪{Math.round(diff).toLocaleString()}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {detailDialog.type === 'customers' && (
+            <div className="space-y-4">
+              <p className="text-stone-600">רשימת לקוחות וסיכום הזמנות:</p>
+              <div className="max-h-96 overflow-y-auto">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 bg-white">
+                    <tr className="border-b">
+                      <th className="text-right p-2">שם לקוח</th>
+                      <th className="text-right p-2">אימייל</th>
+                      <th className="text-right p-2">מס׳ הזמנות</th>
+                      <th className="text-right p-2">סה״כ קניות</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.values(
+                      filteredOrders.reduce((acc, order) => {
+                        const email = order.customer_email;
+                        if (!acc[email]) {
+                          acc[email] = {
+                            name: order.customer_name,
+                            email,
+                            orderCount: 0,
+                            totalSpent: 0
+                          };
+                        }
+                        acc[email].orderCount += 1;
+                        acc[email].totalSpent += order.total_price_ils || 0;
+                        return acc;
+                      }, {})
+                    )
+                      .sort((a, b) => b.totalSpent - a.totalSpent)
+                      .map((customer, idx) => (
+                        <tr key={idx} className="border-b hover:bg-stone-50">
+                          <td className="p-2">{customer.name}</td>
+                          <td className="p-2 text-stone-500 text-xs">{customer.email}</td>
+                          <td className="p-2 text-center">{customer.orderCount}</td>
+                          <td className="p-2 font-semibold">₪{customer.totalSpent.toLocaleString()}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
