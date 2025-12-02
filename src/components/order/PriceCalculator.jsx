@@ -17,7 +17,7 @@ const EXCHANGE_RATES = {
   USD: 3.7 // לא בשימוש כרגע אבל נשמור למקרה הצורך
 };
 
-const MULTIPLIER = 2.2;
+const MULTIPLIER = 2.5;
 const DOMESTIC_SHIPPING = 30;
 
 export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
