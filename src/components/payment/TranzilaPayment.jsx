@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Loader2, CreditCard, ShieldCheck, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { tranzilaCreateHandshake } from '@/functions/tranzilaCreateHandshake';
+import { createPageUrl } from '@/utils';
 
 export default function TranzilaPayment({ 
   order, 
