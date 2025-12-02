@@ -200,8 +200,8 @@ Deno.serve(async (req) => {
       appId: Deno.env.get('BASE44_APP_ID')
     });
 
-    // Find the order
-    const orders = await base44.entities.Order.filter({ order_number: orderNumber });
+    // Find the order using service role (admin access)
+    const orders = await base44.asServiceRole.entities.Order.filter({ order_number: orderNumber });
     
     if (!orders || orders.length === 0) {
       console.log('Order not found:', orderNumber);
