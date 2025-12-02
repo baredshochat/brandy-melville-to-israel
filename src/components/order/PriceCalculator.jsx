@@ -3,18 +3,25 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowRight, ArrowLeft, Loader2, ShieldCheck, Tag } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { CalculationSettings } from '@/entities/CalculationSettings';
 import { PricingLabels } from '@/entities/PricingLabels';
 import { Coupon } from '@/entities/Coupon';
-import { calculateImportCartPrice } from '../pricing/ImportPricingEngine';
 
 const formatMoney = (amount) => {
   return `₪${Math.round(amount).toLocaleString('he-IL')}`;
 };
 
+// שערי המרה קבועים
+const EXCHANGE_RATES = {
+  EUR: 4,
+  GBP: 4.5,
+  USD: 3.7 // לא בשימוש כרגע אבל נשמור למקרה הצורך
+};
+
+const MULTIPLIER = 2.5;
+const DOMESTIC_SHIPPING = 30;
+
 export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
   const [loading, setLoading] = useState(true);
-  const [settings, setSettings] = useState(null);
   const [labels, setLabels] = useState(null);
   const [priceData, setPriceData] = useState(null);
   const [error, setError] = useState('');
@@ -28,19 +35,12 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
       try {
         setLoading(true);
         
-        // Load calculation settings
-        const settingsList = await CalculationSettings.list();
-        const currentSettings = settingsList && settingsList.length > 0 
-          ? settingsList[0] 
-          : {};
-        
         // Load pricing labels
         const labelsList = await PricingLabels.list();
         const currentLabels = labelsList && labelsList.length > 0
           ? labelsList[0]
           : {};
 
-        setSettings(currentSettings);
         setLabels(currentLabels);
 
         // Check if all items are local
@@ -52,7 +52,7 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
           
           // Check if this is a test product (price <= 1) - no shipping for test products
           const isTestProduct = itemsTotal <= 1;
-          const domesticShipping = isTestProduct ? 0 : (currentSettings.domestic_ship_ils || 35);
+          const domesticShipping = isTestProduct ? 0 : DOMESTIC_SHIPPING;
           const finalTotal = itemsTotal + domesticShipping;
           
           setPriceData({
@@ -63,18 +63,36 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
                 fullPrice: item.original_price * item.quantity
               })),
               cartSubtotal: itemsTotal,
-              importCosts: 0,
-              serviceFee: 0,
               domesticShipping,
-              vat: 0,
               finalTotal: Math.round(finalTotal),
               isLocal: true
             }
           });
         } else {
-          // Calculate prices using import engine for non-local items
-          const calculatedPrice = calculateImportCartPrice(cart, currentSettings);
-          setPriceData(calculatedPrice);
+          // חישוב חדש ופשוט: מחיר מקורי * שער המרה * 2.5 + 30 משלוח
+          const itemsWithPrices = cart.map(item => {
+            const currency = item.original_currency || (site === 'uk' ? 'GBP' : 'EUR');
+            const exchangeRate = EXCHANGE_RATES[currency] || 4;
+            const itemPriceILS = item.original_price * exchangeRate * MULTIPLIER * item.quantity;
+            return {
+              ...item,
+              fullPrice: Math.round(itemPriceILS)
+            };
+          });
+
+          const itemsTotal = itemsWithPrices.reduce((sum, item) => sum + item.fullPrice, 0);
+          const finalTotal = itemsTotal + DOMESTIC_SHIPPING;
+
+          setPriceData({
+            finalPriceILS: Math.round(finalTotal),
+            breakdown: {
+              items: itemsWithPrices,
+              cartSubtotal: itemsTotal,
+              domesticShipping: DOMESTIC_SHIPPING,
+              finalTotal: Math.round(finalTotal),
+              isLocal: false
+            }
+          });
         }
         
       } catch (err) {
@@ -88,7 +106,7 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
     if (cart && cart.length > 0) {
       loadData();
     }
-  }, [cart]);
+  }, [cart, site]);
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
@@ -233,7 +251,7 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
     return null;
   }
 
-  const { cartSubtotal, importCosts, serviceFee, domesticShipping, vat, finalTotal } = priceData.breakdown;
+  const { cartSubtotal, domesticShipping, finalTotal } = priceData.breakdown;
 
   return (
     <motion.div
@@ -275,35 +293,12 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
 
           {/* Pricing Breakdown */}
           <div className="space-y-3">
-            {/* Only show import costs for non-local orders */}
-            {!priceData.breakdown.isLocal && importCosts > 0 && (
-              <div className="flex justify-between items-center py-2 border-t border-stone-200">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-stone-600 italic">עלות יבוא</span>
-                  <span className="text-xs text-stone-500">(משלוח, מכס, טיפול)</span>
-                </div>
-                <span className="text-xs italic text-stone-700">
-                  {formatMoney(importCosts)}
-                </span>
-              </div>
-            )}
-
             <div className="flex justify-between items-center py-2 border-t border-stone-200">
               <span className="text-xs text-stone-600 italic">משלוח עד הבית</span>
               <span className="text-xs italic text-stone-700">
                 {formatMoney(domesticShipping)}
               </span>
             </div>
-
-            {/* Only show VAT for non-local orders */}
-            {!priceData.breakdown.isLocal && vat > 0 && (
-              <div className="flex justify-between items-center py-2 border-t border-stone-200">
-                <span className="text-xs text-stone-600 italic">מע״מ (18%)</span>
-                <span className="text-xs italic text-stone-700">
-                  {formatMoney(vat)}
-                </span>
-              </div>
-            )}
 
             {/* Coupon Section */}
             <div className="py-3 border-t-2 border-stone-200">
