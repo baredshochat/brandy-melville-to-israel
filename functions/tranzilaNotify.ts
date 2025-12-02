@@ -217,7 +217,7 @@ Deno.serve(async (req) => {
     }
 
     // Update order payment status
-    await base44.entities.Order.update(order.id, { 
+    await base44.asServiceRole.entities.Order.update(order.id, { 
       payment_status: 'completed',
       email_sent_to_customer: true
     });
