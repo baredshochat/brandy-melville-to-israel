@@ -729,19 +729,17 @@ Example output:
           breakdown: priceBreakdown
         });
 
-        // Delay email by 3 minutes (180000ms)
-        setTimeout(async () => {
-          try {
-            await SendEmail({
-              from_name: "Brandy Melville to Israel",
-              to: recipientEmail,
-              subject: `הזמנה #${order?.order_number} התקבלה - התחלנו לטפל! 💖`,
-              body: emailHtml
-            });
-          } catch (emailError) {
-            console.error('Failed to send order received email:', emailError);
-          }
-        }, 180000);
+        // Send email immediately (before redirect to Tranzila)
+        try {
+          await SendEmail({
+            from_name: "Brandy Melville to Israel",
+            to: recipientEmail,
+            subject: `הזמנה #${order?.order_number} התקבלה - התחלנו לטפל! 💖`,
+            body: emailHtml
+          });
+        } catch (emailError) {
+          console.error('Failed to send order received email:', emailError);
+        }
         }
 
         // Clear cart items before going to payment
