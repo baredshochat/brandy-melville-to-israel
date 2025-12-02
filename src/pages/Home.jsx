@@ -270,9 +270,12 @@ export default function Home() {
   const refreshCart = () => { window.dispatchEvent(new CustomEvent('refreshCart')); };
 
   const loadCart = useCallback(async () => {
-    if (!user || !selectedSite) { setCart([]); return; }
+    if (!selectedSite) { setCart([]); return; }
     try {
-      const items = await CartItem.filter({ created_by: user.email, site: selectedSite });
+      // If user is logged in, filter by email; otherwise get all cart items for this site
+      const items = user 
+        ? await CartItem.filter({ created_by: user.email, site: selectedSite })
+        : await CartItem.filter({ site: selectedSite });
       setCart(Array.isArray(items) ? items : []);
     } catch (e) {
       console.error("Failed to load cart items:", e);

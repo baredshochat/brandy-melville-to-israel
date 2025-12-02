@@ -24,18 +24,14 @@ export default function CartPopover() {
   }, []);
 
   const loadCartItems = useCallback(async () => {
-    if (!user) {
-      setCartItems({});
-      setLoading(false);
-      setHasError(false);
-      return;
-    }
-    
     setLoading(true);
     setHasError(false);
     
     try {
-      const items = await CartItem.filter({ created_by: user.email });
+      // If user is logged in, filter by email; otherwise get all cart items for this session
+      const items = user 
+        ? await CartItem.filter({ created_by: user.email })
+        : await CartItem.list();
       const groupedItems = items.reduce((groups, item) => {
         const site = item.site || 'unknown';
         if (!groups[site]) groups[site] = [];
