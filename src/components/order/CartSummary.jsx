@@ -4,8 +4,15 @@ import { Plus, Trash2, ArrowLeft, ArrowRight, ShoppingBag, Heart, Minus, Edit } 
 import { motion } from 'framer-motion';
 import ColorDisplay from './ColorDisplay';
 import CartValueTip from './CartValueTip';
-import { CalculationSettings } from '@/entities/CalculationSettings';
-import { calculateImportCartPrice } from '../pricing/ImportPricingEngine';
+
+// שערי המרה קבועים
+const EXCHANGE_RATES = {
+  EUR: 4,
+  GBP: 4.5,
+  USD: 3.7
+};
+
+const MULTIPLIER = 2.5;
 
 const getSiteName = (siteCode) => {
   const names = {
@@ -44,42 +51,27 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
   };
 
   const [deletingIds, setDeletingIds] = React.useState([]);
-  const [settings, setSettings] = React.useState(null);
   const [displayPrice, setDisplayPrice] = React.useState(0);
-  const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Load calculation settings
-        const settingsList = await CalculationSettings.list();
-        const currentSettings = settingsList && settingsList.length > 0 
-          ? settingsList[0] 
-          : {};
-        
-        setSettings(currentSettings);
-
-        // Calculate display price
-        if (cart && cart.length > 0) {
-          const isLocalOrder = cart.every(item => item.site === 'local');
-          
-          if (isLocalOrder) {
-            // For local items, just show the item prices (no shipping in cart summary)
-            const localTotal = cart.reduce((sum, item) => sum + (item.original_price * item.quantity), 0);
-            setDisplayPrice(localTotal);
-          } else {
-            // For import items, use 70% display price
-            const priceData = calculateImportCartPrice(cart, currentSettings);
-            setDisplayPrice(priceData.cartDisplayPrice);
-          }
-        }
-      } catch (error) {
-        console.error("Failed to load data:", error);
-      } finally {
-        setLoading(false);
+    // Calculate display price
+    if (cart && cart.length > 0) {
+      const isLocalOrder = cart.every(item => item.site === 'local');
+      
+      if (isLocalOrder) {
+        // For local items, just show the item prices (no shipping in cart summary)
+        const localTotal = cart.reduce((sum, item) => sum + (item.original_price * item.quantity), 0);
+        setDisplayPrice(localTotal);
+      } else {
+        // For import items: מחיר מקורי * שער המרה * 2.5
+        const importTotal = cart.reduce((sum, item) => {
+          const currency = item.original_currency || 'EUR';
+          const exchangeRate = EXCHANGE_RATES[currency] || 4;
+          return sum + (item.original_price * exchangeRate * MULTIPLIER * item.quantity);
+        }, 0);
+        setDisplayPrice(Math.round(importTotal));
       }
-    };
-    fetchData();
+    }
   }, [cart]);
 
   const currentSite = cart.length > 0 ? cart[0].site : null;
@@ -106,17 +98,6 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
       }
     }
   };
-
-  if (loading) {
-    return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="p-8 flex justify-center items-center">
-        <div className="text-stone-500">טוען...</div>
-      </motion.div>
-    );
-  }
 
   const canCheckout = cart.length >= 1;
 
