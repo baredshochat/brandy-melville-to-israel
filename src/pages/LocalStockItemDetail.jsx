@@ -43,7 +43,7 @@ export default function LocalStockItemDetail() {
     }
   };
 
-  const handleAddToCart = async () => {
+  const handleAddToCart = async (goToCart = false) => {
     setAddingToCart(true);
 
     try {
@@ -66,12 +66,18 @@ export default function LocalStockItemDetail() {
         free_shipping: item.free_shipping || false
       });
 
-      setAddedToCart(true);
       window.dispatchEvent(new CustomEvent('refreshCart'));
 
-      setTimeout(() => {
-        setAddedToCart(false);
-      }, 2000);
+      if (goToCart) {
+        // לרכישה - עבור ישירות לסל
+        window.location.href = createPageUrl('Home') + '?site=local&step=4';
+      } else {
+        // הוספה לסל - חזור לדף המלאי המקומי
+        setAddedToCart(true);
+        setTimeout(() => {
+          window.location.href = createPageUrl('LocalStock');
+        }, 1000);
+      }
     } catch (error) {
       console.error("Error adding to cart:", error);
       alert("שגיאה בהוספת הפריט לסל.");
