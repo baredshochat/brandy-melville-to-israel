@@ -147,16 +147,51 @@ Deno.serve(async (req) => {
       return Response.json({ status: 'ignored', reason: 'payment not successful' });
     }
 
-    // Extract order number from remarks or pdesc
+    // Extract order number from pdesc, remarks, or json_purchase_data
+    const pdesc = data.pdesc || data.Pdesc || '';
     const remarks = data.remarks || data.Remarks || '';
-    const orderNumberMatch = remarks.match(/BM\d+/);
+    const jsonPurchaseData = data.json_purchase_data || '';
     
-    if (!orderNumberMatch) {
-      console.log('No order number found in remarks:', remarks);
-      return Response.json({ status: 'error', reason: 'no order number' });
+    // Try to find order number in various fields
+    let orderNumber = null;
+    
+    // Check pdesc first (most common)
+    let match = pdesc.match(/BM\d+/);
+    if (match) {
+      orderNumber = match[0];
     }
-
-    const orderNumber = orderNumberMatch[0];
+    
+    // Check remarks
+    if (!orderNumber) {
+      match = remarks.match(/BM\d+/);
+      if (match) {
+        orderNumber = match[0];
+      }
+    }
+    
+    // Check json_purchase_data
+    if (!orderNumber && jsonPurchaseData) {
+      try {
+        const parsed = JSON.parse(jsonPurchaseData);
+        if (parsed.order_number) {
+          orderNumber = parsed.order_number;
+        }
+      } catch (e) {
+        // Not JSON, try regex
+        match = jsonPurchaseData.match(/BM\d+/);
+        if (match) {
+          orderNumber = match[0];
+        }
+      }
+    }
+    
+    // Log all received data for debugging
+    console.log('Looking for order in - pdesc:', pdesc, 'remarks:', remarks, 'json_purchase_data:', jsonPurchaseData);
+    
+    if (!orderNumber) {
+      console.log('No order number found in any field');
+      return Response.json({ status: 'error', reason: 'no order number', receivedData: data });
+    }
     console.log('Processing order:', orderNumber);
 
     // Initialize Base44 client with service role
