@@ -742,9 +742,15 @@ Example output:
             console.error('Failed to send order received email:', emailError);
           }
         }, 180000);
-      }
+        }
 
-      setStep(7); // Go to Tranzila payment step
+        // Clear cart items before going to payment
+        const itemsToDelete = [...cart];
+        await Promise.allSettled(itemsToDelete.map(item => CartItem.delete(item.id)));
+        refreshCart();
+        setCart([]);
+
+        setStep(7); // Go to Tranzila payment step
     } catch (error) {
       console.error("Error creating order:", error);
       alert('שגיאה ביצירת ההזמנה. אנא נסי שוב.');
