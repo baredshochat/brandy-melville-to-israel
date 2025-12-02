@@ -6,7 +6,7 @@ import { User } from "@/entities/User";
 import SheetNav from './components/layout/SheetNav';
 import CartPopover from './components/layout/CartPopover';
 
-const MAINTENANCE_MODE = true; // שנה ל-false כשהאתר מוכן
+const MAINTENANCE_MODE = false; // שנה ל-true כדי לחסום גישה
 
 export default function Layout({ children }) {
   const location = useLocation();
