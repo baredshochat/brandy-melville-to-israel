@@ -98,6 +98,108 @@ const formatMoney = (amount, currency = 'ILS') => {
   }
 };
 
+// Helper: build a professional RTL HTML email for order received (before payment confirmation)
+function buildOrderReceivedEmailHTML({ order, customerName, customerEmail, trackOrderUrl, chatUrl, cart = [], totalILS, breakdown }) {
+  const brandName = "Brandy Melville to Israel";
+  const primary = "#443E41";
+  const accent = "#FFCAD4";
+  const border = "#FCE8EF";
+  const muted = "#9CA3AF";
+  const bg = "#FFFDFC";
+
+  const isLocalOrder = order?.site === 'local' || (cart.length > 0 && cart[0].site === 'local');
+
+  const itemsRows = (cart || []).map((item) => {
+    const options = [item.color, item.size].filter(Boolean).join(" • ");
+    return `
+      <tr>
+        <td style="padding:10px 0; font-size:14px; color:${primary};">${(item.product_name || '').replace(/</g,'&lt;')}</td>
+        <td style="padding:10px 0; font-size:12px; color:${muted}; text-align:right; white-space:nowrap;">${options || ''}</td>
+        <td style="padding:10px 0; font-size:14px; color:${primary}; text-align:left; white-space:nowrap;">× ${item.quantity || 1}</td>
+      </tr>
+      <tr><td colspan="3" style="border-bottom:1px solid ${border}; height:1px;"></td></tr>
+    `;
+  }).join("");
+
+  const totalILSStr = formatMoney(totalILS, 'ILS');
+  const deliveryTimeText = isLocalOrder ? '3-7 ימי עסקים' : '3-4 שבועות';
+
+  return `
+  <!doctype html>
+  <html lang="he" dir="rtl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>הזמנה #${order?.order_number || ""} התקבלה</title>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body dir="rtl" style="margin:0; background:${bg}; font-family:Assistant, Arial, Helvetica, sans-serif;">
+    <div style="max-width:640px; margin:24px auto; background:#fff; border:1px solid ${border}; border-radius:8px; overflow:hidden;">
+      <div style="padding:16px 20px; border-bottom:1px solid ${border}; display:flex; align-items:center; justify-content:space-between; background:#fff;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="width:32px; height:32px; background:${accent}; color:#fff; display:flex; align-items:center; justify-content:center; border-radius:50%;">💖</div>
+          <div>
+            <div style="font-size:16px; font-weight:700; color:${primary};">${brandName}</div>
+            <div style="font-size:12px; color:${muted};">${isLocalOrder ? 'מלאי מקומי - אספקה מהירה' : 'הדרך הקלה להזמין ברנדי מחו״ל'}</div>
+          </div>
+        </div>
+        <div style="font-size:12px; color:${muted};">מס׳ הזמנה: <strong style="color:${primary}">${order?.order_number || ""}</strong></div>
+      </div>
+
+      <div style="padding:24px 20px;">
+        <h1 style="margin:0 0 8px 0; font-size:20px; color:${primary};">שלום ${customerName || 'יקרה'},</h1>
+        <p style="margin:0 0 12px 0; font-size:14px; color:${primary}; line-height:1.6;">
+          קיבלנו את ההזמנה שלך! 🎉 אנחנו כבר מתחילות לטפל בה ומתרגשות להכין ולשלוח אותה אלייך.
+        </p>
+
+        <div style="margin:16px 0; padding:12px; background:${accent}22; border:1px solid ${accent}; border-radius:6px;">
+          <p style="margin:0; font-size:13px; color:${primary};">
+            <strong>זמן אספקה משוער:</strong> ${deliveryTimeText}
+          </p>
+        </div>
+
+        <div style="margin:18px 0; border:1px solid ${border}; padding:16px; border-radius:6px; background:#fff;">
+          <h3 style="margin:0 0 12px 0; font-size:14px; color:${primary};">הפריטים שהזמנת:</h3>
+          <table style="width:100%; border-collapse:collapse;">
+            <tbody>
+              ${itemsRows}
+            </tbody>
+          </table>
+
+          <div style="display:flex; justify-content:space-between; gap:10px; margin-top:14px; padding:12px; background:${bg}; border:1px solid ${border}; border-radius:6px;">
+            <div style="font-size:15px; color:${primary}; font-weight:700;">סה״כ</div>
+            <div style="font-size:18px; color:${primary}; font-weight:800;">${totalILSStr}</div>
+          </div>
+        </div>
+
+        <div style="margin:20px 0; text-align:center;">
+          <a href="${trackOrderUrl}" style="display:inline-block; background:${primary}; color:#fff; text-decoration:none; padding:10px 16px; font-size:14px; font-weight:700; margin:4px 6px; border-radius:6px;">
+            עקבי אחרי ההזמנה שלך
+          </a>
+          <a href="${chatUrl}" style="display:inline-block; background:#fff; color:${primary}; border:2px solid ${accent}; text-decoration:none; padding:10px 16px; font-size:14px; font-weight:700; margin:4px 6px; border-radius:6px;">
+            צ׳אט עם הנציגה הווירטואלית
+          </a>
+        </div>
+
+        <div style="margin-top:4px; padding:12px; background:${accent}22; border:1px solid ${accent}; border-radius:6px; text-align:center;">
+          <span style="font-size:13px; color:${primary};">
+            תודה שבחרת בנו! אנחנו על זה ומטפלות בכל אהבה ✨ אם עולה לך שאלה בדרך, אנחנו כאן בשבילך תמיד 💖
+          </span>
+        </div>
+
+        <p style="margin:16px 0 0 0; font-size:12px; color:${muted}; text-align:center;">
+          אישור זה נשלח לכתובת <span style="color:${primary}; font-weight:600;">${customerEmail || ''}</span>.
+        </p>
+      </div>
+
+      <div style="padding:16px 20px; border-top:1px solid ${border}; background:#fff; color:${muted}; font-size:12px;">
+        צוות ${brandName}
+      </div>
+    </div>
+  </body>
+  </html>`;
+}
+
 // Helper: build a professional RTL HTML email for order confirmation
 function buildOrderConfirmationEmailHTML({ order, customerName, customerEmail, trackOrderUrl, chatUrl, cart = [], totalILS, breakdown }) {
   const brandName = "Brandy Melville to Israel";
