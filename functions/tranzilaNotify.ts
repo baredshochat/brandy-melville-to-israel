@@ -1,3 +1,7 @@
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+
+const OWNER_EMAIL = 'Baredshochat35@gmail.com';
+
 // Helper: format money
 const formatMoney = (amount, currency = 'ILS') => {
   const n = Number(amount || 0);
@@ -5,8 +9,8 @@ const formatMoney = (amount, currency = 'ILS') => {
   return `${symbol}${n.toFixed(2)}`;
 };
 
-// Build confirmation email HTML
-function buildOrderConfirmationEmailHTML({ order, customerName, customerEmail, trackOrderUrl, chatUrl, totalILS }) {
+// Build confirmation email HTML for customer
+function buildCustomerPaymentConfirmationEmail({ order, customerName, customerEmail, trackOrderUrl, chatUrl, totalILS }) {
   const brandName = "Brandy Melville to Israel";
   const primary = "#443E41";
   const accent = "#FFCAD4";
@@ -41,7 +45,7 @@ function buildOrderConfirmationEmailHTML({ order, customerName, customerEmail, t
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>אישור הזמנה #${order?.order_number || ""}</title>
+    <title>אישור תשלום - הזמנה #${order?.order_number || ""}</title>
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&display=swap" rel="stylesheet">
   </head>
   <body dir="rtl" style="margin:0; background:${bg}; font-family:Assistant, Arial, Helvetica, sans-serif;">
@@ -64,13 +68,21 @@ function buildOrderConfirmationEmailHTML({ order, customerName, customerEmail, t
           <br><strong style="color:${primary}">חשוב לדעת:</strong> ${pricingExplanation}
         </p>
 
+        <div style="margin:16px 0; padding:12px; background:#E8F5E9; border:1px solid #A5D6A7; border-radius:6px;">
+          <p style="margin:0; font-size:14px; color:#2E7D32; font-weight:600;">
+            ✓ התשלום אושר בהצלחה
+          </p>
+        </div>
+
         <div style="margin:16px 0; padding:12px; background:${accent}22; border:1px solid ${accent}; border-radius:6px;">
           <p style="margin:0; font-size:13px; color:${primary};">
+            <strong>מספר מעקב:</strong> ${order?.order_number || ""}<br>
             <strong>זמן אספקה משוער:</strong> ${deliveryTimeText}
           </p>
         </div>
 
         <div style="margin:18px 0; border:1px solid ${border}; padding:16px; border-radius:6px; background:#fff;">
+          <h3 style="margin:0 0 12px 0; font-size:14px; color:${primary};">הפריטים שהזמנת:</h3>
           <table style="width:100%; border-collapse:collapse;">
             <tbody>
               ${itemsRows}
@@ -108,6 +120,129 @@ function buildOrderConfirmationEmailHTML({ order, customerName, customerEmail, t
           <strong>בלי הפתעות:</strong> ${pricingExplanation} אין תשלומים נוספים לאחר ההזמנה.
         </div>
         <div style="color:${muted};">צוות ${brandName}</div>
+      </div>
+    </div>
+  </body>
+  </html>`;
+}
+
+// Build payment failed email for customer
+function buildCustomerPaymentFailedEmail({ customerName, orderNumber }) {
+  const brandName = "Brandy Melville to Israel";
+  const primary = "#443E41";
+  const accent = "#FFCAD4";
+  const border = "#FCE8EF";
+  const muted = "#9CA3AF";
+  const bg = "#FFFDFC";
+
+  return `
+  <!doctype html>
+  <html lang="he" dir="rtl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>התשלום נכשל - הזמנה #${orderNumber || ""}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body dir="rtl" style="margin:0; background:${bg}; font-family:Assistant, Arial, Helvetica, sans-serif;">
+    <div style="max-width:640px; margin:24px auto; background:#fff; border:1px solid ${border}; border-radius:8px; overflow:hidden;">
+      <div style="padding:16px 20px; border-bottom:1px solid ${border}; background:#fff;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="width:32px; height:32px; background:${accent}; color:#fff; display:flex; align-items:center; justify-content:center; border-radius:50%;">💖</div>
+          <div>
+            <div style="font-size:16px; font-weight:700; color:${primary};">${brandName}</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding:24px 20px;">
+        <h1 style="margin:0 0 8px 0; font-size:20px; color:${primary};">שלום ${customerName || 'יקרה'},</h1>
+        
+        <div style="margin:16px 0; padding:12px; background:#FFEBEE; border:1px solid #EF9A9A; border-radius:6px;">
+          <p style="margin:0; font-size:14px; color:#C62828; font-weight:600;">
+            ✗ לצערנו, התשלום לא עבר בהצלחה
+          </p>
+        </div>
+
+        <p style="margin:16px 0; font-size:14px; color:${primary}; line-height:1.6;">
+          ייתכן שהייתה בעיה עם פרטי כרטיס האשראי או שהייתה בעיה טכנית זמנית.
+          <br><br>
+          מה אפשר לעשות?
+        </p>
+
+        <ul style="margin:16px 0; padding-right:20px; font-size:14px; color:${primary}; line-height:1.8;">
+          <li>לנסות שוב עם אותו כרטיס</li>
+          <li>לנסות כרטיס אשראי אחר</li>
+          <li>לפנות לבנק לבדיקה</li>
+          <li>ליצור איתנו קשר לעזרה</li>
+        </ul>
+
+        <div style="margin-top:4px; padding:12px; background:${accent}22; border:1px solid ${accent}; border-radius:6px; text-align:center;">
+          <span style="font-size:13px; color:${primary};">
+            אנחנו כאן בשבילך! אם יש שאלות, אל תהססי לפנות אלינו 💖
+          </span>
+        </div>
+      </div>
+
+      <div style="padding:16px 20px; border-top:1px solid ${border}; background:#fff; color:${muted}; font-size:12px;">
+        צוות ${brandName}
+      </div>
+    </div>
+  </body>
+  </html>`;
+}
+
+// Build notification email for owner
+function buildOwnerNotificationEmail({ status, orderNumber, amount, customerName, customerEmail, customerPhone, confirmNum }) {
+  const isApproved = status === 'approved';
+  const statusText = isApproved ? '✓ תשלום אושר' : '✗ תשלום נכשל';
+  const statusColor = isApproved ? '#2E7D32' : '#C62828';
+  const statusBg = isApproved ? '#E8F5E9' : '#FFEBEE';
+
+  return `
+  <!doctype html>
+  <html lang="he" dir="rtl">
+  <head>
+    <meta charset="utf-8">
+    <title>${statusText} - הזמנה #${orderNumber}</title>
+  </head>
+  <body dir="rtl" style="margin:0; background:#f5f5f5; font-family:Arial, sans-serif; padding:20px;">
+    <div style="max-width:500px; margin:0 auto; background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+      <div style="padding:16px 20px; background:${statusBg}; border-bottom:1px solid #ddd;">
+        <h1 style="margin:0; font-size:18px; color:${statusColor};">${statusText}</h1>
+      </div>
+      <div style="padding:20px;">
+        <table style="width:100%; border-collapse:collapse;">
+          <tr>
+            <td style="padding:8px 0; font-weight:bold; color:#666;">מספר הזמנה:</td>
+            <td style="padding:8px 0; color:#333;">${orderNumber || 'לא ידוע'}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0; font-weight:bold; color:#666;">סכום:</td>
+            <td style="padding:8px 0; color:#333; font-size:18px; font-weight:bold;">₪${amount || '0'}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0; font-weight:bold; color:#666;">שם לקוחה:</td>
+            <td style="padding:8px 0; color:#333;">${customerName || 'לא ידוע'}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0; font-weight:bold; color:#666;">אימייל:</td>
+            <td style="padding:8px 0; color:#333;">${customerEmail || 'לא ידוע'}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0; font-weight:bold; color:#666;">טלפון:</td>
+            <td style="padding:8px 0; color:#333;">${customerPhone || 'לא ידוע'}</td>
+          </tr>
+          ${confirmNum ? `
+          <tr>
+            <td style="padding:8px 0; font-weight:bold; color:#666;">מספר אישור:</td>
+            <td style="padding:8px 0; color:#333;">${confirmNum}</td>
+          </tr>
+          ` : ''}
+        </table>
+      </div>
+      <div style="padding:12px 20px; background:#f9f9f9; border-top:1px solid #eee; font-size:12px; color:#999;">
+        התקבל ב-${new Date().toLocaleString('he-IL')}
       </div>
     </div>
   </body>
