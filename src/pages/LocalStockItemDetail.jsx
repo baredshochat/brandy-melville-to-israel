@@ -204,31 +204,44 @@ export default function LocalStockItemDetail() {
               )}
             </div>
 
-            {/* Add to Cart */}
-            <Button
-              onClick={handleAddToCart}
-              disabled={addingToCart || addedToCart || !item.is_available}
-              className="w-full h-14 bg-stone-800 hover:bg-stone-900 text-white text-lg"
-            >
-              {addingToCart ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin ml-2" />
-                  מוסיף לסל...
-                </>
-              ) : addedToCart ? (
-                <>
-                  <CheckCircle className="w-5 h-5 ml-2" />
-                  נוסף לסל!
-                </>
-              ) : !item.is_available ? (
-                'אזל מהמלאי'
-              ) : (
-                <>
-                  <ShoppingCart className="w-5 h-5 ml-2" />
-                  הוסף לסל
-                </>
-              )}
-            </Button>
+            {/* Action Buttons */}
+            <div className="flex flex-col gap-3">
+              <Button
+                onClick={() => handleAddToCart(true)}
+                disabled={addingToCart || addedToCart || !item.is_available}
+                className="w-full h-14 bg-rose-500 hover:bg-rose-600 text-white text-lg"
+              >
+                {addingToCart ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin ml-2" />
+                    מוסיף לסל...
+                  </>
+                ) : !item.is_available ? (
+                  'אזל מהמלאי'
+                ) : (
+                  'לרכישה'
+                )}
+              </Button>
+              
+              <Button
+                onClick={() => handleAddToCart(false)}
+                disabled={addingToCart || addedToCart || !item.is_available}
+                variant="outline"
+                className="w-full h-12 border-stone-300 text-stone-800 hover:bg-stone-100 text-base"
+              >
+                {addedToCart ? (
+                  <>
+                    <CheckCircle className="w-5 h-5 ml-2 text-green-600" />
+                    נוסף לסל!
+                  </>
+                ) : (
+                  <>
+                    <ShoppingCart className="w-5 h-5 ml-2" />
+                    הוסף לסל
+                  </>
+                )}
+              </Button>
+            </div>
 
             {/* Info Box */}
             <div className="p-4 bg-rose-50 border border-rose-200 space-y-2">
