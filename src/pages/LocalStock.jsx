@@ -44,8 +44,8 @@ export default function LocalStock() {
     }
   };
 
-  const handleAddToCart = async (item) => {
-        setAddingToCart((prev) => ({ ...prev, [item.id]: true }));
+  const handleAddToCart = async (item, goToCart = false) => {
+    setAddingToCart((prev) => ({ ...prev, [item.id]: true }));
 
     try {
       await CartItem.create({
@@ -66,16 +66,22 @@ export default function LocalStock() {
         available_sizes: []
       });
 
-      setAddedItems((prev) => new Set([...prev, item.id]));
       window.dispatchEvent(new CustomEvent('refreshCart'));
 
-      setTimeout(() => {
-        setAddedItems((prev) => {
-          const next = new Set(prev);
-          next.delete(item.id);
-          return next;
-        });
-      }, 2000);
+      if (goToCart) {
+        // לרכישה - עבור ישירות לסל
+        window.location.href = createPageUrl('Home') + '?site=local&step=4';
+      } else {
+        // הוספה לסל - הישאר בדף המלאי המקומי
+        setAddedItems((prev) => new Set([...prev, item.id]));
+        setTimeout(() => {
+          setAddedItems((prev) => {
+            const next = new Set(prev);
+            next.delete(item.id);
+            return next;
+          });
+        }, 1500);
+      }
     } catch (error) {
       console.error("Error adding to cart:", error);
       alert("שגיאה בהוספת הפריט לסל.");
