@@ -51,9 +51,9 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
           // Simple calculation for local items - just item price + shipping
           const itemsTotal = cart.reduce((sum, item) => sum + (item.original_price * item.quantity), 0);
           
-          // Check if this is a test product (price <= 1) - no shipping for test products
-          const isTestProduct = itemsTotal <= 1;
-          const domesticShipping = isTestProduct ? 0 : DOMESTIC_SHIPPING;
+          // Check if all items have free shipping
+          const allFreeShipping = cart.every(item => item.free_shipping === true);
+          const domesticShipping = allFreeShipping ? 0 : DOMESTIC_SHIPPING;
           const finalTotal = itemsTotal + domesticShipping;
           
           setPriceData({
