@@ -62,7 +62,8 @@ export default function LocalStockItemDetail() {
         item_weight: item.weight_kg || 0.3,
         item_image_url: item.image_url || '',
         available_colors: [],
-        available_sizes: []
+        available_sizes: [],
+        free_shipping: item.free_shipping || false
       });
 
       setAddedToCart(true);
