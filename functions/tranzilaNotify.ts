@@ -201,7 +201,7 @@ Deno.serve(async (req) => {
     });
 
     // Find the order
-    const orders = await base44.asServiceRole.entities.Order.filter({ order_number: orderNumber });
+    const orders = await base44.entities.Order.filter({ order_number: orderNumber });
     
     if (!orders || orders.length === 0) {
       console.log('Order not found:', orderNumber);
