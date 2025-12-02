@@ -250,157 +250,189 @@ function buildOwnerNotificationEmail({ status, orderNumber, amount, customerName
 }
 
 Deno.serve(async (req) => {
-  // Always return 200 OK immediately for Tranzila
-  // Process in background-like manner but still sync
+  const base44 = createClientFromRequest(req);
   
   try {
-    // Parse form data from Tranzila notification
-    const contentType = req.headers.get('content-type') || '';
-    let data = {};
+    // Parse JSON from your Google Cloud Run server
+    const data = await req.json();
     
-    if (contentType.includes('application/x-www-form-urlencoded')) {
-      const text = await req.text();
-      const params = new URLSearchParams(text);
-      for (const [key, value] of params) {
-        data[key] = value;
-      }
-    } else if (contentType.includes('application/json')) {
-      data = await req.json();
-    } else {
-      // Try to read body as text and parse as URL params
-      const text = await req.text();
-      if (text) {
-        const params = new URLSearchParams(text);
-        for (const [key, value] of params) {
-          data[key] = value;
+    console.log('Webhook received from server:', JSON.stringify(data));
+
+    // Extract data from webhook
+    const status = data.status; // 'approved' or 'declined'
+    const amount = data.amount;
+    const orderNumber = data.order_id;
+    const confirmNum = data.confirm_num;
+    const cardMask = data.card_mask;
+    const customerName = data.customer_name;
+    const customerEmail = data.email;
+    const customerPhone = data.phone;
+    const rawPayload = data.raw;
+
+    // Save webhook log
+    try {
+      await base44.asServiceRole.entities.WebhookLog.create({
+        source: 'Tranzila',
+        event_type: 'payment_notification',
+        status: status || 'unknown',
+        order_id: orderNumber || '',
+        amount: amount || '',
+        customer_name: customerName || '',
+        customer_email: customerEmail || '',
+        customer_phone: customerPhone || '',
+        raw_payload: JSON.stringify(rawPayload || data)
+      });
+      console.log('Webhook logged');
+    } catch (logError) {
+      console.error('Failed to log webhook:', logError.message);
+    }
+
+    // Find the order
+    let order = null;
+    if (orderNumber) {
+      try {
+        const orders = await base44.asServiceRole.entities.Order.filter({ order_number: orderNumber });
+        if (orders && orders.length > 0) {
+          order = orders[0];
+          console.log('Found order:', order.id);
         }
-      }
-      // Also check URL params
-      const url = new URL(req.url);
-      for (const [key, value] of url.searchParams) {
-        data[key] = value;
+      } catch (e) {
+        console.error('Error finding order:', e.message);
       }
     }
 
-    console.log('Tranzila notification received:', JSON.stringify(data));
-
-    // Check if payment was successful
-    const response = data.Response || data.response;
-    if (response !== '000') {
-      console.log('Payment not successful, Response:', response);
-      return new Response('OK', { status: 200 });
-    }
-
-    // Extract order number from remarks field (where we put it)
-    // Format in remarks: "הזמנה BM1764691543798"
-    const remarks = decodeURIComponent(data.remarks || data.Remarks || '');
-    const pdesc = decodeURIComponent(data.pdesc || data.Pdesc || '');
-    
-    console.log('Decoded remarks:', remarks);
-    console.log('Decoded pdesc:', pdesc);
-    
-    // Try to find order number
-    let orderNumber = null;
-    
-    // Check remarks first (where we store the order number)
-    let match = remarks.match(/BM\d+/);
-    if (match) {
-      orderNumber = match[0];
-    }
-    
-    // Check pdesc as fallback
-    if (!orderNumber) {
-      match = pdesc.match(/BM\d+/);
-      if (match) {
-        orderNumber = match[0];
-      }
-    }
-    
-    if (!orderNumber) {
-      console.log('No order number found');
-      return new Response('OK', { status: 200 });
-    }
-    
-    console.log('Found order number:', orderNumber);
-
-    // Use Base44 REST API directly
     const appId = Deno.env.get('BASE44_APP_ID');
-    const apiBase = 'https://app.base44.com/api/airtable';
-    
-    // Fetch order
-    const ordersResponse = await fetch(`${apiBase}/${appId}/Order?filterByFormula={order_number}="${orderNumber}"`, {
-      headers: { 'Content-Type': 'application/json' }
-    });
-    
-    if (!ordersResponse.ok) {
-      console.log('Failed to fetch order:', ordersResponse.status);
-      return new Response('OK', { status: 200 });
-    }
-    
-    const ordersData = await ordersResponse.json();
-    const records = ordersData.records || [];
-    
-    if (records.length === 0) {
-      console.log('Order not found:', orderNumber);
-      return new Response('OK', { status: 200 });
-    }
-    
-    const order = { id: records[0].id, ...records[0].fields };
-    console.log('Found order:', order.id);
+    const baseUrl = `https://app.base44.com/${appId}/`;
+    const trackOrderUrl = `${baseUrl}TrackOrder?orderNumber=${orderNumber}`;
+    const chatUrl = `${baseUrl}Chat`;
 
-    // Check if email already sent
-    if (order.email_sent_to_customer) {
-      console.log('Email already sent for this order');
-      return new Response('OK', { status: 200 });
-    }
+    if (status === 'approved') {
+      // Payment approved
+      console.log('Payment approved for order:', orderNumber);
 
-    // Update order status
-    await fetch(`${apiBase}/${appId}/Order/${order.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        fields: {
-          payment_status: 'completed',
-          email_sent_to_customer: true
+      // Update order status
+      if (order) {
+        try {
+          await base44.asServiceRole.entities.Order.update(order.id, {
+            payment_status: 'completed',
+            email_sent_to_customer: true
+          });
+          console.log('Order updated to completed');
+        } catch (e) {
+          console.error('Error updating order:', e.message);
         }
-      })
-    });
-    console.log('Order updated');
+      }
 
-    // Send email via Base44 integration API
-    if (order.customer_email) {
-      const baseUrl = `https://app.base44.com/${appId}/`;
-      const trackOrderUrl = `${baseUrl}TrackOrder?orderNumber=${orderNumber}`;
-      const chatUrl = `${baseUrl}Chat`;
+      // Send email to customer
+      if (customerEmail) {
+        try {
+          const customerEmailHtml = buildCustomerPaymentConfirmationEmail({
+            order: order || { order_number: orderNumber, items: [] },
+            customerName,
+            customerEmail,
+            trackOrderUrl,
+            chatUrl,
+            totalILS: amount
+          });
 
-      const emailHtml = buildOrderConfirmationEmailHTML({
-        order,
-        customerName: order.customer_name,
-        customerEmail: order.customer_email,
-        trackOrderUrl,
-        chatUrl,
-        totalILS: order.total_price_ils
-      });
+          await base44.asServiceRole.integrations.Core.SendEmail({
+            from_name: "Brandy Melville to Israel",
+            to: customerEmail,
+            subject: `אישור תשלום - הזמנה #${orderNumber} • ₪${amount}`,
+            body: customerEmailHtml
+          });
+          console.log('Customer email sent');
+        } catch (e) {
+          console.error('Error sending customer email:', e.message);
+        }
+      }
 
-      // Call the SendEmail integration
-      const emailResponse = await fetch(`https://app.base44.com/api/integrations/${appId}/Core/SendEmail`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      // Send email to owner
+      try {
+        const ownerEmailHtml = buildOwnerNotificationEmail({
+          status: 'approved',
+          orderNumber,
+          amount,
+          customerName,
+          customerEmail,
+          customerPhone,
+          confirmNum
+        });
+
+        await base44.asServiceRole.integrations.Core.SendEmail({
           from_name: "Brandy Melville to Israel",
-          to: order.customer_email,
-          subject: `אישור תשלום - הזמנה #${orderNumber} • ${formatMoney(order.total_price_ils, 'ILS')}`,
-          body: emailHtml
-        })
-      });
-      
-      console.log('Email API response:', emailResponse.status);
+          to: OWNER_EMAIL,
+          subject: `✓ תשלום אושר - הזמנה #${orderNumber} • ₪${amount}`,
+          body: ownerEmailHtml
+        });
+        console.log('Owner email sent');
+      } catch (e) {
+        console.error('Error sending owner email:', e.message);
+      }
+
+    } else if (status === 'declined') {
+      // Payment declined
+      console.log('Payment declined for order:', orderNumber);
+
+      // Update order status
+      if (order) {
+        try {
+          await base44.asServiceRole.entities.Order.update(order.id, {
+            payment_status: 'failed'
+          });
+          console.log('Order updated to failed');
+        } catch (e) {
+          console.error('Error updating order:', e.message);
+        }
+      }
+
+      // Send email to customer
+      if (customerEmail) {
+        try {
+          const customerEmailHtml = buildCustomerPaymentFailedEmail({
+            customerName,
+            orderNumber
+          });
+
+          await base44.asServiceRole.integrations.Core.SendEmail({
+            from_name: "Brandy Melville to Israel",
+            to: customerEmail,
+            subject: `התשלום נכשל - הזמנה #${orderNumber}`,
+            body: customerEmailHtml
+          });
+          console.log('Customer decline email sent');
+        } catch (e) {
+          console.error('Error sending customer decline email:', e.message);
+        }
+      }
+
+      // Send email to owner
+      try {
+        const ownerEmailHtml = buildOwnerNotificationEmail({
+          status: 'declined',
+          orderNumber,
+          amount,
+          customerName,
+          customerEmail,
+          customerPhone,
+          confirmNum
+        });
+
+        await base44.asServiceRole.integrations.Core.SendEmail({
+          from_name: "Brandy Melville to Israel",
+          to: OWNER_EMAIL,
+          subject: `✗ תשלום נכשל - הזמנה #${orderNumber}`,
+          body: ownerEmailHtml
+        });
+        console.log('Owner decline email sent');
+      } catch (e) {
+        console.error('Error sending owner decline email:', e.message);
+      }
     }
 
-    return new Response('OK', { status: 200 });
+    return Response.json({ success: true, message: 'Webhook processed' }, { status: 200 });
   } catch (error) {
-    console.error('Error:', error.message);
-    // Always return 200 to Tranzila so they don't retry
-    return new Response('OK', { status: 200 });
+    console.error('Error processing webhook:', error.message);
+    return Response.json({ success: false, error: error.message }, { status: 200 });
   }
 });
