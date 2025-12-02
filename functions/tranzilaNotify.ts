@@ -194,8 +194,11 @@ Deno.serve(async (req) => {
     }
     console.log('Processing order:', orderNumber);
 
-    // Initialize Base44 client with service role
-    const base44 = createClientFromRequest(req);
+    // Initialize Base44 client with service role (no auth needed for webhook)
+    const base44 = createClient({
+      appId: Deno.env.get('BASE44_APP_ID'),
+      serviceRoleKey: Deno.env.get('BASE44_SERVICE_ROLE_KEY')
+    });
 
     // Find the order
     const orders = await base44.asServiceRole.entities.Order.filter({ order_number: orderNumber });
