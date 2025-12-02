@@ -1,5 +1,3 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
-
 // Helper: format money
 const formatMoney = (amount, currency = 'ILS') => {
   const n = Number(amount || 0);
@@ -117,6 +115,9 @@ function buildOrderConfirmationEmailHTML({ order, customerName, customerEmail, t
 }
 
 Deno.serve(async (req) => {
+  // Always return 200 OK immediately for Tranzila
+  // Process in background-like manner but still sync
+  
   try {
     // Parse form data from Tranzila notification
     const contentType = req.headers.get('content-type') || '';
@@ -131,122 +132,140 @@ Deno.serve(async (req) => {
     } else if (contentType.includes('application/json')) {
       data = await req.json();
     } else {
-      // Try URL params
+      // Try to read body as text and parse as URL params
+      const text = await req.text();
+      if (text) {
+        const params = new URLSearchParams(text);
+        for (const [key, value] of params) {
+          data[key] = value;
+        }
+      }
+      // Also check URL params
       const url = new URL(req.url);
       for (const [key, value] of url.searchParams) {
         data[key] = value;
       }
     }
 
-    console.log('Tranzila notification received:', data);
+    console.log('Tranzila notification received:', JSON.stringify(data));
 
     // Check if payment was successful
     const response = data.Response || data.response;
     if (response !== '000') {
       console.log('Payment not successful, Response:', response);
-      return Response.json({ status: 'ignored', reason: 'payment not successful' });
+      return new Response('OK', { status: 200 });
     }
 
-    // Extract order number from pdesc, remarks, or json_purchase_data
-    const pdesc = data.pdesc || data.Pdesc || '';
-    const remarks = data.remarks || data.Remarks || '';
-    const jsonPurchaseData = data.json_purchase_data || '';
+    // Extract order number from remarks field (where we put it)
+    // Format in remarks: "הזמנה BM1764691543798"
+    const remarks = decodeURIComponent(data.remarks || data.Remarks || '');
+    const pdesc = decodeURIComponent(data.pdesc || data.Pdesc || '');
     
-    // Try to find order number in various fields
+    console.log('Decoded remarks:', remarks);
+    console.log('Decoded pdesc:', pdesc);
+    
+    // Try to find order number
     let orderNumber = null;
     
-    // Check pdesc first (most common)
-    let match = pdesc.match(/BM\d+/);
+    // Check remarks first (where we store the order number)
+    let match = remarks.match(/BM\d+/);
     if (match) {
       orderNumber = match[0];
     }
     
-    // Check remarks
+    // Check pdesc as fallback
     if (!orderNumber) {
-      match = remarks.match(/BM\d+/);
+      match = pdesc.match(/BM\d+/);
       if (match) {
         orderNumber = match[0];
       }
     }
     
-    // Check json_purchase_data
-    if (!orderNumber && jsonPurchaseData) {
-      try {
-        const parsed = JSON.parse(jsonPurchaseData);
-        if (parsed.order_number) {
-          orderNumber = parsed.order_number;
-        }
-      } catch (e) {
-        // Not JSON, try regex
-        match = jsonPurchaseData.match(/BM\d+/);
-        if (match) {
-          orderNumber = match[0];
-        }
-      }
-    }
-    
-    // Log all received data for debugging
-    console.log('Looking for order in - pdesc:', pdesc, 'remarks:', remarks, 'json_purchase_data:', jsonPurchaseData);
-    
     if (!orderNumber) {
-      console.log('No order number found in any field');
-      return Response.json({ status: 'error', reason: 'no order number', receivedData: data });
+      console.log('No order number found');
+      return new Response('OK', { status: 200 });
     }
-    console.log('Processing order:', orderNumber);
-
-    // Initialize Base44 client from request - use service role for webhook operations
-    const base44 = createClientFromRequest(req);
-
-    // Find the order using service role (admin access)
-    const orders = await base44.asServiceRole.entities.Order.filter({ order_number: orderNumber });
     
-    if (!orders || orders.length === 0) {
+    console.log('Found order number:', orderNumber);
+
+    // Use Base44 REST API directly
+    const appId = Deno.env.get('BASE44_APP_ID');
+    const apiBase = 'https://app.base44.com/api/airtable';
+    
+    // Fetch order
+    const ordersResponse = await fetch(`${apiBase}/${appId}/Order?filterByFormula={order_number}="${orderNumber}"`, {
+      headers: { 'Content-Type': 'application/json' }
+    });
+    
+    if (!ordersResponse.ok) {
+      console.log('Failed to fetch order:', ordersResponse.status);
+      return new Response('OK', { status: 200 });
+    }
+    
+    const ordersData = await ordersResponse.json();
+    const records = ordersData.records || [];
+    
+    if (records.length === 0) {
       console.log('Order not found:', orderNumber);
-      return Response.json({ status: 'error', reason: 'order not found' });
+      return new Response('OK', { status: 200 });
     }
+    
+    const order = { id: records[0].id, ...records[0].fields };
+    console.log('Found order:', order.id);
 
-    const order = orders[0];
-
-    // Check if email was already sent
+    // Check if email already sent
     if (order.email_sent_to_customer) {
-      console.log('Email already sent for order:', orderNumber);
-      return Response.json({ status: 'already_sent' });
+      console.log('Email already sent for this order');
+      return new Response('OK', { status: 200 });
     }
 
-    // Update order payment status
-    await base44.asServiceRole.entities.Order.update(order.id, { 
-      payment_status: 'completed',
-      email_sent_to_customer: true
+    // Update order status
+    await fetch(`${apiBase}/${appId}/Order/${order.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fields: {
+          payment_status: 'completed',
+          email_sent_to_customer: true
+        }
+      })
     });
+    console.log('Order updated');
 
-    // Build email
-    const baseUrl = 'https://app.base44.com/brandy-melville-order-il/'; // Replace with actual app URL
-    const trackOrderUrl = `${baseUrl}TrackOrder?orderNumber=${orderNumber}`;
-    const chatUrl = `${baseUrl}Chat`;
-
-    const emailHtml = buildOrderConfirmationEmailHTML({
-      order,
-      customerName: order.customer_name,
-      customerEmail: order.customer_email,
-      trackOrderUrl,
-      chatUrl,
-      totalILS: order.total_price_ils
-    });
-
-    // Send email using Base44 integrations
+    // Send email via Base44 integration API
     if (order.customer_email) {
-      await base44.asServiceRole.integrations.Core.SendEmail({
-        from_name: "Brandy Melville to Israel",
-        to: order.customer_email,
-        subject: `אישור תשלום - הזמנה #${orderNumber} • ${formatMoney(order.total_price_ils, 'ILS')}`,
-        body: emailHtml
+      const baseUrl = `https://app.base44.com/${appId}/`;
+      const trackOrderUrl = `${baseUrl}TrackOrder?orderNumber=${orderNumber}`;
+      const chatUrl = `${baseUrl}Chat`;
+
+      const emailHtml = buildOrderConfirmationEmailHTML({
+        order,
+        customerName: order.customer_name,
+        customerEmail: order.customer_email,
+        trackOrderUrl,
+        chatUrl,
+        totalILS: order.total_price_ils
       });
-      console.log('Email sent to:', order.customer_email);
+
+      // Call the SendEmail integration
+      const emailResponse = await fetch(`https://app.base44.com/api/integrations/${appId}/Core/SendEmail`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from_name: "Brandy Melville to Israel",
+          to: order.customer_email,
+          subject: `אישור תשלום - הזמנה #${orderNumber} • ${formatMoney(order.total_price_ils, 'ILS')}`,
+          body: emailHtml
+        })
+      });
+      
+      console.log('Email API response:', emailResponse.status);
     }
 
-    return Response.json({ status: 'success', orderNumber });
+    return new Response('OK', { status: 200 });
   } catch (error) {
-    console.error('Error processing Tranzila notification:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('Error:', error.message);
+    // Always return 200 to Tranzila so they don't retry
+    return new Response('OK', { status: 200 });
   }
 });
