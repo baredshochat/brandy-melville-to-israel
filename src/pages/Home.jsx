@@ -602,13 +602,43 @@ Example output:
 
   const handlePriceConfirm = (price, weight, breakdown) => { setTotalPriceILS(price); setTotalWeight(weight); setPriceBreakdown(breakdown); setStep(6); };
 
-  // CHANGED: on customer submit create order and go to Tranzila payment
+  // CHANGED: on customer submit create order, send email, and go to Tranzila payment
   const handleCustomerSubmit = async (data) => {
     setCustomerData(data);
     setLoading(true);
     try {
       const order = await submitOrder(data);
       setCurrentOrder(order);
+
+      // Send order received email immediately
+      const recipientEmail = (user && user.email) ? user.email : data.customer_email;
+      if (recipientEmail) {
+        const trackOrderPageUrl = new URL(createPageUrl('TrackOrder'), window.location.origin).href;
+        const chatPageUrl = new URL(createPageUrl('Chat'), window.location.origin).href;
+
+        const emailHtml = buildOrderReceivedEmailHTML({
+          order,
+          customerName: data.customer_name,
+          customerEmail: recipientEmail,
+          trackOrderUrl: trackOrderPageUrl,
+          chatUrl: chatPageUrl,
+          cart,
+          totalILS: totalPriceILS,
+          breakdown: priceBreakdown
+        });
+
+        try {
+          await SendEmail({
+            from_name: "Brandy Melville to Israel",
+            to: recipientEmail,
+            subject: `הזמנה #${order?.order_number} התקבלה - התחלנו לטפל! 💖`,
+            body: emailHtml
+          });
+        } catch (emailError) {
+          console.error('Failed to send order received email:', emailError);
+        }
+      }
+
       setStep(7); // Go to Tranzila payment step
     } catch (error) {
       console.error("Error creating order:", error);
