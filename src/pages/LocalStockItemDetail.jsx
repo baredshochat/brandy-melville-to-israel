@@ -186,9 +186,15 @@ export default function LocalStockItemDetail() {
               <p className="text-4xl font-bold text-stone-900">
                 ₪{item.price_ils}
               </p>
-              <p className="text-sm text-stone-500 mt-2">
-                + 35 ש״ח משלוח עד הבית
-              </p>
+              {item.free_shipping ? (
+                <p className="text-sm text-green-600 mt-2 font-medium">
+                  ✨ משלוח חינם!
+                </p>
+              ) : (
+                <p className="text-sm text-stone-500 mt-2">
+                  + 30 ש״ח משלוח עד הבית
+                </p>
+              )}
             </div>
 
             {/* Add to Cart */}
