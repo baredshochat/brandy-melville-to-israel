@@ -238,7 +238,7 @@ Deno.serve(async (req) => {
 
     // Send email using Base44 integrations
     if (order.customer_email) {
-      await base44.integrations.Core.SendEmail({
+      await base44.asServiceRole.integrations.Core.SendEmail({
         from_name: "Brandy Melville to Israel",
         to: order.customer_email,
         subject: `אישור תשלום - הזמנה #${orderNumber} • ${formatMoney(order.total_price_ils, 'ILS')}`,
