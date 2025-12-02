@@ -490,8 +490,7 @@ Example output:
   };
 
   const handleProductConfirm = async (product) => {
-    if (!user) { alert("אנא התחברי כדי להוסיף פריטים לסל."); return; }
-    if (confirmingItem) return;
+        if (confirmingItem) return;
     setConfirmingItem(true);
 
     const siteForOperation = editingItem ? editingItem.site : selectedSite;

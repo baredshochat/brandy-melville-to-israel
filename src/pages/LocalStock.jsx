@@ -45,12 +45,7 @@ export default function LocalStock() {
   };
 
   const handleAddToCart = async (item) => {
-    if (!user) {
-      alert("אנא התחברי כדי להוסיף פריטים לסל.");
-      return;
-    }
-
-    setAddingToCart((prev) => ({ ...prev, [item.id]: true }));
+        setAddingToCart((prev) => ({ ...prev, [item.id]: true }));
 
     try {
       await CartItem.create({
