@@ -712,7 +712,7 @@ Example output:
       const order = await submitOrder(data);
       setCurrentOrder(order);
 
-      // Send order received email immediately
+      // Send order received email after 3 minutes delay
       const recipientEmail = (user && user.email) ? user.email : data.customer_email;
       if (recipientEmail) {
         const trackOrderPageUrl = new URL(createPageUrl('TrackOrder'), window.location.origin).href;
@@ -729,16 +729,19 @@ Example output:
           breakdown: priceBreakdown
         });
 
-        try {
-          await SendEmail({
-            from_name: "Brandy Melville to Israel",
-            to: recipientEmail,
-            subject: `הזמנה #${order?.order_number} התקבלה - התחלנו לטפל! 💖`,
-            body: emailHtml
-          });
-        } catch (emailError) {
-          console.error('Failed to send order received email:', emailError);
-        }
+        // Delay email by 3 minutes (180000ms)
+        setTimeout(async () => {
+          try {
+            await SendEmail({
+              from_name: "Brandy Melville to Israel",
+              to: recipientEmail,
+              subject: `הזמנה #${order?.order_number} התקבלה - התחלנו לטפל! 💖`,
+              body: emailHtml
+            });
+          } catch (emailError) {
+            console.error('Failed to send order received email:', emailError);
+          }
+        }, 180000);
       }
 
       setStep(7); // Go to Tranzila payment step
