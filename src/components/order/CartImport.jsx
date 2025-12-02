@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -86,7 +85,6 @@ export default function CartImport({ site, onImportComplete, onBack, loading }) 
   };
 
   const handleManualImport = async () => {
-    if (!user) { setStatus({ type: 'error', message: 'אנא התחברי כדי לייבא פריטים לסל.' }); return; }
     const validUrls = urls.filter((url) => url.trim().length > 0);
     if (validUrls.length === 0) { setStatus({ type: 'error', message: 'אנא הדביקי לפחות קישור אחד למוצר.' }); return; }
     const invalidUrls = validateUrls(validUrls, site);
