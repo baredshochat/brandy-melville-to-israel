@@ -47,6 +47,11 @@ export default function TranzilaPayment({
     if (formRef.current && !formSubmitted) {
       setFormSubmitted(true);
       formRef.current.submit();
+      
+      // Redirect to home page after 2 seconds (after Tranzila opens in iframe)
+      setTimeout(() => {
+        window.location.href = createPageUrl('Home');
+      }, 2000);
     }
   };
 
