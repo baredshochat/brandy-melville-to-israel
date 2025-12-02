@@ -17,6 +17,7 @@ import ManageLocalStock from './pages/ManageLocalStock';
 import LocalStockItemDetail from './pages/LocalStockItemDetail';
 import ExchangeRates from './pages/ExchangeRates';
 import ManageCoupons from './pages/ManageCoupons';
+import ReturnsPolicy from './pages/ReturnsPolicy';
 import __Layout from './Layout.jsx';
 
 
@@ -40,6 +41,7 @@ export const PAGES = {
     "LocalStockItemDetail": LocalStockItemDetail,
     "ExchangeRates": ExchangeRates,
     "ManageCoupons": ManageCoupons,
+    "ReturnsPolicy": ReturnsPolicy,
 }
 
 export const pagesConfig = {
