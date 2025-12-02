@@ -51,10 +51,14 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
           // Simple calculation for local items - just item price + shipping
           const itemsTotal = cart.reduce((sum, item) => sum + (item.original_price * item.quantity), 0);
           
+          // Apply 15% launch discount
+          const launchDiscount = Math.round(itemsTotal * LAUNCH_DISCOUNT_PERCENT);
+          const afterDiscount = itemsTotal - launchDiscount;
+          
           // Check if all items have free shipping
           const allFreeShipping = cart.every(item => item.free_shipping === true);
           const domesticShipping = allFreeShipping ? 0 : DOMESTIC_SHIPPING;
-          const finalTotal = itemsTotal + domesticShipping;
+          const finalTotal = afterDiscount + domesticShipping;
           
           setPriceData({
             finalPriceILS: Math.round(finalTotal),
@@ -64,6 +68,8 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
                 fullPrice: item.original_price * item.quantity
               })),
               cartSubtotal: itemsTotal,
+              launchDiscount,
+              afterDiscount,
               domesticShipping,
               finalTotal: Math.round(finalTotal),
               isLocal: true
@@ -298,8 +304,8 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
 
           {/* Pricing Breakdown */}
           <div className="space-y-3">
-            {/* Launch Discount - only for import orders */}
-            {!priceData.breakdown.isLocal && launchDiscount > 0 && (
+            {/* Launch Discount - for all orders */}
+            {launchDiscount > 0 && (
               <div className="flex justify-between items-center py-2 border-t border-stone-200 bg-green-50 px-2 -mx-2">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-medium text-green-700">🎉 קופון השקת אתר (15%)</span>
