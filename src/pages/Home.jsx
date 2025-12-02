@@ -712,37 +712,7 @@ Example output:
       const order = await submitOrder(data);
       setCurrentOrder(order);
 
-      // Send order received email after 3 minutes delay
-      const recipientEmail = (user && user.email) ? user.email : data.customer_email;
-      if (recipientEmail) {
-        const trackOrderPageUrl = new URL(createPageUrl('TrackOrder'), window.location.origin).href;
-        const chatPageUrl = new URL(createPageUrl('Chat'), window.location.origin).href;
-
-        const emailHtml = buildOrderReceivedEmailHTML({
-          order,
-          customerName: data.customer_name,
-          customerEmail: recipientEmail,
-          trackOrderUrl: trackOrderPageUrl,
-          chatUrl: chatPageUrl,
-          cart,
-          totalILS: totalPriceILS,
-          breakdown: priceBreakdown
-        });
-
-        // Send email immediately (before redirect to Tranzila)
-        try {
-          await SendEmail({
-            from_name: "Brandy Melville to Israel",
-            to: recipientEmail,
-            subject: `הזמנה #${order?.order_number} התקבלה - התחלנו לטפל! 💖`,
-            body: emailHtml
-          });
-        } catch (emailError) {
-          console.error('Failed to send order received email:', emailError);
-        }
-        }
-
-        // Clear cart items before going to payment
+      // Clear cart items before going to payment
         const itemsToDelete = [...cart];
         await Promise.allSettled(itemsToDelete.map(item => CartItem.delete(item.id)));
         refreshCart();
