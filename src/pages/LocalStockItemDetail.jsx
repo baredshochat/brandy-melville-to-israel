@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { LocalStockItem } from "@/entities/LocalStockItem";
 import { CartItem } from "@/entities/CartItem";
@@ -45,11 +44,6 @@ export default function LocalStockItemDetail() {
   };
 
   const handleAddToCart = async () => {
-    if (!user) {
-      alert("אנא התחברי כדי להוסיף פריטים לסל.");
-      return;
-    }
-
     setAddingToCart(true);
 
     try {
