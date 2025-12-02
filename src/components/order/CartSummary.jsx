@@ -12,7 +12,7 @@ const EXCHANGE_RATES = {
   USD: 3.7
 };
 
-const MULTIPLIER = 2.5;
+const MULTIPLIER = 2;
 
 const getSiteName = (siteCode) => {
   const names = {
