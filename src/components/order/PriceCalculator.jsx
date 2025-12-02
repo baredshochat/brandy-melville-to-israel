@@ -19,6 +19,7 @@ const EXCHANGE_RATES = {
 
 const MULTIPLIER = 2.5;
 const DOMESTIC_SHIPPING = 30;
+const LAUNCH_DISCOUNT_PERCENT = 0.15; // 15% הנחת השקה
 
 export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
   const [loading, setLoading] = useState(true);
@@ -81,13 +82,17 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
           });
 
           const itemsTotal = itemsWithPrices.reduce((sum, item) => sum + item.fullPrice, 0);
-          const finalTotal = itemsTotal + DOMESTIC_SHIPPING;
+          const launchDiscount = Math.round(itemsTotal * LAUNCH_DISCOUNT_PERCENT);
+          const afterDiscount = itemsTotal - launchDiscount;
+          const finalTotal = afterDiscount + DOMESTIC_SHIPPING;
 
           setPriceData({
             finalPriceILS: Math.round(finalTotal),
             breakdown: {
               items: itemsWithPrices,
               cartSubtotal: itemsTotal,
+              launchDiscount,
+              afterDiscount,
               domesticShipping: DOMESTIC_SHIPPING,
               finalTotal: Math.round(finalTotal),
               isLocal: false
@@ -251,7 +256,7 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
     return null;
   }
 
-  const { cartSubtotal, domesticShipping, finalTotal } = priceData.breakdown;
+  const { cartSubtotal, launchDiscount, domesticShipping, finalTotal } = priceData.breakdown;
 
   return (
     <motion.div
@@ -293,6 +298,18 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
 
           {/* Pricing Breakdown */}
           <div className="space-y-3">
+            {/* Launch Discount - only for import orders */}
+            {!priceData.breakdown.isLocal && launchDiscount > 0 && (
+              <div className="flex justify-between items-center py-2 border-t border-stone-200 bg-green-50 px-2 -mx-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-green-700">🎉 קופון השקת אתר (15%)</span>
+                </div>
+                <span className="text-xs font-medium text-green-700">
+                  -{formatMoney(launchDiscount)}
+                </span>
+              </div>
+            )}
+
             <div className="flex justify-between items-center py-2 border-t border-stone-200">
               <span className="text-xs text-stone-600 italic">משלוח עד הבית</span>
               <span className="text-xs italic text-stone-700">
