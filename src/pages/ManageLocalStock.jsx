@@ -31,11 +31,12 @@ const emptyItem = {
   size: '',
   quantity_available: 0,
   is_available: true,
+  free_shipping: false,
   category: 'other',
   internal_sku: '',
   source_url: '',
   weight_kg: 0.3,
-  additional_images: [] // Added for additional images
+  additional_images: []
 };
 
 export default function ManageLocalStock() {
@@ -239,7 +240,7 @@ export default function ManageLocalStock() {
   const handleEdit = (item) => {
     setEditingItem(item);
     // Ensure additional_images is always an array when editing
-    setFormData({ ...item, additional_images: item.additional_images || [] });
+    setFormData({ ...item, additional_images: item.additional_images || [], free_shipping: item.free_shipping || false });
     setSuggestedPriceInfo(null);
     setDialogOpen(true);
   };
@@ -482,8 +483,16 @@ export default function ManageLocalStock() {
                     />
                     <Label>זמין למכירה</Label>
                   </div>
-                </div>
-              </div>
+
+                  <div className="flex items-center space-x-2 space-x-reverse">
+                    <Switch
+                      checked={formData.free_shipping}
+                      onCheckedChange={(checked) => setFormData({ ...formData, free_shipping: checked })}
+                    />
+                    <Label>ללא עלות משלוח (מוצר ניסיון)</Label>
+                  </div>
+                  </div>
+                  </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setDialogOpen(false)}>
                   ביטול
