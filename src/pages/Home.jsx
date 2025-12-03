@@ -713,13 +713,38 @@ Example output:
       const order = await submitOrder(data);
       setCurrentOrder(order);
 
-      // Clear cart items before going to payment
-        const itemsToDelete = [...cart];
-        await Promise.allSettled(itemsToDelete.map(item => CartItem.delete(item.id)));
-        refreshCart();
-        setCart([]);
+      // Send "order received" email immediately
+      const recipientEmail = (user && user.email) ? user.email : data.customer_email;
+      if (recipientEmail) {
+        const trackOrderPageUrl = new URL(createPageUrl('TrackOrder'), window.location.origin).href;
+        const chatPageUrl = new URL(createPageUrl('Chat'), window.location.origin).href;
 
-        setStep(7); // Go to Tranzila payment step
+        const emailHtml = buildOrderReceivedEmailHTML({
+          order,
+          customerName: data.customer_name,
+          customerEmail: recipientEmail,
+          trackOrderUrl: trackOrderPageUrl,
+          chatUrl: chatPageUrl,
+          cart,
+          totalILS: totalPriceILS,
+          breakdown: priceBreakdown
+        });
+
+        SendEmail({
+          from_name: "Brandy Melville to Israel",
+          to: recipientEmail,
+          subject: `קיבלנו את ההזמנה שלך #${order?.order_number} 💖`,
+          body: emailHtml
+        }).catch(err => console.error('Failed to send order received email:', err));
+      }
+
+      // Clear cart items before going to payment
+      const itemsToDelete = [...cart];
+      await Promise.allSettled(itemsToDelete.map(item => CartItem.delete(item.id)));
+      refreshCart();
+      setCart([]);
+
+      setStep(7); // Go to Tranzila payment step
     } catch (error) {
       console.error("Error creating order:", error);
       alert('שגיאה ביצירת ההזמנה. אנא נסי שוב.');
