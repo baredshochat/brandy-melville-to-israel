@@ -35,35 +35,35 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
     const loadData = async () => {
       try {
         setLoading(true);
-        
+
         // Load pricing labels
         const labelsList = await PricingLabels.list();
-        const currentLabels = labelsList && labelsList.length > 0
-          ? labelsList[0]
-          : {};
+        const currentLabels = labelsList && labelsList.length > 0 ?
+        labelsList[0] :
+        {};
 
         setLabels(currentLabels);
 
         // Check if all items are local
-        const isLocalOrder = cart.every(item => item.site === 'local');
-        
+        const isLocalOrder = cart.every((item) => item.site === 'local');
+
         if (isLocalOrder) {
           // Simple calculation for local items - just item price + shipping
-          const itemsTotal = cart.reduce((sum, item) => sum + (item.original_price * item.quantity), 0);
-          
+          const itemsTotal = cart.reduce((sum, item) => sum + item.original_price * item.quantity, 0);
+
           // Apply 15% launch discount
           const launchDiscount = Math.round(itemsTotal * LAUNCH_DISCOUNT_PERCENT);
           const afterDiscount = itemsTotal - launchDiscount;
-          
+
           // Check if all items have free shipping
-          const allFreeShipping = cart.every(item => item.free_shipping === true);
+          const allFreeShipping = cart.every((item) => item.free_shipping === true);
           const domesticShipping = allFreeShipping ? 0 : DOMESTIC_SHIPPING;
           const finalTotal = afterDiscount + domesticShipping;
-          
+
           setPriceData({
             finalPriceILS: Math.round(finalTotal),
             breakdown: {
-              items: cart.map(item => ({
+              items: cart.map((item) => ({
                 ...item,
                 fullPrice: item.original_price * item.quantity
               })),
@@ -77,7 +77,7 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
           });
         } else {
           // חישוב חדש ופשוט: מחיר מקורי * שער המרה * 2.5 + 30 משלוח
-          const itemsWithPrices = cart.map(item => {
+          const itemsWithPrices = cart.map((item) => {
             const currency = item.original_currency || (site === 'uk' ? 'GBP' : 'EUR');
             const exchangeRate = EXCHANGE_RATES[currency] || 4;
             const itemPriceILS = item.original_price * exchangeRate * MULTIPLIER * item.quantity;
@@ -105,7 +105,7 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
             }
           });
         }
-        
+
       } catch (err) {
         console.error('Error loading pricing data:', err);
         setError('שגיאה בחישוב המחיר. אנא נסי שוב.');
@@ -130,7 +130,7 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
 
     try {
       const coupons = await Coupon.filter({ code: couponCode.trim().toUpperCase() });
-      
+
       if (!coupons || coupons.length === 0) {
         setCouponError('קוד קופון לא תקף');
         setApplyingCoupon(false);
@@ -226,7 +226,7 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
 
       onConfirm(
         finalPrice,
-        cart.reduce((sum, item) => sum + ((item.estimated_weight_kg || item.item_weight || 0.25) * item.quantity), 0),
+        cart.reduce((sum, item) => sum + (item.estimated_weight_kg || item.item_weight || 0.25) * item.quantity, 0),
         breakdown
       );
     }
@@ -239,8 +239,8 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
         animate={{ opacity: 1 }}
         className="p-8 flex justify-center items-center min-h-[400px]">
         <Loader2 className="w-8 h-8 animate-spin text-rose-400" />
-      </motion.div>
-    );
+      </motion.div>);
+
   }
 
   if (error) {
@@ -254,8 +254,8 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
           <ArrowLeft className="w-4 h-4 ml-2" />
           חזרה
         </Button>
-      </motion.div>
-    );
+      </motion.div>);
+
   }
 
   if (!priceData) {
@@ -289,8 +289,8 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
               <span>{labels?.items_section_title || 'הפריטים שלך'}</span>
             </h3>
             <div className="space-y-2">
-              {priceData.breakdown.items.map((item, idx) => (
-                <div key={idx} className="flex justify-between text-base font-bold">
+              {priceData.breakdown.items.map((item, idx) =>
+              <div key={idx} className="flex justify-between text-base font-bold">
                   <span className="text-stone-800 ltr text-left">
                     {item.product_name} × {item.quantity}
                   </span>
@@ -298,23 +298,23 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
                     {formatMoney(item.fullPrice)}
                   </span>
                 </div>
-              ))}
+              )}
             </div>
           </div>
 
           {/* Pricing Breakdown */}
           <div className="space-y-3">
             {/* Launch Discount - for all orders */}
-            {launchDiscount > 0 && (
-              <div className="flex justify-between items-center py-2 border-t border-stone-200 bg-green-50 px-2 -mx-2">
+            {launchDiscount > 0 &&
+            <div className="flex justify-between items-center py-2 border-t border-stone-200 bg-green-50 px-2 -mx-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-green-700">🎉 קופון השקת אתר (15%)</span>
+                  <span className="text-xs font-medium text-green-700">🎉 הנחת השקת אתר (15%)</span>
                 </div>
                 <span className="text-xs font-medium text-green-700">
                   -{formatMoney(launchDiscount)}
                 </span>
               </div>
-            )}
+            }
 
             <div className="flex justify-between items-center py-2 border-t border-stone-200">
               <span className="text-xs text-stone-600 italic">משלוח עד הבית</span>
@@ -325,69 +325,69 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
 
             {/* Coupon Section */}
             <div className="py-3 border-t-2 border-stone-200">
-              {!appliedCoupon ? (
-                <div className="space-y-2">
+              {!appliedCoupon ?
+              <div className="space-y-2">
                   <label className="text-sm font-medium text-stone-700 flex items-center gap-2">
                     <Tag className="w-4 h-4" />
                     יש לך קוד קופון?
                   </label>
                   <div className="flex gap-2">
                     <Input
-                      type="text"
-                      placeholder="הכניסי קוד קופון"
-                      value={couponCode}
-                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                      className="flex-1"
-                      disabled={applyingCoupon}
-                    />
+                    type="text"
+                    placeholder="הכניסי קוד קופון"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    className="flex-1"
+                    disabled={applyingCoupon} />
+
                     <Button
-                      onClick={handleApplyCoupon}
-                      disabled={applyingCoupon || !couponCode.trim()}
-                      variant="outline"
-                      className="px-6"
-                    >
+                    onClick={handleApplyCoupon}
+                    disabled={applyingCoupon || !couponCode.trim()}
+                    variant="outline"
+                    className="px-6">
+
                       {applyingCoupon ? <Loader2 className="w-4 h-4 animate-spin" /> : 'החל'}
                     </Button>
                   </div>
-                  {couponError && (
-                    <p className="text-xs text-red-600">{couponError}</p>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-2">
+                  {couponError &&
+                <p className="text-xs text-red-600">{couponError}</p>
+                }
+                </div> :
+
+              <div className="space-y-2">
                   <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200">
                     <div className="flex items-center gap-2">
                       <Tag className="w-4 h-4 text-green-600" />
                       <div>
                         <p className="text-sm font-medium text-green-900">קופון הוחל: {appliedCoupon.code}</p>
                         <p className="text-xs text-green-700">
-                          {appliedCoupon.discount_type === 'percentage'
-                            ? `הנחה של ${appliedCoupon.discount_value}%`
-                            : `הנחה של ₪${appliedCoupon.discount_value}`}
+                          {appliedCoupon.discount_type === 'percentage' ?
+                        `הנחה של ${appliedCoupon.discount_value}%` :
+                        `הנחה של ₪${appliedCoupon.discount_value}`}
                         </p>
                       </div>
                     </div>
                     <Button
-                      onClick={handleRemoveCoupon}
-                      variant="ghost"
-                      size="sm"
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
+                    onClick={handleRemoveCoupon}
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50">
+
                       הסר
                     </Button>
                   </div>
                 </div>
-              )}
+              }
             </div>
 
-            {appliedCoupon && (
-              <div className="flex justify-between items-center py-2 border-t border-green-200 bg-green-50">
+            {appliedCoupon &&
+            <div className="flex justify-between items-center py-2 border-t border-green-200 bg-green-50">
                 <span className="text-sm font-medium text-green-900">הנחת קופון</span>
                 <span className="text-sm font-bold text-green-600">
                   -{formatMoney(calculateDiscount())}
                 </span>
               </div>
-            )}
+            }
 
             <div className="flex justify-between items-center pt-4 border-t-2 border-rose-200">
               <span className="text-lg font-bold text-stone-900">
@@ -430,6 +430,6 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
           </Button>
         </div>
       </div>
-    </motion.div>
-  );
+    </motion.div>);
+
 }
