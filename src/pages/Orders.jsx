@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Order } from "@/entities/Order";
 import { User } from "@/entities/User";
@@ -449,34 +448,42 @@ export default function Orders() {
       if (data.status) {
         const order = orders.find(o => o.id === orderId);
         if (order && data.status !== order.status) {
-          // Check if the customer is a registered app user to comply with platform email policy
-          const matches = await User.filter({ email: order.customer_email });
-          const isAppUser = Array.isArray(matches) && matches.length > 0;
+          // Get status step number to determine if email should be sent
+          const statusStep = statusStepsMap[data.status]?.step;
+          
+          // Skip email for steps 2 and 3 (ordered and warehouse)
+          const shouldSkipEmail = statusStep === 2 || statusStep === 3;
+          
+          if (!shouldSkipEmail) {
+            // Check if the customer is a registered app user to comply with platform email policy
+            const matches = await User.filter({ email: order.customer_email });
+            const isAppUser = Array.isArray(matches) && matches.length > 0;
 
-          const trackOrderPageUrl = new URL(createPageUrl('TrackOrder'), window.location.origin).href;
-          const chatPageUrl = new URL(createPageUrl('Chat'), window.location.origin).href;
-          const statusLabel = statusConfig[data.status]?.label || data.status;
+            const trackOrderPageUrl = new URL(createPageUrl('TrackOrder'), window.location.origin).href;
+            const chatPageUrl = new URL(createPageUrl('Chat'), window.location.origin).href;
+            const statusLabel = statusConfig[data.status]?.label || data.status;
 
-          const emailHtml = buildStatusUpdateEmailHTML({
-            customerName: order.customer_name,
-            orderNumber: order.order_number,
-            statusLabel,
-            trackUrl: trackOrderPageUrl,
-            chatUrl: chatPageUrl
-          });
-
-          const subject = `עדכון סטטוס להזמנה #${order.order_number}: ${statusLabel}`;
-
-          if (isAppUser) {
-            await SendEmail({
-              from_name: "Brandy Melville to Israel",
-              to: order.customer_email,
-              subject,
-              body: emailHtml
+            const emailHtml = buildStatusUpdateEmailHTML({
+              customerName: order.customer_name,
+              orderNumber: order.order_number,
+              statusLabel,
+              trackUrl: trackOrderPageUrl,
+              chatUrl: chatPageUrl
             });
-          } else {
-            // NEW: If not an app user, open email preview for manual sending
-            openEmailPreview(order.customer_email, subject, emailHtml);
+
+            const subject = `עדכון סטטוס להזמנה #${order.order_number}: ${statusLabel}`;
+
+            if (isAppUser) {
+              await SendEmail({
+                from_name: "Brandy Melville to Israel",
+                to: order.customer_email,
+                subject,
+                body: emailHtml
+              });
+            } else {
+              // NEW: If not an app user, open email preview for manual sending
+              openEmailPreview(order.customer_email, subject, emailHtml);
+            }
           }
         }
       }
