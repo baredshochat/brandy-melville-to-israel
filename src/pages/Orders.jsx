@@ -893,6 +893,18 @@ export default function Orders() {
                       <table className="w-full">
                         <thead className="bg-stone-50 border-b border-stone-200">
                           <tr>
+                            <th className="p-3 w-10">
+                              <Checkbox
+                                checked={filteredOrders.length > 0 && selectedOrderIds.size === filteredOrders.length}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setSelectedOrderIds(new Set(filteredOrders.map(o => o.id)));
+                                  } else {
+                                    setSelectedOrderIds(new Set());
+                                  }
+                                }}
+                              />
+                            </th>
                             {/* Simplified columns per request */}
                             <th className="text-right p-3 font-medium">מספר הזמנה</th>
                             <th className="text-right p-3 font-medium">לקוח</th>
@@ -915,6 +927,22 @@ export default function Orders() {
                                   className="border-b border-stone-100 hover:bg-stone-50 cursor-pointer"
                                   onClick={() => handleRowClick(order)} // Clicking anywhere on the row still opens the drawer
                                 >
+                                  <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                                    <Checkbox
+                                      checked={selectedOrderIds.has(order.id)}
+                                      onCheckedChange={(checked) => {
+                                        setSelectedOrderIds(prev => {
+                                          const next = new Set(prev);
+                                          if (checked) {
+                                            next.add(order.id);
+                                          } else {
+                                            next.delete(order.id);
+                                          }
+                                          return next;
+                                        });
+                                      }}
+                                    />
+                                  </td>
                                   <td className="p-3 font-mono text-sm">{order.order_number}</td>
 
                                   {/* Customer cell: name + email only */}
@@ -969,7 +997,7 @@ export default function Orders() {
 
                                 {/* NEW: full-width horizontal status stepper row */}
                                 <tr className="bg-transparent">
-                                  <td colSpan={4} className="px-3 pb-3">
+                                  <td colSpan={5} className="px-3 pb-3">
                                     <div className="p-2 rounded-md border border-stone-200 bg-white/70">
                                       <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto py-1">
                                         <span className="text-[11px] font-semibold tracking-wide text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded">
@@ -1008,10 +1036,10 @@ export default function Orders() {
                                   </td>
                                 </tr>
 
-                                {/* Expanded details row spans all 4 columns */}
+                                {/* Expanded details row spans all 5 columns */}
                                 {isExpanded && (
                                   <tr className="bg-stone-50 border-b border-stone-100">
-                                    <td colSpan={4} className="p-4">
+                                    <td colSpan={5} className="p-4">
                                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                                         <div className="space-y-1">
                                           <div className="text-stone-500">סה״כ בש״ח</div>
