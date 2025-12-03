@@ -36,27 +36,30 @@ export default function DiscountBanner() {
   return (
     <motion.div
       initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }} className="bg-red-100 text-white mb-6 px-4 py-3 from-rose-500 via-pink-500 to-rose-500 shadow-lg">
-
-
-      <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 text-center">
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-rose-50 border border-rose-200 py-3 px-4 mb-6"
+    >
+      <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-center">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5" />
-          <span className="text-slate-800 text-lg font-bold">15% הנחה לכבוד ההשקה</span>
-          <Sparkles className="w-5 h-5" />
+          <span className="text-rose-600 font-medium">✨ 15% הנחה לכבוד ההשקה</span>
         </div>
         
-        <div className="flex items-center gap-2">
-          <Clock className="text-slate-800 lucide lucide-clock w-4 h-4" />
-          <span className="text-sm">נגמר בעוד:</span>
-          <div className="flex gap-1 font-mono font-bold text-sm">
-            <span className="bg-white/20 px-2 py-1">{timeLeft.days}י</span>
-            <span className="bg-white/20 px-2 py-1">{String(timeLeft.hours).padStart(2, '0')}ש</span>
-            <span className="bg-white/20 px-2 py-1">{String(timeLeft.minutes).padStart(2, '0')}ד</span>
-            <span className="bg-white/20 px-2 py-1">{String(timeLeft.seconds).padStart(2, '0')}ש</span>
+        <span className="hidden sm:block text-rose-300">|</span>
+        
+        <div className="flex items-center gap-2 text-stone-600 text-sm">
+          <span>נגמר בעוד</span>
+          <div className="flex gap-1 font-mono text-rose-700">
+            <span>{timeLeft.days}י</span>
+            <span>:</span>
+            <span>{String(timeLeft.hours).padStart(2, '0')}ש</span>
+            <span>:</span>
+            <span>{String(timeLeft.minutes).padStart(2, '0')}ד</span>
+            <span>:</span>
+            <span>{String(timeLeft.seconds).padStart(2, '0')}ש</span>
           </div>
         </div>
       </div>
-    </motion.div>);
+    </motion.div>
+  );
 
 }
