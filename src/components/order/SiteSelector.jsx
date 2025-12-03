@@ -121,7 +121,7 @@ const HowItWorksModal = () =>
               </div>
               <div>
                 <h4 className="font-semibold mb-1 text-sm">תשלום מהיר</h4>
-                <p className="text-sm text-stone-600">מחיר הפריט + 35 ש״ח משלוח בלבד</p>
+                <p className="text-sm text-stone-600">מחיר הפריט + 30 ש״ח משלוח בלבד</p>
               </div>
             </div>
             
