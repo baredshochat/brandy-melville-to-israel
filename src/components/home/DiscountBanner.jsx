@@ -48,14 +48,11 @@ export default function DiscountBanner() {
         
         <div className="flex items-center gap-2 text-stone-600 text-sm">
           <span>נגמר בעוד</span>
-          <div className="flex gap-1 font-mono text-rose-700">
-            <span>{timeLeft.days}י</span>
-            <span>:</span>
-            <span>{String(timeLeft.hours).padStart(2, '0')}ש</span>
-            <span>:</span>
-            <span>{String(timeLeft.minutes).padStart(2, '0')}ד</span>
-            <span>:</span>
-            <span>{String(timeLeft.seconds).padStart(2, '0')}ש</span>
+          <div className="flex gap-2 font-mono text-rose-700">
+            <span>{timeLeft.days} <span className="text-xs text-stone-400">ימים</span></span>
+            <span>{String(timeLeft.hours).padStart(2, '0')} <span className="text-xs text-stone-400">שעות</span></span>
+            <span>{String(timeLeft.minutes).padStart(2, '0')} <span className="text-xs text-stone-400">דקות</span></span>
+            <span>{String(timeLeft.seconds).padStart(2, '0')} <span className="text-xs text-stone-400">שניות</span></span>
           </div>
         </div>
       </div>
