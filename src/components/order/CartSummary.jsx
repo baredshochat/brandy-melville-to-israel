@@ -29,20 +29,20 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
       if (!url) return "";
       const u = new URL(url);
       let path = u.pathname.replace(/\/+$/, "");
-      let slug = path.includes("/products/")
-        ? path.split("/products/")[1]
-        : path.split("/").filter(Boolean).pop();
-      
+      let slug = path.includes("/products/") ?
+      path.split("/products/")[1] :
+      path.split("/").filter(Boolean).pop();
+
       if (!slug) return "";
       slug = slug.split("?")[0].split("#")[0];
       slug = decodeURIComponent(slug);
-      
-      return slug
-        .replace(/-/g, ' ')
-        .split(" ")
-        .filter(Boolean)
-        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(" ");
+
+      return slug.
+      replace(/-/g, ' ').
+      split(" ").
+      filter(Boolean).
+      map((w) => w.charAt(0).toUpperCase() + w.slice(1)).
+      join(" ");
     } catch (e) {
       console.warn("Could not parse URL for product name:", url, e);
       return "";
@@ -55,18 +55,18 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
   React.useEffect(() => {
     // Calculate display price
     if (cart && cart.length > 0) {
-      const isLocalOrder = cart.every(item => item.site === 'local');
-      
+      const isLocalOrder = cart.every((item) => item.site === 'local');
+
       if (isLocalOrder) {
         // For local items, just show the item prices (no shipping in cart summary)
-        const localTotal = cart.reduce((sum, item) => sum + (item.original_price * item.quantity), 0);
+        const localTotal = cart.reduce((sum, item) => sum + item.original_price * item.quantity, 0);
         setDisplayPrice(localTotal);
       } else {
         // For import items: מחיר מקורי * שער המרה * 2.5
         const importTotal = cart.reduce((sum, item) => {
           const currency = item.original_currency || 'EUR';
           const exchangeRate = EXCHANGE_RATES[currency] || 4;
-          return sum + (item.original_price * exchangeRate * MULTIPLIER * item.quantity);
+          return sum + item.original_price * exchangeRate * MULTIPLIER * item.quantity;
         }, 0);
         setDisplayPrice(Math.round(importTotal));
       }
@@ -78,7 +78,7 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
 
   const handleRemoveItem = async (itemId) => {
     if (deletingIds.includes(itemId)) return;
-    
+
     setDeletingIds((prev) => [...prev, itemId]);
     try {
       await onRemove(itemId);
@@ -134,9 +134,9 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
                 </div>
                 
                 {cart.map((item) => {
-              const displayName = (item.product_name && item.product_name.trim())
-                ? item.product_name
-                : getNameFromUrl(item.product_url);
+              const displayName = item.product_name && item.product_name.trim() ?
+              item.product_name :
+              getNameFromUrl(item.product_url);
 
               return (
                 <div key={item.id} className="flex items-start justify-between p-3 sm:p-4 bg-white/80 border border-rose-100 shadow-sm flex-col gap-3 sm:flex-row sm:gap-4">
@@ -197,13 +197,13 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
                     <span className="text-stone-600 font-medium">סיכום ביניים:</span>
                     <span className="text-xl font-bold text-stone-800">₪{displayPrice.toLocaleString('he-IL')}</span>
                   </div>
-                  <p className="text-xs text-stone-500 mb-4 text-center">
-                    מחיר הפריטים בלבד. עלויות משלוח ומסים יתווספו בשלב הבא 📦
-                  </p>
+                  <p className="text-xs text-stone-500 mb-4 text-center">מחיר הפריטים כולל מיסים ועלויות ייבוא לארץ. לא נדרש תשלום נוסף 
+
+              </p>
                   <Button
-                    onClick={onCheckout}
-                    disabled={!canCheckout}
-                    className="w-full h-12 sm:h-14 px-6 sm:px-8 bg-black hover:bg-stone-800 active:bg-stone-700 text-white font-medium transition-all duration-300 flex items-center justify-center gap-2 shadow-lg text-base sm:text-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                onClick={onCheckout}
+                disabled={!canCheckout}
+                className="w-full h-12 sm:h-14 px-6 sm:px-8 bg-black hover:bg-stone-800 active:bg-stone-700 text-white font-medium transition-all duration-300 flex items-center justify-center gap-2 shadow-lg text-base sm:text-lg disabled:opacity-50 disabled:cursor-not-allowed">
                     סיכום הזמנה
                     <ArrowRight className="w-5 h-5" />
                   </Button>
