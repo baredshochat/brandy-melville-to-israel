@@ -320,8 +320,8 @@ Example output:
 
           <div className="mt-6 sm:mt-8 space-y-4 sm:space-y-6">
             <div className="p-3 sm:p-4 bg-amber-50 border border-amber-200 text-amber-900">
-              <p className="text-sm sm:text-base font-semibold">
-                ⚠️ שימי לב: הפריט שיגיע הוא בדיוק לפי הקישור המקורי. אם יש טעות בפרטים, לחצי על "בדוק שוב" למעלה.
+              <p className="text-sm sm:text-base font-semibold">⚠️ שימי לב: הפריט שיגיע הוא בדיוק לפי הקישור המקורי. 
+
               </p>
             </div>
 
