@@ -17,9 +17,9 @@ export default function DiscountBanner() {
 
     return {
       days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-      hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
-      minutes: Math.floor((difference / 1000 / 60) % 60),
-      seconds: Math.floor((difference / 1000) % 60)
+      hours: Math.floor(difference / (1000 * 60 * 60) % 24),
+      minutes: Math.floor(difference / 1000 / 60 % 60),
+      seconds: Math.floor(difference / 1000 % 60)
     };
   }
 
@@ -36,18 +36,18 @@ export default function DiscountBanner() {
   return (
     <motion.div
       initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-gradient-to-r from-rose-500 via-pink-500 to-rose-500 text-white py-3 px-4 mb-6 shadow-lg"
-    >
+      animate={{ opacity: 1, y: 0 }} className="bg-red-100 text-white mb-6 px-4 py-3 from-rose-500 via-pink-500 to-rose-500 shadow-lg">
+
+
       <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 text-center">
         <div className="flex items-center gap-2">
           <Sparkles className="w-5 h-5" />
-          <span className="font-bold text-lg">השקה חגיגית! 15% הנחה</span>
+          <span className="text-slate-800 text-lg font-bold">15% הנחה לכבוד ההשקה</span>
           <Sparkles className="w-5 h-5" />
         </div>
         
         <div className="flex items-center gap-2">
-          <Clock className="w-4 h-4" />
+          <Clock className="text-slate-800 lucide lucide-clock w-4 h-4" />
           <span className="text-sm">נגמר בעוד:</span>
           <div className="flex gap-1 font-mono font-bold text-sm">
             <span className="bg-white/20 px-2 py-1">{timeLeft.days}י</span>
@@ -57,6 +57,6 @@ export default function DiscountBanner() {
           </div>
         </div>
       </div>
-    </motion.div>
-  );
+    </motion.div>);
+
 }
