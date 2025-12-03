@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Plus, Trash2, ArrowLeft, ArrowRight, ShoppingBag, Heart, Minus, Edit } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ColorDisplay from './ColorDisplay';
-import CartValueTip from './CartValueTip';
 
 // שערי המרה קבועים
 const EXCHANGE_RATES = {
@@ -191,7 +190,7 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
             })}
 
 
-                <CartValueTip count={cart.length} onAddAnother={onAddAnother} />
+
 
                 <div className="pt-4 sm:pt-6 border-t-2 border-rose-200/50">
                   <div className="flex justify-between items-center mb-2">
