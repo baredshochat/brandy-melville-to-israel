@@ -18,6 +18,7 @@ import LoadingCalculation from "../components/order/LoadingCalculation";
 import { Heart } from "lucide-react";
 import CartImport from '../components/order/CartImport';
 import TranzilaPayment from '../components/payment/TranzilaPayment';
+import DiscountBanner from '../components/home/DiscountBanner';
 
 // ---- Helpers ----
 async function normalizeLLMResult(res) {
@@ -861,6 +862,7 @@ Example output:
 
   return (
     <div className="container mx-auto" dir="rtl">
+      <DiscountBanner />
       <AnimatePresence mode="wait">{renderStep()}</AnimatePresence>
     </div>
   );
