@@ -197,7 +197,7 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
                     <span className="text-stone-600 font-medium">סיכום ביניים:</span>
                     <span className="text-xl font-bold text-stone-800">₪{displayPrice.toLocaleString('he-IL')}</span>
                   </div>
-                  <p className="text-xs text-stone-500 mb-4 text-center">מחיר הפריטים כולל מיסים ועלויות ייבוא לארץ. לא נדרש תשלום נוסף 
+                  <p className="text-xs text-stone-500 mb-4 text-center">📦 מחיר הפריטים כולל מיסים ועלויות ייבוא לארץ. לא נדרש תשלום נוסף
 
               </p>
                   <Button
