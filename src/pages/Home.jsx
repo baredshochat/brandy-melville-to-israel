@@ -640,7 +640,7 @@ Example output:
       setCurrentItem(null);
       setEditingItem(null);
       setProductUrl('');
-      setStep(4);
+      setStep(3.5); // Go to loading screen before cart
     } catch (error) {
       console.error("Error confirming product:", error);
       alert("שגיאה בשמירת הפריט לסל.");
@@ -824,8 +824,8 @@ Example output:
       case 1: return <SiteSelector onSiteSelect={handleSiteSelect} />;
       case 2: return <CartImport site={selectedSite} onImportComplete={handleCartImported} onBack={() => setStep(1)} loading={loading} />;
       case 3: return <ProductPreview productData={currentItem} onConfirm={handleProductConfirm} onBack={() => { setStep(2); setEditingItem(null); }} />;
-      case 4: return <CartSummary cart={safeCart} onRemove={handleRemoveFromCart} onUpdateQuantity={handleUpdateCartQuantity} onEdit={handleEditItem} onAddAnother={() => setStep(2)} onCheckout={() => setStep(4.5)} onBack={() => setStep(1)} />;
-      case 4.5: return <LoadingCalculation onComplete={() => setStep(5)} />;
+      case 3.5: return <LoadingCalculation onComplete={() => setStep(4)} />;
+      case 4: return <CartSummary cart={safeCart} onRemove={handleRemoveFromCart} onUpdateQuantity={handleUpdateCartQuantity} onEdit={handleEditItem} onAddAnother={() => setStep(2)} onCheckout={() => setStep(5)} onBack={() => setStep(1)} />;
       case 5: {
         const siteForCalculation = selectedSite || (safeCart.length > 0 ? safeCart[0].site : '');
         return <PriceCalculator cart={safeCart} site={siteForCalculation} onConfirm={handlePriceConfirm} onBack={() => setStep(4)} />;
