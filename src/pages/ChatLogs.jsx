@@ -184,10 +184,20 @@ export default function ChatLogs() {
                         {feedback.customer_email || 'אנונימי'}
                       </span>
                     </div>
-                    <span className="flex items-center gap-1 text-xs text-stone-400">
-                      <Calendar className="w-3 h-3" />
-                      {feedback.created_date ? format(new Date(feedback.created_date), 'dd/MM/yyyy HH:mm', { locale: he }) : '—'}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className="flex items-center gap-1 text-xs text-stone-400">
+                        <Calendar className="w-3 h-3" />
+                        {feedback.created_date ? format(new Date(feedback.created_date), 'dd/MM/yyyy HH:mm', { locale: he }) : '—'}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(feedback.id)}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 h-7 w-7 p-0"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                   
                   {extractComment(feedback.comment) && (
