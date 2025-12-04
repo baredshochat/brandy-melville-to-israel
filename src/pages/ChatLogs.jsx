@@ -76,6 +76,17 @@ export default function ChatLogs() {
     return null;
   };
 
+  const handleDelete = async (feedbackId) => {
+    if (!confirm("למחוק את המשוב הזה?")) return;
+    try {
+      await Feedback.delete(feedbackId);
+      setFeedbacks(prev => prev.filter(f => f.id !== feedbackId));
+    } catch (error) {
+      console.error("Error deleting feedback:", error);
+      alert("שגיאה במחיקה");
+    }
+  };
+
   if (userRole !== 'admin') {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
