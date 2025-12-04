@@ -5,7 +5,7 @@ import { createPageUrl } from "@/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MessageSquare, Search, Loader2, ThumbsUp, ThumbsDown, Calendar, Mail, ArrowRight } from "lucide-react";
+import { MessageSquare, Search, Loader2, ThumbsUp, ThumbsDown, Calendar, Mail, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
