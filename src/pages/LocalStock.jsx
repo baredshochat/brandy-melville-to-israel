@@ -169,7 +169,7 @@ export default function LocalStock() {
               exit={{ opacity: 0, y: -20 }}
               transition={{ delay: index * 0.05 }}>
                   <Card
-                                    className="h-full overflow-hidden hover:shadow-lg transition-all duration-300 bg-white/90 backdrop-blur-sm cursor-pointer group border-0"
+                                    className="h-full overflow-hidden hover:shadow-lg transition-all duration-300 bg-white cursor-pointer group border-0 shadow-none"
                                     onClick={() => window.location.href = createPageUrl('LocalStockItemDetail') + '?id=' + item.id}>
                                       <CardContent className="p-0 relative">
                                         {item.image_url &&
@@ -185,18 +185,18 @@ export default function LocalStock() {
                                           handleAddToCart(item);
                                         }}
                                         disabled={addingToCart[item.id] || addedItems.has(item.id)}
-                                        className="absolute bottom-2 left-2 w-8 h-8 bg-white/90 hover:bg-white flex items-center justify-center rounded-full shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                                        className="absolute bottom-1 left-1 w-6 h-6 bg-white/80 hover:bg-white flex items-center justify-center rounded-full shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
                                               {addingToCart[item.id] ?
-                                        <Loader2 className="w-4 h-4 animate-spin text-stone-800" /> :
+                                        <Loader2 className="w-3 h-3 animate-spin text-stone-800" /> :
                                         addedItems.has(item.id) ?
-                                        <CheckCircle className="w-4 h-4 text-green-600" /> :
-                                        <Plus className="w-4 h-4 text-stone-800" />
+                                        <CheckCircle className="w-3 h-3 text-green-600" /> :
+                                        <Plus className="w-3 h-3 text-stone-800" />
                                         }
                                             </button>
                                           </div>
                                     }
-                                        <div className="px-2 py-2">
-                                          <h3 className="font-medium text-xs text-stone-800 mb-1 truncate">
+                                        <div className="px-1 py-1">
+                                          <h3 className="font-medium text-xs text-stone-800 truncate">
                                             {item.product_name}
                                           </h3>
                                           <div className="flex items-center gap-1">
