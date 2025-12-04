@@ -103,6 +103,7 @@ export default function LocalStock() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-50 via-rose-50/30 to-stone-100 pb-12">
+      <DiscountBanner />
       <div className="bg-gradient-to-r from-rose-100/50 to-pink-100/50 py-6 mb-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <motion.div
