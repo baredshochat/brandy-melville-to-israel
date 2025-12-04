@@ -16,7 +16,7 @@ export default function ReturnsPolicyPage() {
         <h1 className="text-4xl font-semibold text-stone-900 mb-6">מדיניות החזרה וביטולים</h1>
         
         <h2 className="text-2xl font-semibold text-stone-800 mt-8 mb-4">1. החזרות על מלאי מקומי</h2>
-        <p>1.1. ניתן להחזיר פריט שנרכש מהמלאי המקומי תוך 14 ימים מיום קבלתו.</p>
+        <p>1.1. ניתן להחזיר פריט שנרכש מהמלאי המקומי תוך 7 ימים מיום קבלתו.</p>
         <p>1.2. הפריט חייב להיות:</p>
         <ul className="list-disc pr-6 space-y-1">
           <li>חדש, ללא סימני שימוש</li>
