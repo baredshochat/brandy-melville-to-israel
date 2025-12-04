@@ -169,47 +169,47 @@ export default function LocalStock() {
               exit={{ opacity: 0, y: -20 }}
               transition={{ delay: index * 0.05 }}>
                   <Card
-                className="h-full overflow-hidden hover:shadow-xl transition-all duration-300 bg-white/90 backdrop-blur-sm cursor-pointer group"
-                onClick={() => window.location.href = createPageUrl('LocalStockItemDetail') + '?id=' + item.id}>
-                    <CardContent className="p-0 relative">
-                      {item.image_url &&
-                  <div className="w-full bg-stone-100 overflow-hidden relative flex items-center justify-center" style={{ minHeight: '350px' }}>
-                          <img
-                      src={item.image_url}
-                      alt={item.product_name}
-                      className="w-full h-auto object-contain group-hover:scale-105 transition-transform duration-300"
-                      style={{ maxHeight: '400px' }} />
-                          <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleAddToCart(item);
-                      }}
-                      disabled={addingToCart[item.id] || addedItems.has(item.id)}
-                      className="absolute bottom-3 left-3 w-10 h-10 bg-white/90 hover:bg-white flex items-center justify-center rounded-full shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
-                            {addingToCart[item.id] ?
-                      <Loader2 className="w-5 h-5 animate-spin text-stone-800" /> :
-                      addedItems.has(item.id) ?
-                      <CheckCircle className="w-5 h-5 text-green-600" /> :
-                      <Plus className="w-5 h-5 text-stone-800" />
-                      }
-                          </button>
-                        </div>
-                  }
-                      <div className="p-3">
-                        <h3 className="font-medium text-sm text-stone-800 mb-2">
-                          {item.product_name}
-                        </h3>
-                        <div className="flex items-center gap-2">
-                          <p className="text-stone-400 text-xs line-through">
-                            ₪{item.price_ils}
-                          </p>
-                          <p className="text-rose-600 text-sm font-semibold">
-                            ₪{Math.round(item.price_ils * 0.85)}
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                                    className="h-full overflow-hidden hover:shadow-lg transition-all duration-300 bg-white/90 backdrop-blur-sm cursor-pointer group border-0"
+                                    onClick={() => window.location.href = createPageUrl('LocalStockItemDetail') + '?id=' + item.id}>
+                                      <CardContent className="p-0 relative">
+                                        {item.image_url &&
+                                    <div className="w-full bg-stone-50 overflow-hidden relative flex items-center justify-center" style={{ minHeight: '280px' }}>
+                                            <img
+                                        src={item.image_url}
+                                        alt={item.product_name}
+                                        className="w-full h-auto object-contain group-hover:scale-105 transition-transform duration-300"
+                                        style={{ maxHeight: '320px' }} />
+                                            <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleAddToCart(item);
+                                        }}
+                                        disabled={addingToCart[item.id] || addedItems.has(item.id)}
+                                        className="absolute bottom-2 left-2 w-8 h-8 bg-white/90 hover:bg-white flex items-center justify-center rounded-full shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                                              {addingToCart[item.id] ?
+                                        <Loader2 className="w-4 h-4 animate-spin text-stone-800" /> :
+                                        addedItems.has(item.id) ?
+                                        <CheckCircle className="w-4 h-4 text-green-600" /> :
+                                        <Plus className="w-4 h-4 text-stone-800" />
+                                        }
+                                            </button>
+                                          </div>
+                                    }
+                                        <div className="px-2 py-2">
+                                          <h3 className="font-medium text-xs text-stone-800 mb-1 truncate">
+                                            {item.product_name}
+                                          </h3>
+                                          <div className="flex items-center gap-1">
+                                            <p className="text-stone-400 text-xs line-through">
+                                              ₪{item.price_ils}
+                                            </p>
+                                            <p className="text-rose-600 text-sm font-semibold">
+                                              ₪{Math.round(item.price_ils * 0.85)}
+                                            </p>
+                                          </div>
+                                        </div>
+                                      </CardContent>
+                                    </Card>
                 </motion.div>
             )}
             </AnimatePresence>
