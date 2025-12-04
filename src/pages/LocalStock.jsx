@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ShoppingCart, Search, ArrowRight, Loader2, CheckCircle, Plus, Settings } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPageUrl } from "@/utils";
+import DiscountBanner from '../components/home/DiscountBanner';
 
 const categoryNames = {
   tops: "חולצות וטופים",
