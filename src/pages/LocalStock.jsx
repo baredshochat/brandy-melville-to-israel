@@ -198,9 +198,14 @@ export default function LocalStock() {
                         <h3 className="font-medium text-sm text-stone-800 mb-2">
                           {item.product_name}
                         </h3>
-                        <p className="text-stone-800 text-sm font-normal">
-                          ₪{item.price_ils}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-stone-400 text-xs line-through">
+                            ₪{item.price_ils}
+                          </p>
+                          <p className="text-rose-600 text-sm font-semibold">
+                            ₪{Math.round(item.price_ils * 0.85)}
+                          </p>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
