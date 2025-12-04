@@ -18,6 +18,7 @@ const categoryNames = {
   tops: "חולצות וטופים",
   bottoms: "מכנסיים וחצאיות",
   dresses: "שמלות",
+  sweaters: "סוודרים וסווטשירטים",
   accessories: "אביזרים",
   other: "אחר"
 };
