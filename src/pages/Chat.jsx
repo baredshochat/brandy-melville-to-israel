@@ -7,6 +7,7 @@ import { Send, Bot, User as UserIcon, Loader2, ThumbsUp, ThumbsDown, Phone } fro
 import { InvokeLLM, SendEmail } from '@/integrations/Core';
 import { User } from '@/entities/User';
 import { Feedback } from '@/entities/Feedback';
+import { ChatConversation } from '@/entities/ChatConversation';
 import MessageContent from '../components/chat/MessageContent';
 
 // The context for the AI assistant
@@ -112,6 +113,7 @@ export default function ChatPage() {
   const [feedbackState, setFeedbackState] = useState(null); // null | 'prompt_comment' | 'thank_you'
   const [feedbackComment, setFeedbackComment] = useState('');
   const [sessionID] = useState(() => `session_${Date.now()}`); // To link feedback to a session
+  const [conversationId, setConversationId] = useState(null);
   
   // Human agent state
   const [frustrationCount, setFrustrationCount] = useState(0);
@@ -122,6 +124,30 @@ export default function ChatPage() {
   useEffect(() => {
     User.me().then(setUser).catch(() => console.error("User not logged in"));
   }, []);
+
+  // Save conversation to database
+  const saveConversation = async (updatedMessages) => {
+    const messagesWithTimestamp = updatedMessages.map(msg => ({
+      ...msg,
+      timestamp: msg.timestamp || new Date().toISOString()
+    }));
+    
+    try {
+      if (conversationId) {
+        await ChatConversation.update(conversationId, { messages: messagesWithTimestamp });
+      } else {
+        const newConv = await ChatConversation.create({
+          session_id: sessionID,
+          customer_email: user?.email || 'anonymous',
+          messages: messagesWithTimestamp,
+          status: 'active'
+        });
+        setConversationId(newConv.id);
+      }
+    } catch (error) {
+      console.error("Error saving conversation:", error);
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -155,7 +181,11 @@ export default function ChatPage() {
       }
 
       const botMessage = { role: 'bot', content: response };
-      setMessages((prev) => [...prev, botMessage]);
+      setMessages((prev) => {
+        const updated = [...prev, botMessage];
+        saveConversation(updated);
+        return updated;
+      });
       
       // Check for frustration keywords
       const frustrationKeywords = ['לא עזר', 'לא הבנתי', 'לא מבינה', 'לא עונה', 'נציג', 'אנושי', 'בן אדם', 'מתסכל', 'לא רלוונטי', 'שטויות', 'לא נכון', 'טעות', 'בעיה', 'לא פתר', 'עדיין לא', 'כבר שאלתי', 'שוב', 'לא מספיק'];
