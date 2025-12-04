@@ -1,20 +1,25 @@
 import React, { useState, useEffect } from "react";
 import { User } from "@/entities/User";
 import { Feedback } from "@/entities/Feedback";
+import { ChatConversation } from "@/entities/ChatConversation";
 import { createPageUrl } from "@/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MessageSquare, Search, Loader2, ThumbsUp, ThumbsDown, Calendar, Mail, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { MessageSquare, Search, Loader2, ThumbsUp, ThumbsDown, Calendar, Mail, Trash2, Eye, Bot, User as UserIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
 
 export default function ChatLogs() {
   const [feedbacks, setFeedbacks] = useState([]);
+  const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedConversation, setSelectedConversation] = useState(null);
+  const [viewMode, setViewMode] = useState('conversations'); // 'conversations' | 'feedbacks'
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -25,7 +30,7 @@ export default function ChatLogs() {
           return;
         }
         setUserRole(user.role);
-        loadFeedbacks();
+        loadData();
       } catch (error) {
         window.location.href = createPageUrl('Home');
       }
@@ -33,15 +38,19 @@ export default function ChatLogs() {
     checkAccess();
   }, []);
 
-  const loadFeedbacks = async () => {
+  const loadData = async () => {
     setLoading(true);
     try {
-      const data = await Feedback.list('-created_date', 100);
+      const [feedbackData, conversationData] = await Promise.all([
+        Feedback.list('-created_date', 100),
+        ChatConversation.list('-created_date', 100)
+      ]);
       // Filter only chat session feedbacks
-      const chatFeedbacks = data.filter(f => f.order_id?.startsWith('session_') || f.comment?.includes('Chat session'));
+      const chatFeedbacks = feedbackData.filter(f => f.order_id?.startsWith('session_') || f.comment?.includes('Chat session'));
       setFeedbacks(chatFeedbacks);
+      setConversations(conversationData);
     } catch (error) {
-      console.error("Error loading feedbacks:", error);
+      console.error("Error loading data:", error);
     } finally {
       setLoading(false);
     }
@@ -56,6 +65,28 @@ export default function ChatLogs() {
       f.order_id?.toLowerCase().includes(query)
     );
   });
+
+  const filteredConversations = conversations.filter(c => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    const hasMatchingMessage = c.messages?.some(m => m.content?.toLowerCase().includes(query));
+    return (
+      c.customer_email?.toLowerCase().includes(query) ||
+      c.session_id?.toLowerCase().includes(query) ||
+      hasMatchingMessage
+    );
+  });
+
+  const handleDeleteConversation = async (conversationId) => {
+    if (!confirm("למחוק את השיחה הזו?")) return;
+    try {
+      await ChatConversation.delete(conversationId);
+      setConversations(prev => prev.filter(c => c.id !== conversationId));
+    } catch (error) {
+      console.error("Error deleting conversation:", error);
+      alert("שגיאה במחיקה");
+    }
+  };
 
   const getRatingDisplay = (rating) => {
     if (rating === 5) {
@@ -103,7 +134,7 @@ export default function ChatLogs() {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-stone-900 mb-2">לוג שיחות צ'אט</h1>
-          <p className="text-stone-600">צפייה במשובים ושיחות מהבוט</p>
+          <p className="text-stone-600">צפייה בשיחות ומשובים מהבוט</p>
         </div>
         <Button 
           variant="outline" 
@@ -112,6 +143,26 @@ export default function ChatLogs() {
         >
           <MessageSquare className="w-4 h-4" />
           לצ'אט
+        </Button>
+      </div>
+
+      {/* View Toggle */}
+      <div className="flex gap-2 mb-6">
+        <Button
+          variant={viewMode === 'conversations' ? 'default' : 'outline'}
+          onClick={() => setViewMode('conversations')}
+          className="flex items-center gap-2"
+        >
+          <MessageSquare className="w-4 h-4" />
+          שיחות ({conversations.length})
+        </Button>
+        <Button
+          variant={viewMode === 'feedbacks' ? 'default' : 'outline'}
+          onClick={() => setViewMode('feedbacks')}
+          className="flex items-center gap-2"
+        >
+          <ThumbsUp className="w-4 h-4" />
+          משובים ({feedbacks.length})
         </Button>
       </div>
 
@@ -129,7 +180,13 @@ export default function ChatLogs() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-4 gap-4 mb-8">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-3xl font-bold text-stone-900">{conversations.length}</div>
+            <p className="text-sm text-stone-500">סה"כ שיחות</p>
+          </CardContent>
+        </Card>
         <Card>
           <CardContent className="pt-6">
             <div className="text-3xl font-bold text-stone-900">{feedbacks.length}</div>
@@ -154,67 +211,195 @@ export default function ChatLogs() {
         </Card>
       </div>
 
+      {/* Conversations List */}
+      {viewMode === 'conversations' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>שיחות ({filteredConversations.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="text-center py-8">
+                <Loader2 className="w-8 h-8 animate-spin mx-auto text-stone-400" />
+              </div>
+            ) : filteredConversations.length === 0 ? (
+              <div className="text-center py-8 text-stone-500">
+                <MessageSquare className="w-12 h-12 mx-auto mb-4 text-stone-300" />
+                <p>אין שיחות להצגה</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filteredConversations.map((conversation) => (
+                  <div 
+                    key={conversation.id} 
+                    className="p-4 border border-stone-200 hover:bg-stone-50 transition-colors"
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-center gap-4">
+                        <span className="flex items-center gap-1 text-sm text-stone-700 font-medium">
+                          <MessageSquare className="w-4 h-4" />
+                          {conversation.messages?.length || 0} הודעות
+                        </span>
+                        <span className="flex items-center gap-1 text-sm text-stone-500">
+                          <Mail className="w-3 h-3" />
+                          {conversation.customer_email || 'אנונימי'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="flex items-center gap-1 text-xs text-stone-400">
+                          <Calendar className="w-3 h-3" />
+                          {conversation.created_date ? format(new Date(conversation.created_date), 'dd/MM/yyyy HH:mm', { locale: he }) : '—'}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSelectedConversation(conversation)}
+                          className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 h-7 w-7 p-0"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteConversation(conversation.id)}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50 h-7 w-7 p-0"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    {/* Preview last message */}
+                    {conversation.messages?.length > 0 && (
+                      <div className="mt-2 p-3 bg-stone-50 text-sm text-stone-600 truncate">
+                        {conversation.messages[conversation.messages.length - 1]?.content?.substring(0, 100)}...
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Feedbacks List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>משובים אחרונים ({filteredFeedbacks.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-center py-8">
-              <Loader2 className="w-8 h-8 animate-spin mx-auto text-stone-400" />
-            </div>
-          ) : filteredFeedbacks.length === 0 ? (
-            <div className="text-center py-8 text-stone-500">
-              <MessageSquare className="w-12 h-12 mx-auto mb-4 text-stone-300" />
-              <p>אין משובים להצגה</p>
-            </div>
-          ) : (
+      {viewMode === 'feedbacks' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>משובים ({filteredFeedbacks.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="text-center py-8">
+                <Loader2 className="w-8 h-8 animate-spin mx-auto text-stone-400" />
+              </div>
+            ) : filteredFeedbacks.length === 0 ? (
+              <div className="text-center py-8 text-stone-500">
+                <MessageSquare className="w-12 h-12 mx-auto mb-4 text-stone-300" />
+                <p>אין משובים להצגה</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filteredFeedbacks.map((feedback) => (
+                  <div 
+                    key={feedback.id} 
+                    className="p-4 border border-stone-200 hover:bg-stone-50 transition-colors"
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-center gap-4">
+                        {getRatingDisplay(feedback.rating)}
+                        <span className="flex items-center gap-1 text-sm text-stone-500">
+                          <Mail className="w-3 h-3" />
+                          {feedback.customer_email || 'אנונימי'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="flex items-center gap-1 text-xs text-stone-400">
+                          <Calendar className="w-3 h-3" />
+                          {feedback.created_date ? format(new Date(feedback.created_date), 'dd/MM/yyyy HH:mm', { locale: he }) : '—'}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(feedback.id)}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50 h-7 w-7 p-0"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    {extractComment(feedback.comment) && (
+                      <div className="mt-2 p-3 bg-stone-50 text-sm text-stone-700">
+                        <strong>תגובת הלקוח:</strong> {extractComment(feedback.comment)}
+                      </div>
+                    )}
+                    
+                    <div className="mt-2 text-xs text-stone-400">
+                      מזהה שיחה: {feedback.order_id || '—'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Conversation Detail Dialog */}
+      <Dialog open={!!selectedConversation} onOpenChange={() => setSelectedConversation(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquare className="w-5 h-5" />
+              צפייה בשיחה
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedConversation && (
             <div className="space-y-4">
-              {filteredFeedbacks.map((feedback) => (
-                <div 
-                  key={feedback.id} 
-                  className="p-4 border border-stone-200 hover:bg-stone-50 transition-colors"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center gap-4">
-                      {getRatingDisplay(feedback.rating)}
-                      <span className="flex items-center gap-1 text-sm text-stone-500">
-                        <Mail className="w-3 h-3" />
-                        {feedback.customer_email || 'אנונימי'}
-                      </span>
+              <div className="flex items-center gap-4 text-sm text-stone-500 border-b pb-3">
+                <span className="flex items-center gap-1">
+                  <Mail className="w-3 h-3" />
+                  {selectedConversation.customer_email || 'אנונימי'}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  {selectedConversation.created_date ? format(new Date(selectedConversation.created_date), 'dd/MM/yyyy HH:mm', { locale: he }) : '—'}
+                </span>
+              </div>
+              
+              <div className="space-y-3">
+                {selectedConversation.messages?.map((msg, index) => (
+                  <div 
+                    key={index} 
+                    className={`flex items-start gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    {msg.role === 'bot' && (
+                      <div className="w-7 h-7 bg-rose-400 flex items-center justify-center text-white flex-shrink-0">
+                        <Bot className="w-4 h-4" />
+                      </div>
+                    )}
+                    <div className={`max-w-[80%] p-3 text-sm ${
+                      msg.role === 'user' 
+                        ? 'bg-stone-800 text-white' 
+                        : 'bg-stone-100 text-stone-800'
+                    }`}>
+                      {msg.content}
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="flex items-center gap-1 text-xs text-stone-400">
-                        <Calendar className="w-3 h-3" />
-                        {feedback.created_date ? format(new Date(feedback.created_date), 'dd/MM/yyyy HH:mm', { locale: he }) : '—'}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(feedback.id)}
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50 h-7 w-7 p-0"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+                    {msg.role === 'user' && (
+                      <div className="w-7 h-7 bg-stone-700 flex items-center justify-center text-white flex-shrink-0">
+                        <UserIcon className="w-4 h-4" />
+                      </div>
+                    )}
                   </div>
-                  
-                  {extractComment(feedback.comment) && (
-                    <div className="mt-2 p-3 bg-stone-50 text-sm text-stone-700">
-                      <strong>תגובת הלקוח:</strong> {extractComment(feedback.comment)}
-                    </div>
-                  )}
-                  
-                  <div className="mt-2 text-xs text-stone-400">
-                    מזהה שיחה: {feedback.order_id || '—'}
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }
