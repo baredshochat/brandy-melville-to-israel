@@ -713,30 +713,7 @@ Example output:
       const order = await submitOrder(data);
       setCurrentOrder(order);
 
-      // Send "order received" email immediately
-      const recipientEmail = (user && user.email) ? user.email : data.customer_email;
-      if (recipientEmail) {
-        const trackOrderPageUrl = new URL(createPageUrl('TrackOrder'), window.location.origin).href;
-        const chatPageUrl = new URL(createPageUrl('Chat'), window.location.origin).href;
-
-        const emailHtml = buildOrderReceivedEmailHTML({
-          order,
-          customerName: data.customer_name,
-          customerEmail: recipientEmail,
-          trackOrderUrl: trackOrderPageUrl,
-          chatUrl: chatPageUrl,
-          cart,
-          totalILS: totalPriceILS,
-          breakdown: priceBreakdown
-        });
-
-        SendEmail({
-          from_name: "Brandy Melville to Israel",
-          to: recipientEmail,
-          subject: `קיבלנו את ההזמנה שלך #${order?.order_number} 💖`,
-          body: emailHtml
-        }).catch(err => console.error('Failed to send order received email:', err));
-      }
+      // Email will be sent manually by admin after reviewing the order
 
       // Clear cart items before going to payment
       const itemsToDelete = [...cart];
