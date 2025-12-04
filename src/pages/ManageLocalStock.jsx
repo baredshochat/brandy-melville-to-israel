@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Package, Plus, Edit, Trash2, Loader2, Link as LinkIcon, Image as ImageIcon, AlertTriangle, Eye } from "lucide-react";
+import { Package, Plus, Edit, Trash2, Loader2, Link as LinkIcon, Image as ImageIcon, AlertTriangle, Eye, Copy } from "lucide-react";
 import { motion } from "framer-motion";
 
 const categoryNames = {
@@ -260,6 +260,18 @@ export default function ManageLocalStock() {
   const handleNewItem = () => {
     setEditingItem(null);
     setFormData({ ...emptyItem });
+    setSuggestedPriceInfo(null);
+    setDialogOpen(true);
+  };
+
+  const handleDuplicate = (item) => {
+    setEditingItem(null);
+    setFormData({
+      ...item,
+      id: undefined,
+      product_name: `${item.product_name} (העתק)`,
+      additional_images: item.additional_images || []
+    });
     setSuggestedPriceInfo(null);
     setDialogOpen(true);
   };
@@ -573,11 +585,14 @@ export default function ManageLocalStock() {
                         )}
                       </td>
                       <td className="p-2">
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="ghost" onClick={() => handleEdit(item)}>
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="ghost" onClick={() => handleEdit(item)} title="עריכה">
                             <Edit className="w-4 h-4" />
                           </Button>
-                          <Button size="sm" variant="ghost" onClick={() => handleDelete(item.id)} className="text-red-600 hover:text-red-700">
+                          <Button size="sm" variant="ghost" onClick={() => handleDuplicate(item)} title="שכפול">
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => handleDelete(item.id)} className="text-red-600 hover:text-red-700" title="מחיקה">
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
