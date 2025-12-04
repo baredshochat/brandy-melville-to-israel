@@ -47,7 +47,7 @@ export default function ShoppingListTab({ orders, onUpdated }) {
             };
           }
           dict[key].total_qty += Number(it.quantity || 1);
-          dict[key].orders.push({ order_id: order.id, item_index: idx, order_number: order.order_number });
+          dict[key].orders.push({ order_id: order.id, item_index: idx, order_number: order.order_number, created_date: order.created_date });
           // collect urls
           if (it.product_url) {
             // Set the first product_url found as the main one for the group
@@ -177,6 +177,7 @@ export default function ShoppingListTab({ orders, onUpdated }) {
                     <th className="text-right p-3">קישור</th> {/* New column header */}
                     <th className="text-right p-3">אתר</th>
                     <th className="text-right p-3">כמות כוללת</th>
+                    <th className="text-right p-3">תאריך הזמנה</th>
                     <th className="text-right p-3">הזמנות מקור</th>
                     <th className="text-right p-3">פעולות</th>
                   </tr>
@@ -212,6 +213,9 @@ export default function ShoppingListTab({ orders, onUpdated }) {
                       </td>
                       <td className="p-3">{r.site?.toUpperCase()}</td>
                       <td className="p-3 font-semibold">{r.total_qty}</td>
+                      <td className="p-3 text-sm text-stone-600">
+                        {r.orders[0]?.created_date ? new Date(r.orders[0].created_date).toLocaleDateString('he-IL') : '—'}
+                      </td>
                       <td className="p-3">
                         <div className="flex flex-wrap gap-1">
                           {r.orders.slice(0,4).map(o => (
