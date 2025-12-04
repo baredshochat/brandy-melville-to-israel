@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Order } from "@/entities/Order";
-import { Package, Check, Filter, ListOrdered, Truck, ExternalLink } from "lucide-react";
+import { Package, Check, Filter, ListOrdered, Truck, ExternalLink, Trash2 } from "lucide-react";
 
 function groupKey(item, site) {
   const base = [
@@ -74,6 +73,28 @@ export default function ShoppingListTab({ orders, onUpdated }) {
     // סדר לפי אתר ואז שם מוצר
     return arr.sort((a,b) => (a.site||"").localeCompare(b.site||"") || (a.product_name||"").localeCompare(b.product_name||""));
   }, [orders, siteFilter, search]);
+
+  const deleteGroup = async (group) => {
+    if (!confirm(`למחוק את כל הפריטים של "${group.product_name}" מרשימת הקניות?`)) return;
+    
+    const ordersMap = new Map();
+    group.orders.forEach(({ order_id, item_index }) => {
+      if (!ordersMap.has(order_id)) ordersMap.set(order_id, []);
+      ordersMap.get(order_id).push(item_index);
+    });
+
+    const promises = [];
+    ordersMap.forEach((indexes, orderId) => {
+      const o = orders.find(x => x.id === orderId);
+      if (!o) return;
+      // Remove items by filtering out the indexes
+      const newItems = (o.items || []).filter((it, i) => !indexes.includes(i));
+      promises.push(Order.update(orderId, { items: newItems }));
+    });
+
+    await Promise.all(promises);
+    if (onUpdated) onUpdated();
+  };
 
   const markGroupAsOrdered = async (group) => {
     // מעדכן את כל הפריטים התואמים בכל ההזמנות ל-ordered + שומר רפרנס ספק אם הוזן
@@ -202,9 +223,14 @@ export default function ShoppingListTab({ orders, onUpdated }) {
                         </div>
                       </td>
                       <td className="p-3">
-                        <Button size="sm" onClick={() => markGroupAsOrdered(r)} className="bg-stone-900 hover:bg-black">
-                          סמן כהוזמן <Check className="w-4 h-4 mr-2" />
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={() => markGroupAsOrdered(r)} className="bg-stone-900 hover:bg-black">
+                            סמן כהוזמן <Check className="w-4 h-4 mr-2" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => deleteGroup(r)} className="text-red-500 hover:text-red-700 hover:bg-red-50">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
