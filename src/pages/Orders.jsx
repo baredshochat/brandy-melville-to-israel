@@ -825,8 +825,8 @@ export default function Orders() {
               {/* Awaiting Payment - prominent warning */}
               {kpis.awaitingPayment > 0 && (
                 <Card
-                  className="cursor-pointer hover:shadow-md transition-shadow border-red-200 bg-red-50"
-                  onClick={() => setFilters({...filters, status: 'awaiting_payment'})}
+                  className={`cursor-pointer hover:shadow-md transition-shadow border-red-200 bg-red-50 ${filters.status === 'awaiting_payment' ? 'ring-2 ring-red-400' : ''}`}
+                  onClick={() => setFilters({...filters, status: filters.status === 'awaiting_payment' ? 'all' : 'awaiting_payment'})}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
@@ -841,8 +841,8 @@ export default function Orders() {
               )}
               
               <Card
-                className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => setFilters({...filters, status: 'pending'})}
+                className={`cursor-pointer hover:shadow-md transition-shadow ${filters.status === 'pending' ? 'ring-2 ring-stone-400' : ''}`}
+                onClick={() => setFilters({...filters, status: filters.status === 'pending' ? 'all' : 'pending'})}
               >
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
