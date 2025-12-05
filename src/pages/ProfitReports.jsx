@@ -62,6 +62,8 @@ export default function ProfitReports() {
   // מצב ליצירת חבילה חדשה
   const [showBatchDialog, setShowBatchDialog] = useState(false);
   const [selectedOrderIds, setSelectedOrderIds] = useState(new Set());
+  const [selectedItems, setSelectedItems] = useState([]); // [{orderId, itemIndex, item}]
+  const [batchMode, setBatchMode] = useState('orders'); // 'orders' or 'items'
   const [newBatch, setNewBatch] = useState({ batch_name: '', total_shipping_cost: '', shipping_currency: 'USD', notes: '' });
   const [editingBatch, setEditingBatch] = useState(null);
   
@@ -320,25 +322,61 @@ export default function ProfitReports() {
     });
   };
 
+  const toggleItemSelection = (orderId, itemIndex, item) => {
+    setSelectedItems(prev => {
+      const exists = prev.find(i => i.orderId === orderId && i.itemIndex === itemIndex);
+      if (exists) {
+        return prev.filter(i => !(i.orderId === orderId && i.itemIndex === itemIndex));
+      } else {
+        return [...prev, { orderId, itemIndex, item, orderNumber: orders.find(o => o.id === orderId)?.order_number }];
+      }
+    });
+  };
+
+  const isItemSelected = (orderId, itemIndex) => {
+    return selectedItems.some(i => i.orderId === orderId && i.itemIndex === itemIndex);
+  };
+
   const handleCreateBatch = async () => {
-    if (!newBatch.batch_name || !newBatch.total_shipping_cost || selectedOrderIds.size === 0) {
-      alert('יש למלא שם חבילה, עלות משלוח ולבחור לפחות הזמנה אחת');
+    const hasOrders = batchMode === 'orders' && selectedOrderIds.size > 0;
+    const hasItems = batchMode === 'items' && selectedItems.length > 0;
+    
+    if (!newBatch.batch_name || !newBatch.total_shipping_cost || (!hasOrders && !hasItems)) {
+      alert('יש למלא שם חבילה, עלות משלוח ולבחור לפחות הזמנה אחת או פריט אחד');
       return;
     }
     setSaving(true);
     try {
-      await ShipmentBatch.create({
+      // Build batch data based on mode
+      const batchData = {
         batch_name: newBatch.batch_name,
-        order_ids: Array.from(selectedOrderIds),
         total_shipping_cost: Number(newBatch.total_shipping_cost),
         shipping_currency: newBatch.shipping_currency,
         notes: newBatch.notes,
         status: 'pending'
-      });
+      };
+
+      if (batchMode === 'orders') {
+        batchData.order_ids = Array.from(selectedOrderIds);
+      } else {
+        // For items mode, store the item references
+        batchData.order_ids = [...new Set(selectedItems.map(i => i.orderId))];
+        batchData.item_refs = selectedItems.map(i => ({
+          order_id: i.orderId,
+          item_index: i.itemIndex,
+          product_name: i.item.product_name
+        }));
+        batchData.notes = (newBatch.notes ? newBatch.notes + ' | ' : '') + 
+          'פריטים: ' + selectedItems.map(i => `${i.item.product_name} (הזמנה #${i.orderNumber})`).join(', ');
+      }
+
+      await ShipmentBatch.create(batchData);
       await loadOrders();
       setShowBatchDialog(false);
       setNewBatch({ batch_name: '', total_shipping_cost: '', shipping_currency: 'USD', notes: '' });
       setSelectedOrderIds(new Set());
+      setSelectedItems([]);
+      setBatchMode('orders');
     } catch (e) {
       console.error('Error creating batch:', e);
       alert('שגיאה ביצירת חבילה');
@@ -819,8 +857,15 @@ export default function ProfitReports() {
       </Tabs>
 
       {/* דיאלוג יצירת חבילה */}
-      <Dialog open={showBatchDialog} onOpenChange={setShowBatchDialog}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <Dialog open={showBatchDialog} onOpenChange={(open) => {
+        setShowBatchDialog(open);
+        if (!open) {
+          setSelectedOrderIds(new Set());
+          setSelectedItems([]);
+          setBatchMode('orders');
+        }
+      }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>קישור הזמנות לחבילת משלוח משותפת</DialogTitle>
           </DialogHeader>
@@ -871,41 +916,126 @@ export default function ProfitReports() {
               />
             </div>
 
-            <div>
-              <Label className="mb-2 block">בחרי הזמנות לקישור ({selectedOrderIds.size} נבחרו)</Label>
-              <div className="max-h-64 overflow-y-auto border p-2 space-y-2">
-                {filteredOrders.filter(o => !getOrderBatch(o.id)).map(order => (
-                  <div 
-                    key={order.id} 
-                    className={`flex items-center gap-3 p-2 hover:bg-stone-50 cursor-pointer ${selectedOrderIds.has(order.id) ? 'bg-purple-50 border border-purple-200' : ''}`}
-                    onClick={() => toggleOrderSelection(order.id)}
-                  >
-                    <Checkbox checked={selectedOrderIds.has(order.id)} />
-                    <div className="flex-1">
-                      <span className="font-medium">#{order.order_number}</span>
-                      <span className="text-stone-500 mr-2">- {order.customer_name}</span>
-                      <span className="text-xs text-stone-400">{new Date(order.created_date).toLocaleDateString('he-IL')}</span>
-                    </div>
-                    <span className="text-sm text-stone-600">₪{order.total_price_ils?.toLocaleString()}</span>
-                  </div>
-                ))}
-              </div>
+            {/* Tab selection for orders vs items */}
+            <div className="flex gap-2 border-b pb-2">
+              <Button 
+                variant={batchMode === 'orders' ? 'default' : 'outline'} 
+                size="sm"
+                onClick={() => setBatchMode('orders')}
+              >
+                <Package className="w-4 h-4 ml-1" />
+                הזמנות שלמות
+              </Button>
+              <Button 
+                variant={batchMode === 'items' ? 'default' : 'outline'} 
+                size="sm"
+                onClick={() => setBatchMode('items')}
+              >
+                <Package className="w-4 h-4 ml-1" />
+                פריטים בודדים
+              </Button>
             </div>
 
-            {selectedOrderIds.size > 0 && newBatch.total_shipping_cost && (
+            {batchMode === 'orders' ? (
+              <div>
+                <Label className="mb-2 block">בחרי הזמנות לקישור ({selectedOrderIds.size} נבחרו)</Label>
+                <div className="max-h-64 overflow-y-auto border p-2 space-y-2">
+                  {filteredOrders.filter(o => !getOrderBatch(o.id)).map(order => (
+                    <div 
+                      key={order.id} 
+                      className={`flex items-center gap-3 p-2 hover:bg-stone-50 cursor-pointer ${selectedOrderIds.has(order.id) ? 'bg-purple-50 border border-purple-200' : ''}`}
+                      onClick={() => toggleOrderSelection(order.id)}
+                    >
+                      <Checkbox checked={selectedOrderIds.has(order.id)} />
+                      <div className="flex-1">
+                        <span className="font-medium">#{order.order_number}</span>
+                        <span className="text-stone-500 mr-2">- {order.customer_name}</span>
+                        <span className="text-xs text-stone-400">{new Date(order.created_date).toLocaleDateString('he-IL')}</span>
+                      </div>
+                      <span className="text-sm text-stone-600">₪{order.total_price_ils?.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div>
+                <Label className="mb-2 block">בחרי פריטים בודדים לקישור ({selectedItems.length} נבחרו)</Label>
+                <p className="text-xs text-stone-500 mb-2">💡 שימושי כשרוצים להזמין פריטים מאתר אחר (למשל מאירופה במקום מאנגליה)</p>
+                <div className="max-h-80 overflow-y-auto border p-2 space-y-3">
+                  {filteredOrders.map(order => (
+                    <div key={order.id} className="border-b pb-2 last:border-b-0">
+                      <div className="font-medium text-sm text-stone-700 mb-2 flex items-center gap-2">
+                        <Badge variant="outline">#{order.order_number}</Badge>
+                        <span>{order.customer_name}</span>
+                        <Badge className="text-xs">{order.site?.toUpperCase()}</Badge>
+                      </div>
+                      <div className="space-y-1 mr-4">
+                        {(order.items || []).map((item, idx) => {
+                          const isSelected = isItemSelected(order.id, idx);
+                          return (
+                            <div 
+                              key={idx}
+                              className={`flex items-center gap-2 p-2 hover:bg-stone-50 cursor-pointer text-sm ${isSelected ? 'bg-purple-50 border border-purple-200' : 'bg-stone-50'}`}
+                              onClick={() => toggleItemSelection(order.id, idx, item)}
+                            >
+                              <Checkbox checked={isSelected} />
+                              <div className="flex-1">
+                                <span className="font-medium">{item.product_name}</span>
+                                {(item.color || item.size) && (
+                                  <span className="text-stone-500 mr-2">
+                                    ({[item.color, item.size].filter(Boolean).join(' / ')})
+                                  </span>
+                                )}
+                                <span className="text-stone-400 mr-2">×{item.quantity || 1}</span>
+                              </div>
+                              <span className="text-xs text-stone-500">
+                                {item.original_currency === 'USD' ? '$' : item.original_currency === 'EUR' ? '€' : item.original_currency === 'GBP' ? '£' : '₪'}
+                                {item.original_price}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {selectedItems.length > 0 && (
+                  <div className="mt-2 p-2 bg-purple-50 border border-purple-200">
+                    <p className="text-xs font-medium text-purple-800 mb-1">פריטים נבחרים:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {selectedItems.map((si, idx) => (
+                        <Badge key={idx} variant="secondary" className="text-xs">
+                          #{si.orderNumber} - {si.item.product_name}
+                          <button onClick={(e) => { e.stopPropagation(); toggleItemSelection(si.orderId, si.itemIndex, si.item); }} className="mr-1 hover:text-red-500">
+                            <X className="w-3 h-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {((batchMode === 'orders' && selectedOrderIds.size > 0) || (batchMode === 'items' && selectedItems.length > 0)) && newBatch.total_shipping_cost && (
               <div className="bg-purple-50 p-3 border border-purple-200">
                 <p className="text-sm text-purple-800">
-                  💡 עלות משלוח להזמנה: ₪{(convertToILS(Number(newBatch.total_shipping_cost), newBatch.shipping_currency) / selectedOrderIds.size).toFixed(0)}
+                  💡 עלות משלוח ל{batchMode === 'orders' ? 'הזמנה' : 'פריט'}: ₪{(convertToILS(Number(newBatch.total_shipping_cost), newBatch.shipping_currency) / (batchMode === 'orders' ? selectedOrderIds.size : selectedItems.length)).toFixed(0)}
                 </p>
               </div>
             )}
           </div>
           
           <div className="flex justify-end gap-2 mt-6">
-            <Button variant="outline" onClick={() => { setShowBatchDialog(false); setSelectedOrderIds(new Set()); }}>
+            <Button variant="outline" onClick={() => { setShowBatchDialog(false); setSelectedOrderIds(new Set()); setSelectedItems([]); setBatchMode('orders'); }}>
               ביטול
             </Button>
-            <Button onClick={handleCreateBatch} disabled={saving} className="bg-purple-600 hover:bg-purple-700">
+            <Button 
+              onClick={handleCreateBatch} 
+              disabled={saving || (batchMode === 'orders' ? selectedOrderIds.size === 0 : selectedItems.length === 0)} 
+              className="bg-purple-600 hover:bg-purple-700"
+            >
               {saving ? <Loader2 className="w-4 h-4 ml-1 animate-spin" /> : <Plus className="w-4 h-4 ml-1" />}
               יצירת חבילה
             </Button>
