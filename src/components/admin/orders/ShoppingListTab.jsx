@@ -34,6 +34,7 @@ export default function ShoppingListTab({ orders, onUpdated }) {
   const [siteFilter, setSiteFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [updateRef, setUpdateRef] = useState("");
+  const [hiddenGroups, setHiddenGroups] = useState(new Set()); // פריטים שסומנו ומוסתרים
 
   const rows = useMemo(() => {
     const dict = {};
