@@ -338,50 +338,102 @@ Return valid JSON only.`,
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>שם מלא</Label>
-                    <div className="flex items-center gap-2">
-                      <span>{order.customer_name}</span>
-                      <button onClick={() => copyToClipboard(order.customer_name)}>
-                        <Copy className="w-3 h-3 text-stone-400" />
-                      </button>
+                {isEditing ? (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label>שם מלא</Label>
+                        <Input
+                          value={editData.customer_name}
+                          onChange={(e) => setEditData({ ...editData, customer_name: e.target.value })}
+                          placeholder="שם הלקוח"
+                        />
+                      </div>
+                      <div>
+                        <Label>אימייל</Label>
+                        <Input
+                          type="email"
+                          value={editData.customer_email}
+                          onChange={(e) => setEditData({ ...editData, customer_email: e.target.value })}
+                          placeholder="אימייל"
+                          dir="ltr"
+                        />
+                      </div>
+                      <div>
+                        <Label>טלפון</Label>
+                        <Input
+                          value={editData.customer_phone}
+                          onChange={(e) => setEditData({ ...editData, customer_phone: e.target.value })}
+                          placeholder="טלפון"
+                          dir="ltr"
+                        />
+                      </div>
+                      <div>
+                        <Label>עיר</Label>
+                        <Input
+                          value={editData.city}
+                          onChange={(e) => setEditData({ ...editData, city: e.target.value })}
+                          placeholder="עיר"
+                        />
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <Label>אימייל</Label>
-                    <div className="flex items-center gap-2">
-                      <span>{order.customer_email}</span>
-                      <button onClick={() => copyToClipboard(order.customer_email)}>
-                        <Copy className="w-3 h-3 text-stone-400" />
-                      </button>
-                      <a href={`mailto:${order.customer_email}`}>
-                        <Mail className="w-4 h-4 text-blue-500 hover:text-blue-700" />
-                      </a>
-                    </div>
-                  </div>
-                  <div>
-                    <Label>טלפון</Label>
-                    <div className="flex items-center gap-2">
-                      <span>{order.customer_phone}</span>
-                      {order.customer_phone && (
-                        <a href={`tel:${order.customer_phone}`}>
-                          <Phone className="w-4 h-4 text-green-500 hover:text-green-700" />
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <Label>כתובת משלוח</Label>
-                  <div className="flex items-start gap-2">
                     <div>
-                      <div>{order.shipping_address}</div>
-                      <div>{order.city}</div>
+                      <Label>כתובת משלוח</Label>
+                      <Input
+                        value={editData.shipping_address}
+                        onChange={(e) => setEditData({ ...editData, shipping_address: e.target.value })}
+                        placeholder="רחוב, מספר בית, דירה"
+                      />
                     </div>
-                    <MapPin className="w-4 h-4 text-stone-400 mt-0.5" />
                   </div>
-                </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label>שם מלא</Label>
+                        <div className="flex items-center gap-2">
+                          <span>{order.customer_name}</span>
+                          <button onClick={() => copyToClipboard(order.customer_name)}>
+                            <Copy className="w-3 h-3 text-stone-400" />
+                          </button>
+                        </div>
+                      </div>
+                      <div>
+                        <Label>אימייל</Label>
+                        <div className="flex items-center gap-2">
+                          <span>{order.customer_email}</span>
+                          <button onClick={() => copyToClipboard(order.customer_email)}>
+                            <Copy className="w-3 h-3 text-stone-400" />
+                          </button>
+                          <a href={`mailto:${order.customer_email}`}>
+                            <Mail className="w-4 h-4 text-blue-500 hover:text-blue-700" />
+                          </a>
+                        </div>
+                      </div>
+                      <div>
+                        <Label>טלפון</Label>
+                        <div className="flex items-center gap-2">
+                          <span>{order.customer_phone}</span>
+                          {order.customer_phone && (
+                            <a href={`tel:${order.customer_phone}`}>
+                              <Phone className="w-4 h-4 text-green-500 hover:text-green-700" />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <Label>כתובת משלוח</Label>
+                      <div className="flex items-start gap-2">
+                        <div>
+                          <div>{order.shipping_address}</div>
+                          <div>{order.city}</div>
+                        </div>
+                        <MapPin className="w-4 h-4 text-stone-400 mt-0.5" />
+                      </div>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
 
