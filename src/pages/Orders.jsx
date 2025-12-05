@@ -1159,6 +1159,16 @@ export default function Orders() {
                                         {/* Reminder button for awaiting payment orders only */}
                                         {order.status === 'awaiting_payment' && (
                                           <div className="flex items-center gap-2">
+                                            {order.reminder_count > 0 && (
+                                              <span className="bg-amber-200 text-amber-800 px-1.5 py-0.5 text-[10px] font-bold rounded-full">
+                                                {order.reminder_count}
+                                              </span>
+                                            )}
+                                            {order.last_reminder_date && (
+                                              <span className="text-[10px] text-stone-500">
+                                                אחרון: {format(new Date(order.last_reminder_date), "dd/MM HH:mm")}
+                                              </span>
+                                            )}
                                             <Button
                                               size="sm"
                                               variant="outline"
@@ -1167,17 +1177,7 @@ export default function Orders() {
                                             >
                                               <Mail className="w-3 h-3 ml-1" />
                                               שלח תזכורת
-                                              {order.reminder_count > 0 && (
-                                                <span className="mr-1 bg-amber-200 text-amber-800 px-1.5 py-0.5 text-[10px] font-bold rounded-full">
-                                                  {order.reminder_count}
-                                                </span>
-                                              )}
                                             </Button>
-                                            {order.last_reminder_date && (
-                                              <span className="text-[10px] text-stone-500">
-                                                אחרון: {format(new Date(order.last_reminder_date), "dd/MM HH:mm")}
-                                              </span>
-                                            )}
                                           </div>
                                         )}
                                       </div>
