@@ -544,6 +544,10 @@ export default function ProfitReports() {
         <TabsList>
           <TabsTrigger value="orders">הזמנות ({filteredOrders.length})</TabsTrigger>
           <TabsTrigger value="batches">חבילות משלוח ({batches.length})</TabsTrigger>
+          <TabsTrigger value="expenses" className="gap-1">
+            <Receipt className="w-4 h-4" />
+            הוצאות חודשיות
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="batches" className="mt-4">
@@ -605,6 +609,11 @@ export default function ProfitReports() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Monthly Expenses Tab */}
+        <TabsContent value="expenses" className="mt-4">
+          <MonthlyExpensesTab />
         </TabsContent>
 
         <TabsContent value="orders" className="mt-4">
