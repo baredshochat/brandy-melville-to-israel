@@ -1159,9 +1159,19 @@ export default function Orders() {
                                         {/* Reminder button for awaiting payment orders only */}
                                         {order.status === 'awaiting_payment' && (
                                           <div className="flex items-center gap-2">
-                                            <span className="text-[10px] text-stone-500">
-                                              תזכורת אחרונה: {order.last_reminder_date ? format(new Date(order.last_reminder_date), "dd/MM HH:mm") : 'טרם נשלחה'}
-                                            </span>
+                                            <div className="flex items-center gap-1 text-[10px] text-stone-500">
+                                              <span>תזכורת אחרונה:</span>
+                                              <input
+                                                type="datetime-local"
+                                                value={order.last_reminder_date ? new Date(order.last_reminder_date).toISOString().slice(0, 16) : ''}
+                                                onChange={(e) => {
+                                                  e.stopPropagation();
+                                                  handleUpdateOrder(order.id, { last_reminder_date: e.target.value ? new Date(e.target.value).toISOString() : null });
+                                                }}
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="bg-transparent border-b border-stone-300 text-[10px] text-stone-600 px-1"
+                                              />
+                                            </div>
                                             <input
                                               type="number"
                                               min="0"
