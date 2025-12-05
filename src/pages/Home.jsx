@@ -375,11 +375,14 @@ export default function Home() {
   const loadCart = useCallback(async () => {
     if (!selectedSite) { setCart([]); return; }
     try {
-      // If user is logged in, filter by email; otherwise get all cart items for this site
-      const items = user 
-        ? await CartItem.filter({ created_by: user.email, site: selectedSite })
-        : await CartItem.filter({ site: selectedSite });
-      setCart(Array.isArray(items) ? items : []);
+      // Only load cart if user is logged in - anonymous users won't have persistent cart
+      if (user) {
+        const items = await CartItem.filter({ created_by: user.email, site: selectedSite });
+        setCart(Array.isArray(items) ? items : []);
+      } else {
+        // For non-logged-in users, don't load cart from DB (prevents loading other users' items)
+        setCart([]);
+      }
     } catch (e) {
       console.error("Failed to load cart items:", e);
       setCart([]);
@@ -465,9 +468,10 @@ export default function Home() {
   const handleCartImported = (items) => {
     const safe = Array.isArray(items) ? items : [];
     if (safe.length === 1) {
-      setCurrentItem(safe[0]);
-      setEditingItem(safe[0]); // NEW: treat single imported item as editing to avoid duplication
-      setStep(3);
+      // Item was already created in CartImport, just go to cart
+      // Don't set currentItem/editingItem to avoid double-creation in handleProductConfirm
+      loadCart();
+      setStep(4);
     } else {
       loadCart();
       setStep(4);
