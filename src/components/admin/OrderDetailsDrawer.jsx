@@ -379,38 +379,202 @@ export default function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate
 
           <TabsContent value="items">
             <Card>
-              <CardHeader>
-                <CardTitle>פריטים בהזמנה ({order.items?.length || 0})</CardTitle>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>פריטים בהזמנה ({isEditingItems ? editingItems.length : (order.items?.length || 0)})</CardTitle>
+                {!isEditingItems ? (
+                  <Button size="sm" variant="outline" onClick={handleEditItems}>
+                    <Edit className="w-4 h-4 ml-1" />
+                    עריכת פריטים
+                  </Button>
+                ) : (
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => setIsEditingItems(false)}>
+                      <X className="w-4 h-4 ml-1" />
+                      ביטול
+                    </Button>
+                    <Button size="sm" onClick={handleSaveItems} disabled={savingItems}>
+                      {savingItems ? <Loader2 className="w-4 h-4 ml-1 animate-spin" /> : <Save className="w-4 h-4 ml-1" />}
+                      שמירה
+                    </Button>
+                  </div>
+                )}
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {order.items?.map((item, index) => (
-                    <div key={index} className="flex justify-between items-start p-4 bg-stone-50 rounded-lg">
-                      <div className="flex-1">
-                        <h4 className="font-medium">{item.product_name}</h4>
-                        <div className="text-sm text-stone-600 space-y-1 mt-1">
-                          <div>SKU: {item.product_sku}</div>
-                          <div>צבע: {item.color} | מידה: {item.size}</div>
-                          <div>כמות: {item.quantity}</div>
-                        </div>
-                        {item.product_url && (
-                          <a
-                            href={item.product_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-500 hover:text-blue-700 text-sm"
+                {isEditingItems ? (
+                  <div className="space-y-4">
+                    {editingItems.map((item, index) => (
+                      <div key={index} className="p-4 bg-stone-50 rounded-lg border space-y-3">
+                        <div className="flex justify-between items-start">
+                          <Input
+                            placeholder="שם המוצר"
+                            value={item.product_name || ''}
+                            onChange={(e) => updateItem(index, 'product_name', e.target.value)}
+                            className="flex-1 font-medium"
+                          />
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-red-500 hover:text-red-700 mr-2"
+                            onClick={() => removeItem(index)}
                           >
-                            צפה במוצר המקורי →
-                          </a>
-                        )}
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+
+                        {/* קישור למוצר */}
+                        <div className="flex gap-2 items-center">
+                          <div className="flex-1">
+                            <Label className="text-xs">קישור למוצר</Label>
+                            <Input
+                              placeholder="הדביקי קישור למוצר..."
+                              value={item.product_url || ''}
+                              onChange={(e) => updateItem(index, 'product_url', e.target.value)}
+                              className="text-xs"
+                              dir="ltr"
+                            />
+                          </div>
+                          {item.product_url && (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 w-8 p-0 mt-5"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(item.product_url);
+                                  alert('הקישור הועתק!');
+                                }}
+                                title="העתק קישור"
+                              >
+                                <Copy className="w-4 h-4" />
+                              </Button>
+                              <a href={item.product_url} target="_blank" rel="noopener noreferrer">
+                                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 mt-5" title="פתח קישור">
+                                  <ExternalLink className="w-4 h-4" />
+                                </Button>
+                              </a>
+                            </>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-4 gap-2">
+                          <div>
+                            <Label className="text-xs">SKU</Label>
+                            <Input
+                              placeholder="מק״ט"
+                              value={item.product_sku || ''}
+                              onChange={(e) => updateItem(index, 'product_sku', e.target.value)}
+                              className="text-xs"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">צבע</Label>
+                            <Input
+                              placeholder="צבע"
+                              value={item.color || ''}
+                              onChange={(e) => updateItem(index, 'color', e.target.value)}
+                              className="text-xs"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">מידה</Label>
+                            <Input
+                              placeholder="מידה"
+                              value={item.size || ''}
+                              onChange={(e) => updateItem(index, 'size', e.target.value)}
+                              className="text-xs"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">כמות</Label>
+                            <Input
+                              type="number"
+                              min="1"
+                              value={item.quantity || 1}
+                              onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 1)}
+                              className="text-xs"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <div className="flex-1">
+                            <Label className="text-xs">מחיר</Label>
+                            <Input
+                              type="number"
+                              placeholder="0"
+                              value={item.original_price || ''}
+                              onChange={(e) => updateItem(index, 'original_price', e.target.value)}
+                            />
+                          </div>
+                          <div className="w-24">
+                            <Label className="text-xs">מטבע</Label>
+                            <Select 
+                              value={item.original_currency || 'EUR'} 
+                              onValueChange={(v) => updateItem(index, 'original_currency', v)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="EUR">€ EUR</SelectItem>
+                                <SelectItem value="USD">$ USD</SelectItem>
+                                <SelectItem value="GBP">£ GBP</SelectItem>
+                                <SelectItem value="ILS">₪ ILS</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <div className="font-semibold">{item.original_currency} {item.original_price}</div>
-                        <div className="text-sm text-stone-600">ליח׳</div>
+                    ))}
+
+                    <Button variant="outline" onClick={addNewItem} className="w-full">
+                      <Plus className="w-4 h-4 ml-1" />
+                      הוסף פריט חדש
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {order.items?.map((item, index) => (
+                      <div key={index} className="flex justify-between items-start p-4 bg-stone-50 rounded-lg">
+                        <div className="flex-1">
+                          <h4 className="font-medium">{item.product_name}</h4>
+                          <div className="text-sm text-stone-600 space-y-1 mt-1">
+                            <div>SKU: {item.product_sku}</div>
+                            <div>צבע: {item.color} | מידה: {item.size}</div>
+                            <div>כמות: {item.quantity}</div>
+                          </div>
+                          {item.product_url && (
+                            <div className="flex items-center gap-2 mt-2">
+                              <a
+                                href={item.product_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-500 hover:text-blue-700 text-sm flex items-center gap-1"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                                צפה במוצר
+                              </a>
+                              <button 
+                                onClick={() => {
+                                  navigator.clipboard.writeText(item.product_url);
+                                  alert('הקישור הועתק!');
+                                }}
+                                className="text-stone-400 hover:text-stone-600"
+                                title="העתק קישור"
+                              >
+                                <Copy className="w-3 h-3" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <div className="font-semibold">{item.original_currency} {item.original_price}</div>
+                          <div className="text-sm text-stone-600">ליח׳</div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
