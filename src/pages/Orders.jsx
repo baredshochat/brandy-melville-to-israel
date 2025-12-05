@@ -413,8 +413,8 @@ export default function Orders() {
   // State for reminder email confirmation dialog
   const [reminderDialog, setReminderDialog] = useState({ open: false, order: null, sending: false });
 
-  // NEW: active view mode - 'pending' (received orders) or 'awaiting_payment' or 'all'
-  const [activeView, setActiveView] = useState('pending');
+  // NEW: active view mode - 'received' (all confirmed orders) or 'awaiting_payment'
+  const [activeView, setActiveView] = useState('received');
 
   // helpers for email preview
   const openEmailPreview = (to, subject, html) => setEmailPreview({ open: true, to, subject, html });
@@ -649,7 +649,9 @@ export default function Orders() {
       if (!isCompleteOrder(order)) return false;
       
       // Filter based on activeView
-      if (activeView === 'pending' && order.status !== 'pending') return false;
+      // 'received' = all orders EXCEPT awaiting_payment (i.e. paid/confirmed orders)
+      // 'awaiting_payment' = only orders waiting for payment
+      if (activeView === 'received' && order.status === 'awaiting_payment') return false;
       if (activeView === 'awaiting_payment' && order.status !== 'awaiting_payment') return false;
 
       // Search filter
@@ -694,12 +696,12 @@ export default function Orders() {
   const kpis = useMemo(() => {
     const totalOrders = filteredOrders.length;
     const totalRevenue = filteredOrders.reduce((sum, order) => sum + (order.total_price_ils || 0), 0);
-    // Count pending orders from ALL orders (not just filtered) since they're hidden by default
-    const pendingOrders = orders.filter(order => isCompleteOrder(order) && order.status === 'pending').length;
+    // Count received orders = all complete orders that are NOT awaiting_payment
+    const receivedOrders = orders.filter(order => isCompleteOrder(order) && order.status !== 'awaiting_payment').length;
     const completedOrders = filteredOrders.filter(order => order.status === 'delivered').length;
     const awaitingPayment = awaitingPaymentOrders.length;
 
-    return { totalOrders, totalRevenue, pendingOrders, completedOrders, awaitingPayment };
+    return { totalOrders, totalRevenue, receivedOrders, completedOrders, awaitingPayment };
   }, [orders, filteredOrders, awaitingPaymentOrders]);
 
   const handleRowClick = (order) => {
@@ -843,14 +845,14 @@ export default function Orders() {
               </Card>
               
               <Card
-                className={`cursor-pointer hover:shadow-md transition-shadow ${activeView === 'pending' ? 'ring-2 ring-stone-400' : ''}`}
-                onClick={() => setActiveView('pending')}
+                className={`cursor-pointer hover:shadow-md transition-shadow ${activeView === 'received' ? 'ring-2 ring-stone-400' : ''}`}
+                onClick={() => setActiveView('received')}
               >
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-stone-600 mb-1">הזמנות שהתקבלו</p>
-                      <p className="text-2xl font-bold text-stone-900">{kpis.pendingOrders}</p>
+                      <p className="text-2xl font-bold text-stone-900">{kpis.receivedOrders}</p>
                     </div>
                     <Clock className="w-8 h-8 text-stone-400" />
                   </div>
@@ -983,7 +985,7 @@ export default function Orders() {
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <CardTitle>
-                    {activeView === 'awaiting_payment' ? 'ממתינות לתשלום' : 'הזמנות שהתקבלו'} ({filteredOrders.length})
+                    {activeView === 'awaiting_payment' ? 'ממתינות לתשלום' : 'הזמנות שהתקבלו ושולמו'} ({filteredOrders.length})
                   </CardTitle>
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm">
