@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -176,7 +175,15 @@ Example output:
   const currencySymbol = itemDetails.original_currency === 'USD' ? '$' : itemDetails.original_currency === 'EUR' ? '€' : itemDetails.original_currency === 'GBP' ? '£' : '';
   const displayName = itemDetails.product_name && String(itemDetails.product_name).trim() ? itemDetails.product_name : getNameFromUrl(itemDetails.product_url) || 'שם לא זוהה';
 
-  const canConfirm = (itemDetails.quantity || 1) > 0;
+  // חובה לבחור צבע ומידה אם יש אפשרויות זמינות
+  const needsColor = itemDetails.available_colors && itemDetails.available_colors.length > 0;
+  const needsSize = itemDetails.available_sizes && itemDetails.available_sizes.length > 0;
+  const hasColor = itemDetails.color && itemDetails.color.trim() !== '';
+  const hasSize = itemDetails.size && itemDetails.size.trim() !== '';
+  
+  const canConfirm = (itemDetails.quantity || 1) > 0 && 
+    (!needsColor || hasColor) && 
+    (!needsSize || hasSize);
 
   const handleColorSelect = (color) => {
     setItemDetails((prev) => ({
@@ -266,7 +273,9 @@ Example output:
             {itemDetails.available_colors && itemDetails.available_colors.length > 0 &&
             <div className="pt-2">
                 <Label className="font-medium text-stone-700 text-sm sm:text-base text-left block mb-2">
-                  צבעים זמינים {itemDetails.color && <span className="text-blue-900 text-sm font-normal">(נבחר: {itemDetails.color})</span>}
+                  צבעים זמינים <span className="text-red-500">*</span>
+                  {itemDetails.color && <span className="text-blue-900 text-sm font-normal mr-2">(נבחר: {itemDetails.color})</span>}
+                  {!hasColor && <span className="text-red-500 text-sm font-normal mr-2">- חובה לבחור צבע</span>}
                 </Label>
                 <div className="flex flex-wrap gap-2">
                   {itemDetails.available_colors.map((color, idx) => {
@@ -293,7 +302,9 @@ Example output:
             {itemDetails.available_sizes && itemDetails.available_sizes.length > 0 &&
             <div className="pt-2">
                 <Label className="font-medium text-stone-700 text-sm sm:text-base text-left block mb-2">
-                  מידות זמינות {itemDetails.size && <span className="text-blue-900 text-sm font-normal">(נבחרה: {itemDetails.size})</span>}
+                  מידות זמינות <span className="text-red-500">*</span>
+                  {itemDetails.size && <span className="text-blue-900 text-sm font-normal mr-2">(נבחרה: {itemDetails.size})</span>}
+                  {!hasSize && <span className="text-red-500 text-sm font-normal mr-2">- חובה לבחור מידה</span>}
                 </Label>
                 <div className="flex flex-wrap gap-2">
                   {itemDetails.available_sizes.map((size, idx) => {
@@ -319,11 +330,14 @@ Example output:
           </div>
 
           <div className="mt-6 sm:mt-8 space-y-4 sm:space-y-6">
-            <div className="p-3 sm:p-4 bg-amber-50 border border-amber-200 text-amber-900">
-              <p className="text-sm sm:text-base font-semibold">⚠️ שימי לב: הפריט שיגיע הוא בדיוק לפי הקישור המקורי. 
-
-              </p>
+          {(!canConfirm && (needsColor || needsSize)) && (
+            <div className="p-3 sm:p-4 bg-red-50 border border-red-200 text-red-900">
+              <p className="text-sm sm:text-base font-semibold">⚠️ יש לבחור {needsColor && !hasColor ? 'צבע' : ''}{needsColor && !hasColor && needsSize && !hasSize ? ' ו' : ''}{needsSize && !hasSize ? 'מידה' : ''} לפני הוספה לסל</p>
             </div>
+          )}
+          <div className="p-3 sm:p-4 bg-amber-50 border border-amber-200 text-amber-900">
+            <p className="text-sm sm:text-base font-semibold">⚠️ שימי לב: הפריט שיגיע הוא בדיוק לפי הקישור המקורי והבחירות שלך.</p>
+          </div>
 
             <div className="max-w-xs">
               <Label className="font-medium text-stone-700 flex items-center gap-2 text-sm sm:text-base">
