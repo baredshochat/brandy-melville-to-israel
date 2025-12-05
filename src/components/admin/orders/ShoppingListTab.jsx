@@ -89,7 +89,20 @@ export default function ShoppingListTab({ orders, onUpdated }) {
       );
     }
     // סדר לפי תאריך הזמנה (חדש ראשון) ואז לפי לקוח
-    return arr.sort((a,b) => new Date(b.created_date) - new Date(a.created_date) || (a.customer_name||"").localeCompare(b.customer_name||""));
+    const sorted = arr.sort((a,b) => new Date(b.created_date) - new Date(a.created_date) || (a.customer_name||"").localeCompare(b.customer_name||""));
+    
+    // הוספת צבע לכל הזמנה
+    const orderColorMap = {};
+    let colorIndex = 0;
+    sorted.forEach(r => {
+      if (!orderColorMap[r.order_number]) {
+        orderColorMap[r.order_number] = ORDER_COLORS[colorIndex % ORDER_COLORS.length];
+        colorIndex++;
+      }
+      r.rowColor = orderColorMap[r.order_number];
+    });
+    
+    return sorted;
   }, [orders, siteFilter, search]);
 
   const deleteGroup = async (group) => {
