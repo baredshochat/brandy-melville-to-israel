@@ -1145,21 +1145,8 @@ export default function Orders() {
                                           {statusConfig[order.status]?.label || order.status}
                                         </span>
 
-                                        {/* Spacer to push reminder button to the left (which is right in RTL) */}
+                                        {/* Spacer */}
                                         <div className="flex-1" />
-
-                                        {/* Reminder button for pending payments */}
-                                        {order.payment_status === 'pending' && (
-                                          <Button
-                                            size="sm"
-                                            variant="outline"
-                                            className="text-xs h-7 px-2 border-amber-300 text-amber-700 hover:bg-amber-50"
-                                            onClick={(e) => { e.stopPropagation(); openReminderDialog(order); }}
-                                          >
-                                            <Mail className="w-3 h-3 ml-1" />
-                                            שלח תזכורת
-                                          </Button>
-                                        )}
                                       </div>
                                     </div>
                                   </td>
