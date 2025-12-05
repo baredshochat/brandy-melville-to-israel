@@ -193,28 +193,28 @@ export default function ShoppingListTab({ orders, onUpdated }) {
                 <tbody>
                   {rows.map((r) => (
                     <tr key={r.key} className="border-b hover:bg-stone-50">
+                      <td className="p-3">
+                        <div className="font-medium">{r.customer_name || '—'}</div>
+                        <div className="text-xs text-stone-500">{r.customer_email || ''}</div>
+                      </td>
+                      <td className="p-3">
+                        <Badge variant="secondary">#{r.order_number}</Badge>
+                      </td>
                       <td className="p-3">{r.product_name}</td>
                       <td className="p-3">{r.product_sku || "-"}</td>
                       <td className="p-3">{r.color || "-"}</td>
                       <td className="p-3">{r.size || "-"}</td>
                       <td className="p-3">
-                        {r.urls && r.urls.length > 0 && r.product_url ? (
-                          <div className="flex items-center gap-2">
-                            <a
-                              href={r.product_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              dir="ltr"
-                              className="text-blue-600 hover:underline break-all max-w-[260px] truncate" // Added truncate for long URLs
-                              title={r.product_url}
-                            >
-                              {r.product_url}
-                            </a>
-                            <ExternalLink className="w-4 h-4 text-stone-500 flex-shrink-0" /> {/* Added flex-shrink-0 to prevent icon from shrinking */}
-                            {r.urls.length > 1 && (
-                              <Badge variant="outline" className="flex-shrink-0">+{r.urls.length - 1}</Badge> // Added flex-shrink-0
-                            )}
-                          </div>
+                        {r.product_url ? (
+                          <a
+                            href={r.product_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline"
+                            title={r.product_url}
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
                         ) : (
                           <span className="text-stone-400">—</span>
                         )}
@@ -222,22 +222,12 @@ export default function ShoppingListTab({ orders, onUpdated }) {
                       <td className="p-3">{r.site?.toUpperCase()}</td>
                       <td className="p-3 font-semibold">{r.total_qty}</td>
                       <td className="p-3 text-sm text-stone-600">
-                        {r.orders[0]?.created_date ? new Date(r.orders[0].created_date).toLocaleDateString('he-IL') : '—'}
-                      </td>
-                      <td className="p-3">
-                        <div className="flex flex-wrap gap-1">
-                          {r.orders.slice(0,4).map(o => (
-                            <Badge key={o.order_id} variant="secondary">#{o.order_number}</Badge>
-                          ))}
-                          {r.orders.length > 4 && (
-                            <Badge variant="outline">+{r.orders.length - 4}</Badge>
-                          )}
-                        </div>
+                        {r.created_date ? new Date(r.created_date).toLocaleDateString('he-IL') : '—'}
                       </td>
                       <td className="p-3">
                         <div className="flex gap-2">
                           <Button size="sm" onClick={() => markGroupAsOrdered(r)} className="bg-stone-900 hover:bg-black">
-                            סמן כהוזמן <Check className="w-4 h-4 mr-2" />
+                            <Check className="w-4 h-4" />
                           </Button>
                           <Button size="sm" variant="ghost" onClick={() => deleteGroup(r)} className="text-red-500 hover:text-red-700 hover:bg-red-50">
                             <Trash2 className="w-4 h-4" />
