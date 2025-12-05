@@ -621,24 +621,28 @@ export default function ProfitReports() {
                                 </thead>
                                 <tbody>
                                   {(order.items || []).map((item, idx) => {
-                                    const { soldPrice, costPrice, profit: itemProfit, hasCost } = calculateItemProfit(item);
+                                    const { costPrice, hasCost } = calculateItemProfit(item);
                                     const currencySymbol = item.original_currency === 'USD' ? '$' : item.original_currency === 'EUR' ? '€' : item.original_currency === 'GBP' ? '£' : '₪';
                                     const originalPriceDisplay = `${currencySymbol}${Number(item.original_price || 0).toFixed(0)}`;
-                                    // חישוב מחיר ללקוחה - המחיר הכולל חלקי מספר הפריטים (הערכה)
-                                    const totalItems = (order.items || []).reduce((sum, it) => sum + (it.quantity || 1), 0);
-                                    const customerPricePerItem = totalItems > 0 ? ((order.total_price_ils || 0) / totalItems) * (item.quantity || 1) : 0;
+                                    // מחיר ללקוחה - משתמשים בשדה השמור, או הערכה אם לא קיים
+                                    const customerPrice = item.customer_price_ils || 0;
+                                    const hasCustomerPrice = customerPrice > 0;
+                                    // חישוב רווח מול מחיר ללקוחה
+                                    const itemProfit = customerPrice - costPrice;
                                     return (
                                       <tr key={idx} className="border-t border-stone-200">
                                         <td className="py-2">{item.product_name}</td>
                                         <td className="py-2">{[item.color, item.size].filter(Boolean).join(' / ') || '-'}</td>
                                         <td className="py-2">{item.quantity || 1}</td>
                                         <td className="py-2 text-stone-600">{originalPriceDisplay}</td>
-                                        <td className="py-2 text-blue-700 font-medium">₪{customerPricePerItem.toFixed(0)}</td>
+                                        <td className="py-2 text-blue-700 font-medium">
+                                          {hasCustomerPrice ? `₪${customerPrice.toFixed(0)}` : <span className="text-amber-500">לא נשמר</span>}
+                                        </td>
                                         <td className="py-2 text-orange-700">
                                           {hasCost ? `₪${costPrice.toFixed(0)}` : <span className="text-amber-500">לא הוזן</span>}
                                         </td>
                                         <td className={`py-2 font-medium ${itemProfit >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                                          {hasCost ? `₪${itemProfit.toFixed(0)}` : '-'}
+                                          {hasCost && hasCustomerPrice ? `₪${itemProfit.toFixed(0)}` : '-'}
                                         </td>
                                       </tr>
                                     );

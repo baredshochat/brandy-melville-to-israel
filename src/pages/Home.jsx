@@ -726,11 +726,21 @@ export default function Home() {
     setLoading(true); // Ensure loading is active here, as submitOrder might set it to false
     try {
       const orderNumber = `BM${Date.now()}`;
-      const customerPayload = overrideCustomerData || customerData || {}; // Use override if provided
-      let newOrder = await Order.create({
-        order_number: orderNumber,
-        site: selectedSite,
-        items: cart,
+              const customerPayload = overrideCustomerData || customerData || {}; // Use override if provided
+
+              // הוספת customer_price_ils לכל פריט מתוך ה-breakdown
+              const itemsWithCustomerPrice = cart.map((item, idx) => {
+                const breakdownItem = priceBreakdown?.items?.[idx];
+                return {
+                  ...item,
+                  customer_price_ils: breakdownItem?.fullPrice || 0
+                };
+              });
+
+              let newOrder = await Order.create({
+                order_number: orderNumber,
+                site: selectedSite,
+                items: itemsWithCustomerPrice,
         total_price_ils: totalPriceILS,
         total_weight_kg: totalWeight,
         price_breakdown: priceBreakdown,
