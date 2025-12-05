@@ -96,10 +96,21 @@ export default function CartImport({ site, onImportComplete, onBack, loading }) 
 
       // FIX: robust prompt with meta tags priority and strict schema
       const prompt = `
-You are a precise web scraping assistant. Extract product data from the URL below with strict adherence to the output schema.
+You are a precise web scraping assistant for Brandy Melville product pages. Extract product data from this URL with EXACT accuracy.
 URL: ${validUrls[0]}
 
-Priority for product name (highest to lowest):
+CRITICAL - SKU EXTRACTION (HIGHEST PRIORITY):
+The SKU/product code is the MOST important field. Look for it in this order:
+1) JSON-LD script with "@type":"Product" -> "sku" field (EXACT value, do not modify)
+2) Look for patterns like "SKU: XXXXX" or "Product Code: XXXXX" in the page
+3) Look in the URL path for product codes (e.g., "M065L-622BAG720000")
+4) Look in hidden inputs or data attributes with names like "product-sku", "variant-sku", "data-sku"
+5) Check the page source for "sku": "..." patterns
+
+DO NOT INVENT OR GUESS THE SKU. If you cannot find the exact SKU on the page, return null for sku field.
+The SKU must be the EXACT string from the website - do not modify, truncate, or add to it.
+
+Product name priority (highest to lowest):
 1) JSON-LD script with "@type":"Product" -> name
 2) <meta property="og:title" content="...">
 3) <meta name="twitter:title" content="...">
@@ -110,7 +121,7 @@ Price and currency rules:
 - Expected currency: ${expectedCurrency}. If found currency differs, set extraction_error explaining mismatch.
 
 Also extract:
-- sku (if present), description (if present)
+- description (if present)
 - available_colors (array of strings), available_sizes (array of strings)
 - fit (Oversized | Regular | Slim | null) if can be inferred from text
 - category heuristic based on name: Hoodie, Tee, Sweatpants, Bag, Skirt, Other
