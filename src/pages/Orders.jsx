@@ -714,13 +714,14 @@ export default function Orders() {
     setReminderDialog(prev => ({ ...prev, sending: true }));
 
     try {
-      const trackOrderPageUrl = new URL(createPageUrl('TrackOrder'), window.location.origin).href;
+      // Link to Home page with order ID to complete payment
+      const completeOrderUrl = new URL(createPageUrl('Home') + `?orderId=${order.id}`, window.location.origin).href;
       const chatPageUrl = new URL(createPageUrl('Chat'), window.location.origin).href;
 
       const emailHtml = buildAbandonedCartReminderEmailHTML({
         customerName: order.customer_name,
         orderNumber: order.order_number,
-        trackUrl: trackOrderPageUrl,
+        trackUrl: completeOrderUrl,
         chatUrl: chatPageUrl
       });
 
