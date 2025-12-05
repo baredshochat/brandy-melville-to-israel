@@ -454,11 +454,7 @@ export default function Orders() {
           // Skip email for steps 2 and 3 (ordered and warehouse)
           const shouldSkipEmail = statusStep === 2 || statusStep === 3;
           
-          if (!shouldSkipEmail) {
-            // Check if the customer is a registered app user to comply with platform email policy
-            const matches = await User.filter({ email: order.customer_email });
-            const isAppUser = Array.isArray(matches) && matches.length > 0;
-
+          if (!shouldSkipEmail && isValidEmail(order.customer_email)) {
             const trackOrderPageUrl = new URL(createPageUrl('TrackOrder'), window.location.origin).href;
             const chatPageUrl = new URL(createPageUrl('Chat'), window.location.origin).href;
             const statusLabel = statusConfig[data.status]?.label || data.status;
@@ -473,30 +469,25 @@ export default function Orders() {
 
             const subject = `עדכון סטטוס להזמנה #${order.order_number}: ${statusLabel}`;
 
-            if (isAppUser) {
+            try {
               await SendEmail({
                 from_name: "Brandy Melville to Israel",
                 to: order.customer_email,
                 subject,
                 body: emailHtml
               });
-            } else {
-              // NEW: If not an app user, open email preview for manual sending
-              openEmailPreview(order.customer_email, subject, emailHtml);
+            } catch (emailError) {
+              console.warn('Failed to send status update email:', emailError);
             }
           }
         }
       }
 
-      // If payment completed and not emailed yet → email customer (only if she's an app user)
+      // If payment completed and not emailed yet → email customer
       if (data.payment_status) {
         const order = orders.find(o => o.id === orderId);
-        if (order && data.payment_status === 'completed' && !order.email_sent_to_customer) {
+        if (order && data.payment_status === 'completed' && !order.email_sent_to_customer && isValidEmail(order.customer_email)) {
           try {
-            // Check if the customer is a registered app user to comply with platform email policy
-            const matches = await User.filter({ email: order.customer_email });
-            const isAppUser = Array.isArray(matches) && matches.length > 0;
-
             const trackOrderPageUrl = new URL(createPageUrl('TrackOrder'), window.location.origin).href;
             const chatPageUrl = new URL(createPageUrl('Chat'), window.location.origin).href;
             const emailHtml = buildPaymentConfirmationEmailHTML({
@@ -509,23 +500,17 @@ export default function Orders() {
 
             const subject = `תשלום התקבל • הזמנה #${order.order_number}`;
 
-            if (isAppUser) {
-              await SendEmail({
-                from_name: "Brandy Melville to Israel",
-                to: order.customer_email,
-                subject,
-                body: emailHtml
-              });
+            await SendEmail({
+              from_name: "Brandy Melville to Israel",
+              to: order.customer_email,
+              subject,
+              body: emailHtml
+            });
 
-              // Mark as emailed to avoid duplicates (only if sent automatically)
-              await Order.update(orderId, { email_sent_to_customer: true });
-            } else {
-              // NEW: If not an app user, open email preview for manual sending
-              openEmailPreview(order.customer_email, subject, emailHtml);
-              // Do NOT mark email_sent_to_customer: true as it was not sent automatically
-            }
+            // Mark as emailed to avoid duplicates
+            await Order.update(orderId, { email_sent_to_customer: true });
           } catch (e) {
-            console.warn('Payment confirmation email skipped or failed:', e);
+            console.warn('Payment confirmation email failed:', e);
           }
         }
       }
