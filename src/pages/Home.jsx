@@ -481,53 +481,42 @@ export default function Home() {
       const siteInfo = { us: { currency: 'USD' }, eu: { currency: 'EUR' }, uk: { currency: 'GBP' } };
 
       const raw = await InvokeLLM({
-        prompt: `You are extracting product data from this URL: ${url}
+        prompt: `You are extracting product data from this Brandy Melville URL: ${url}
 
-CRITICAL INSTRUCTIONS:
-This is a Brandy Melville product page. Extract data carefully.
+      CRITICAL INSTRUCTIONS - READ CAREFULLY:
 
-PRODUCT NAME:
-- Look for: page title, <h1>, og:title meta tag, or product heading
-- Remove any " | Brandy Melville" suffix
-- Keep the original English name
-- Examples: "Duffel Bag", "Priscilla Pants", "Rosa Top"
+      SKU (Product Code) - HIGHEST PRIORITY:
+      The SKU is the MOST important field. You MUST extract it EXACTLY as shown on the page.
+      - Look in JSON-LD script for "sku" field - use EXACT value
+      - Look for "SKU: XXXXX" or "Product Code: XXXXX" text on page
+      - Check URL path for codes like "M065L-622BAG720000"
+      - Look in hidden inputs or data-sku attributes
+      - DO NOT INVENT OR GUESS - if not found, return null
+      - The SKU must be the EXACT string from the website
 
-PRICE:
-- Find the CURRENT price (not crossed-out old prices)
-- Look for: £XX.XX, $XX.XX, €XX.XX format
-- Return ONLY the numeric value (e.g., 20 for £20.00)
-- Check multiple places: main price display, add-to-cart section, product info
+      PRODUCT NAME:
+      - Look for: page title, <h1>, og:title meta tag, or product heading
+      - Remove any " | Brandy Melville" suffix
+      - Keep the original English name
+      - Examples: "Duffel Bag", "Priscilla Pants", "Rosa Top"
 
-SKU (Product Code):
-- Usually shown as "SKU: XXXXX" or similar
-- May be in product details section or hidden in page data
-- If not found, return null
+      PRICE:
+      - Find the CURRENT price (not crossed-out old prices)
+      - Look for: £XX.XX, $XX.XX, €XX.XX format
+      - Return ONLY the numeric value (e.g., 20 for £20.00)
+      - Check multiple places: main price display, add-to-cart section, product info
 
-DESCRIPTION:
-- Find the product description text
-- Usually under "Product Description:", "Details:", or similar heading
-- If not found, return null
+      DESCRIPTION:
+      - Find the product description text
+      - Usually under "Product Description:", "Details:", or similar heading
+      - If not found, return null
 
-COLORS & SIZES:
-- Extract ALL available options from:
-  * Dropdown menus
-  * Radio buttons
-  * Selection buttons
-- Look for labels like "Color:", "Size:", "Options:"
-- Return complete lists
+      COLORS & SIZES:
+      - Extract ALL available options from dropdown menus, radio buttons, selection buttons
+      - Look for labels like "Color:", "Size:", "Options:"
+      - Return complete lists
 
-IMPORTANT: Return valid data for at least product_name and price.
-
-Example output:
-{
-  "product_name": "Duffel Bag",
-  "product_sku": "M065L-622BAG720000",
-  "product_description": "Canvas duffel bag with adjustable strap.",
-  "price": 42,
-  "available_colors": ["Black", "White"],
-  "available_sizes": ["One Size"],
-  "currency_found": "GBP"
-}`,
+      IMPORTANT: Return valid data for at least product_name and price. SKU must be exact or null.`,
         add_context_from_internet: true,
         response_json_schema: {
           type: "object",
