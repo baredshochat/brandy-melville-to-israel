@@ -611,12 +611,12 @@ export default function ProfitReports() {
                                 <thead>
                                   <tr className="text-stone-600">
                                     <th className="text-left pb-2" style={{width: '25%'}}>פריט</th>
-                                    <th className="text-right pb-2" style={{width: '15%'}}>צבע / מידה</th>
-                                    <th className="text-right pb-2" style={{width: '10%'}}>כמות</th>
-                                    <th className="text-right pb-2" style={{width: '12%'}}>מחיר באתר</th>
-                                    <th className="text-right pb-2" style={{width: '14%'}}>מחיר ללקוחה</th>
-                                    <th className="text-right pb-2" style={{width: '14%'}}>עלות בפועל</th>
-                                    <th className="text-right pb-2" style={{width: '10%'}}>רווח</th>
+                                    <th className="text-left pb-2" style={{width: '15%'}}>צבע / מידה</th>
+                                    <th className="text-left pb-2" style={{width: '10%'}}>כמות</th>
+                                    <th className="text-left pb-2" style={{width: '12%'}}>מחיר באתר</th>
+                                    <th className="text-left pb-2" style={{width: '14%'}}>מחיר ללקוחה</th>
+                                    <th className="text-left pb-2" style={{width: '14%'}}>עלות בפועל</th>
+                                    <th className="text-left pb-2" style={{width: '10%'}}>רווח</th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -631,17 +631,17 @@ export default function ProfitReports() {
                                     const itemProfit = customerPrice - costPrice;
                                     return (
                                       <tr key={idx} className="border-t border-stone-200">
-                                        <td className="py-2" style={{width: '25%'}}>{item.product_name}</td>
-                                        <td className="py-2" style={{width: '15%'}}>{[item.color, item.size].filter(Boolean).join(' / ') || '-'}</td>
-                                        <td className="py-2" style={{width: '10%'}}>{item.quantity || 1}</td>
-                                        <td className="py-2 text-stone-600" style={{width: '12%'}}>{originalPriceDisplay}</td>
-                                        <td className="py-2 text-blue-700 font-medium" style={{width: '14%'}}>
+                                        <td className="py-2 text-left" style={{width: '25%'}}>{item.product_name}</td>
+                                        <td className="py-2 text-left" style={{width: '15%'}}>{[item.color, item.size].filter(Boolean).join(' / ') || '-'}</td>
+                                        <td className="py-2 text-left" style={{width: '10%'}}>{item.quantity || 1}</td>
+                                        <td className="py-2 text-left text-stone-600" style={{width: '12%'}}>{originalPriceDisplay}</td>
+                                        <td className="py-2 text-left text-blue-700 font-medium" style={{width: '14%'}}>
                                           {hasCustomerPrice ? `₪${customerPrice.toFixed(0)}` : <span className="text-amber-500">לא נשמר</span>}
                                         </td>
-                                        <td className="py-2 text-orange-700" style={{width: '14%'}}>
+                                        <td className="py-2 text-left text-orange-700" style={{width: '14%'}}>
                                           {hasCost ? `₪${costPrice.toFixed(0)}` : <span className="text-amber-500">לא הוזן</span>}
                                         </td>
-                                        <td className={`py-2 font-medium ${itemProfit >= 0 ? 'text-green-700' : 'text-red-700'}`} style={{width: '10%'}}>
+                                        <td className={`py-2 text-left font-medium ${itemProfit >= 0 ? 'text-green-700' : 'text-red-700'}`} style={{width: '10%'}}>
                                           {hasCost && hasCustomerPrice ? `₪${itemProfit.toFixed(0)}` : '-'}
                                         </td>
                                       </tr>
