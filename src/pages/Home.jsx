@@ -476,7 +476,9 @@ export default function Home() {
 
   const handleUrlSubmit = async (url) => {
     setLoading(true);
-    setProductUrl(url);
+    // שמירה על הקישור המקורי בדיוק כפי שהלקוחה הדביקה
+    const originalUrl = url.trim();
+    setProductUrl(originalUrl);
     try {
       const siteInfo = { us: { currency: 'USD' }, eu: { currency: 'EUR' }, uk: { currency: 'GBP' } };
 
@@ -563,7 +565,7 @@ export default function Home() {
       }
 
       setCurrentItem({
-        product_url: url,
+        product_url: originalUrl, // שומרים את הקישור המקורי בדיוק
         product_name: productName,
         product_sku: extractedSku,
         product_description: result?.product_description || 'תיאור לא זמין',

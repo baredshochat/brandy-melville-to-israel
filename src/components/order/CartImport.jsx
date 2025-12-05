@@ -198,9 +198,12 @@ Return ONLY a JSON object matching the schema; do not include extra text.
       const finalName = (product.name && String(product.name).trim()) ? product.name : (urlDerivedName || 'Product');
       const flags = detectFlags(finalName, (product.available_sizes || [])[0]);
 
+      // שמירה על הקישור המקורי בדיוק כפי שהלקוחה הדביקה
+      const originalUrl = validUrls[0].trim();
+      
       const newItem = {
         product_name: finalName,
-        product_url: product.url || validUrls[0],
+        product_url: originalUrl, // שומרים את הקישור המקורי בדיוק
         site,
         original_price: price,
         original_currency: product.currency,
