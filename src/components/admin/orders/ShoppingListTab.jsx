@@ -216,7 +216,7 @@ export default function ShoppingListTab({ orders, onUpdated }) {
                 </thead>
                 <tbody>
                   {rows.map((r) => (
-                    <tr key={r.key} className="border-b hover:bg-stone-50">
+                    <tr key={r.key} className={`border-b ${r.rowColor || ''}`}>
                       <td className="p-3">
                         <div className="font-medium">{r.customer_name || '—'}</div>
                         <div className="text-xs text-stone-500">{r.customer_email || ''}</div>
