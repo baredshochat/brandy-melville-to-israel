@@ -20,7 +20,7 @@ import {
   Repeat,
   Zap
 } from "lucide-react";
-import { format, startOfMonth, endOfMonth, addMonths, subMonths } from "date-fns";
+import { format, addMonths, subMonths } from "date-fns";
 import { he } from "date-fns/locale";
 
 const EXPENSE_CATEGORIES = [
@@ -36,6 +36,11 @@ const EXPENSE_CATEGORIES = [
   "אחר"
 ];
 
+const MONTHS_HEB = [
+  "ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני",
+  "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"
+];
+
 export default function MonthlyExpensesTab() {
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -47,8 +52,12 @@ export default function MonthlyExpensesTab() {
     type: "fixed",
     category: "",
     description: "",
-    amount: ""
+    amount: "",
+    recurrence: "single",
+    selectedMonths: []
   });
+  
+  const currentYear = new Date().getFullYear();
 
   useEffect(() => {
     loadExpenses();
@@ -57,8 +66,27 @@ export default function MonthlyExpensesTab() {
   const loadExpenses = async () => {
     setLoading(true);
     try {
-      const data = await MonthlyExpense.filter({ month: selectedMonth });
-      setExpenses(data || []);
+      // Load all expenses and filter client-side to include recurring ones
+      const allExpenses = await MonthlyExpense.list();
+      const [selectedYear, selectedMonthNum] = selectedMonth.split("-");
+      
+      const relevantExpenses = (allExpenses || []).filter((e) => {
+        // Single month expense
+        if (e.recurrence === "single" || !e.recurrence) {
+          return e.month === selectedMonth;
+        }
+        // Full year expense
+        if (e.recurrence === "full_year") {
+          return e.year === Number(selectedYear);
+        }
+        // Custom months
+        if (e.recurrence === "custom" && Array.isArray(e.apply_to_months)) {
+          return e.apply_to_months.includes(selectedMonth);
+        }
+        return false;
+      });
+      
+      setExpenses(relevantExpenses);
     } catch (e) {
       console.error("Error loading expenses:", e);
     } finally {
@@ -75,7 +103,14 @@ export default function MonthlyExpensesTab() {
 
   const openAddDialog = () => {
     setEditingExpense(null);
-    setFormData({ type: "fixed", category: "", description: "", amount: "" });
+    setFormData({ 
+      type: "fixed", 
+      category: "", 
+      description: "", 
+      amount: "",
+      recurrence: "single",
+      selectedMonths: []
+    });
     setShowDialog(true);
   };
 
@@ -85,7 +120,9 @@ export default function MonthlyExpensesTab() {
       type: expense.type,
       category: expense.category,
       description: expense.description || "",
-      amount: expense.amount.toString()
+      amount: expense.amount.toString(),
+      recurrence: expense.recurrence || "single",
+      selectedMonths: expense.apply_to_months || []
     });
     setShowDialog(true);
   };
@@ -95,15 +132,36 @@ export default function MonthlyExpensesTab() {
       alert("יש למלא קטגוריה וסכום");
       return;
     }
+    if (formData.recurrence === "custom" && formData.selectedMonths.length === 0) {
+      alert("יש לבחור לפחות חודש אחד");
+      return;
+    }
     setSaving(true);
     try {
+      const [selectedYear] = selectedMonth.split("-");
+      
       const expenseData = {
-        month: selectedMonth,
         type: formData.type,
         category: formData.category,
         description: formData.description,
-        amount: Number(formData.amount)
+        amount: Number(formData.amount),
+        recurrence: formData.recurrence
       };
+
+      // Set month/year/apply_to_months based on recurrence
+      if (formData.recurrence === "single") {
+        expenseData.month = selectedMonth;
+        expenseData.year = null;
+        expenseData.apply_to_months = null;
+      } else if (formData.recurrence === "full_year") {
+        expenseData.month = null;
+        expenseData.year = Number(selectedYear);
+        expenseData.apply_to_months = null;
+      } else if (formData.recurrence === "custom") {
+        expenseData.month = null;
+        expenseData.year = Number(selectedYear);
+        expenseData.apply_to_months = formData.selectedMonths;
+      }
 
       if (editingExpense) {
         await MonthlyExpense.update(editingExpense.id, expenseData);
@@ -118,6 +176,18 @@ export default function MonthlyExpensesTab() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const toggleMonth = (monthStr) => {
+    setFormData((prev) => {
+      const exists = prev.selectedMonths.includes(monthStr);
+      return {
+        ...prev,
+        selectedMonths: exists
+          ? prev.selectedMonths.filter((m) => m !== monthStr)
+          : [...prev.selectedMonths, monthStr]
+      };
+    });
   };
 
   const handleDelete = async (expenseId) => {
@@ -280,6 +350,14 @@ export default function MonthlyExpensesTab() {
                       <div>
                         <div className="flex items-center gap-2">
                           <Badge variant="outline">{expense.category}</Badge>
+                          {expense.recurrence === "full_year" && (
+                            <Badge className="bg-purple-100 text-purple-700 text-xs">כל השנה</Badge>
+                          )}
+                          {expense.recurrence === "custom" && (
+                            <Badge className="bg-teal-100 text-teal-700 text-xs">
+                              {expense.apply_to_months?.length} חודשים
+                            </Badge>
+                          )}
                         </div>
                         {expense.description && (
                           <p className="text-sm text-stone-500 mt-1">{expense.description}</p>
@@ -358,6 +436,47 @@ export default function MonthlyExpensesTab() {
                 onChange={(e) => setFormData((p) => ({ ...p, amount: e.target.value }))}
               />
             </div>
+
+            <div>
+              <Label>תדירות</Label>
+              <Select value={formData.recurrence} onValueChange={(v) => setFormData((p) => ({ ...p, recurrence: v, selectedMonths: [] }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="single">חודש נוכחי בלבד</SelectItem>
+                  <SelectItem value="full_year">כל השנה ({currentYear})</SelectItem>
+                  <SelectItem value="custom">בחירת חודשים</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {formData.recurrence === "custom" && (
+              <div>
+                <Label className="mb-2 block">בחר חודשים</Label>
+                <div className="grid grid-cols-4 gap-2">
+                  {MONTHS_HEB.map((monthName, idx) => {
+                    const monthStr = `${currentYear}-${String(idx + 1).padStart(2, "0")}`;
+                    const isSelected = formData.selectedMonths.includes(monthStr);
+                    return (
+                      <Button
+                        key={monthStr}
+                        type="button"
+                        variant={isSelected ? "default" : "outline"}
+                        size="sm"
+                        className={`text-xs ${isSelected ? "bg-teal-600 hover:bg-teal-700" : ""}`}
+                        onClick={() => toggleMonth(monthStr)}
+                      >
+                        {monthName}
+                      </Button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-stone-500 mt-2">
+                  נבחרו {formData.selectedMonths.length} חודשים
+                </p>
+              </div>
+            )}
 
             <div>
               <Label>תיאור (אופציונלי)</Label>
