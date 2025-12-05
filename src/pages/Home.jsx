@@ -362,7 +362,13 @@ export default function Home() {
   const [currentOrder, setCurrentOrder] = useState(null);
   const [confirmingItem, setConfirmingItem] = useState(false); // NEW: prevent double-create
 
-  useEffect(() => { User.me().then(setUser).catch(() => setUser(null)); }, []);
+  const [userLoaded, setUserLoaded] = useState(false);
+  
+  useEffect(() => { 
+    User.me()
+      .then(u => { setUser(u); setUserLoaded(true); })
+      .catch(() => { setUser(null); setUserLoaded(true); }); 
+  }, []);
 
   // Helper: identify 404/not found errors in various shapes
   const isNotFoundError = (err) => {
@@ -389,7 +395,8 @@ export default function Home() {
     }
   }, [user, selectedSite]);
 
-  useEffect(() => { if (loadCart) { loadCart(); } }, [loadCart]);
+  // Only load cart after user is loaded to ensure proper filtering
+  useEffect(() => { if (userLoaded && loadCart) { loadCart(); } }, [userLoaded, loadCart]);
 
   useEffect(() => {
     try {
