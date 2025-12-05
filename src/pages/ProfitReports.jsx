@@ -665,13 +665,14 @@ export default function ProfitReports() {
                               <table className="w-full text-sm table-fixed">
                                 <thead>
                                   <tr className="text-stone-600">
-                                    <th className="text-left pb-2" style={{width: '22%'}}>פריט</th>
-                                    <th className="text-left pb-2" style={{width: '12%'}}>צבע / מידה</th>
-                                    <th className="text-left pb-2" style={{width: '8%'}}>כמות</th>
+                                    <th className="text-left pb-2" style={{width: '20%'}}>פריט</th>
+                                    <th className="text-left pb-2" style={{width: '10%'}}>צבע / מידה</th>
+                                    <th className="text-left pb-2" style={{width: '6%'}}>כמות</th>
                                     <th className="text-left pb-2" style={{width: '10%'}}>מחיר באתר</th>
-                                    <th className="text-left pb-2" style={{width: '14%'}}>מחיר ללקוחה</th>
-                                    <th className="text-left pb-2" style={{width: '14%'}}>עלות בפועל</th>
+                                    <th className="text-left pb-2" style={{width: '12%'}}>מחיר ללקוחה</th>
+                                    <th className="text-left pb-2" style={{width: '12%'}}>עלות בפועל</th>
                                     <th className="text-left pb-2" style={{width: '10%'}}>רווח</th>
+                                    <th className="text-left pb-2" style={{width: '10%'}}>מרווח</th>
                                     <th className="text-left pb-2" style={{width: '10%'}}>פעולות</th>
                                   </tr>
                                 </thead>
@@ -686,36 +687,38 @@ export default function ProfitReports() {
                                     
                                     const isEditingThisItem = inlineEditingItem?.orderId === order.id && inlineEditingItem?.itemIndex === idx;
                                     
+                                    const itemMargin = (hasCost && hasCustomerPrice && customerPrice > 0) ? (itemProfit / customerPrice) * 100 : null;
+                                    
                                     if (isEditingThisItem) {
                                       return (
                                         <tr key={idx} className="border-t border-stone-200 bg-blue-50">
-                                          <td className="py-2 text-left" style={{width: '22%'}}>{item.product_name}</td>
-                                          <td className="py-2 text-left" style={{width: '12%'}}>{[item.color, item.size].filter(Boolean).join(' / ') || '-'}</td>
-                                          <td className="py-2 text-left" style={{width: '8%'}}>{item.quantity || 1}</td>
+                                          <td className="py-2 text-left" style={{width: '20%'}}>{item.product_name}</td>
+                                          <td className="py-2 text-left" style={{width: '10%'}}>{[item.color, item.size].filter(Boolean).join(' / ') || '-'}</td>
+                                          <td className="py-2 text-left" style={{width: '6%'}}>{item.quantity || 1}</td>
                                           <td className="py-2 text-left text-stone-600" style={{width: '10%'}}>{originalPriceDisplay}</td>
-                                          <td className="py-2 text-left" style={{width: '14%'}}>
+                                          <td className="py-2 text-left" style={{width: '12%'}}>
                                             <Input
                                               type="number"
                                               placeholder="מחיר ללקוחה"
                                               value={inlineEditingItem.data.customer_price_ils}
                                               onChange={(e) => updateInlineItem('customer_price_ils', e.target.value)}
-                                              className="h-7 w-24 text-xs"
+                                              className="h-7 w-20 text-xs"
                                             />
                                           </td>
-                                          <td className="py-2 text-left" style={{width: '14%'}}>
+                                          <td className="py-2 text-left" style={{width: '12%'}}>
                                             <div className="flex gap-1">
                                               <Input
                                                 type="number"
                                                 placeholder="עלות"
                                                 value={inlineEditingItem.data.actual_cost_price}
                                                 onChange={(e) => updateInlineItem('actual_cost_price', e.target.value)}
-                                                className="h-7 w-16 text-xs"
+                                                className="h-7 w-14 text-xs"
                                               />
                                               <Select 
                                                 value={inlineEditingItem.data.actual_cost_currency} 
                                                 onValueChange={(v) => updateInlineItem('actual_cost_currency', v)}
                                               >
-                                                <SelectTrigger className="h-7 w-16 text-xs">
+                                                <SelectTrigger className="h-7 w-14 text-xs">
                                                   <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent>
@@ -727,6 +730,7 @@ export default function ProfitReports() {
                                               </Select>
                                             </div>
                                           </td>
+                                          <td className="py-2 text-left" style={{width: '10%'}}>-</td>
                                           <td className="py-2 text-left" style={{width: '10%'}}>-</td>
                                           <td className="py-2 text-left" style={{width: '10%'}}>
                                             <div className="flex gap-1">
@@ -744,18 +748,25 @@ export default function ProfitReports() {
                                     
                                     return (
                                       <tr key={idx} className="border-t border-stone-200 hover:bg-stone-50">
-                                        <td className="py-2 text-left" style={{width: '22%'}}>{item.product_name}</td>
-                                        <td className="py-2 text-left" style={{width: '12%'}}>{[item.color, item.size].filter(Boolean).join(' / ') || '-'}</td>
-                                        <td className="py-2 text-left" style={{width: '8%'}}>{item.quantity || 1}</td>
+                                        <td className="py-2 text-left" style={{width: '20%'}}>{item.product_name}</td>
+                                        <td className="py-2 text-left" style={{width: '10%'}}>{[item.color, item.size].filter(Boolean).join(' / ') || '-'}</td>
+                                        <td className="py-2 text-left" style={{width: '6%'}}>{item.quantity || 1}</td>
                                         <td className="py-2 text-left text-stone-600" style={{width: '10%'}}>{originalPriceDisplay}</td>
-                                        <td className="py-2 text-left text-blue-700 font-medium" style={{width: '14%'}}>
+                                        <td className="py-2 text-left text-blue-700 font-medium" style={{width: '12%'}}>
                                           {hasCustomerPrice ? `₪${customerPrice.toFixed(0)}` : <span className="text-amber-500">לא נשמר</span>}
                                         </td>
-                                        <td className="py-2 text-left text-orange-700" style={{width: '14%'}}>
+                                        <td className="py-2 text-left text-orange-700" style={{width: '12%'}}>
                                           {hasCost ? `₪${costPrice.toFixed(0)}` : <span className="text-amber-500">לא הוזן</span>}
                                         </td>
                                         <td className={`py-2 text-left font-medium ${itemProfit >= 0 ? 'text-green-700' : 'text-red-700'}`} style={{width: '10%'}}>
                                           {hasCost && hasCustomerPrice ? `₪${itemProfit.toFixed(0)}` : '-'}
+                                        </td>
+                                        <td className="py-2 text-left" style={{width: '10%'}}>
+                                          {itemMargin !== null ? (
+                                            <Badge className={itemMargin >= 20 ? 'bg-green-100 text-green-800' : itemMargin >= 0 ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'}>
+                                              {itemMargin.toFixed(0)}%
+                                            </Badge>
+                                          ) : '-'}
                                         </td>
                                         <td className="py-2 text-left" style={{width: '10%'}}>
                                           <Button 
@@ -772,19 +783,20 @@ export default function ProfitReports() {
                                   })}
                                   {(order.actual_shipping_cost > 0 || getBatchShippingShare(order.id) > 0) && (
                                     <tr className="border-t border-stone-300 bg-stone-200/50">
-                                      <td style={{width: '22%'}} className="py-2 font-medium">
+                                      <td style={{width: '20%'}} className="py-2 font-medium">
                                         עלות משלוח
                                         {getBatchShippingShare(order.id) > 0 && !order.actual_shipping_cost && (
                                           <span className="text-xs text-purple-600 mr-2">(מחבילה: {getOrderBatch(order.id)?.batch_name})</span>
                                         )}
                                       </td>
-                                      <td style={{width: '12%'}} className="py-2"></td>
-                                      <td style={{width: '8%'}} className="py-2"></td>
                                       <td style={{width: '10%'}} className="py-2"></td>
-                                      <td style={{width: '14%'}} className="py-2"></td>
-                                      <td style={{width: '14%'}} className="py-2 text-orange-700 font-medium">
+                                      <td style={{width: '6%'}} className="py-2"></td>
+                                      <td style={{width: '10%'}} className="py-2"></td>
+                                      <td style={{width: '12%'}} className="py-2"></td>
+                                      <td style={{width: '12%'}} className="py-2 text-orange-700 font-medium">
                                         ₪{(order.actual_shipping_cost ? convertToILS(order.actual_shipping_cost, order.actual_shipping_currency || 'ILS') : getBatchShippingShare(order.id)).toFixed(0)}
                                       </td>
+                                      <td style={{width: '10%'}} className="py-2"></td>
                                       <td style={{width: '10%'}} className="py-2"></td>
                                       <td style={{width: '10%'}} className="py-2"></td>
                                     </tr>
