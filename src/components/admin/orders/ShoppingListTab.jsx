@@ -7,13 +7,14 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Order } from "@/entities/Order";
 import { Package, Check, Filter, ListOrdered, Truck, ExternalLink, Trash2 } from "lucide-react";
 
-function groupKey(item, site) {
+function groupKey(item, site, orderId) {
   const base = [
     item.product_sku || "",
     (item.product_name || "").toLowerCase().trim(),
     (item.color || "").toLowerCase().trim(),
     (item.size || "").toLowerCase().trim(),
-    site || ""
+    site || "",
+    orderId || "" // הפרדה לפי הזמנה/לקוח
   ];
   return base.join("|");
 }
