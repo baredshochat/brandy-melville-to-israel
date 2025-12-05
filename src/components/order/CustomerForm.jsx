@@ -3,9 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowRight, ArrowLeft, User, Mail, Phone, Home, MapPin, MessageSquare } from "lucide-react";
 import { motion } from "framer-motion";
 import { User as UserEntity } from "@/entities/User";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 
 export default function CustomerForm({ onSubmit, onBack }) {
   const [user, setUser] = useState(null);
@@ -17,6 +20,7 @@ export default function CustomerForm({ onSubmit, onBack }) {
     city: '',
     notes: ''
   });
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   // Load user and auto-fill email
   useEffect(() => {
@@ -53,7 +57,7 @@ export default function CustomerForm({ onSubmit, onBack }) {
 
   const isValid = formData.customer_name && formData.customer_email && 
                  formData.customer_phone && formData.shipping_address && 
-                 formData.city && emailValid;
+                 formData.city && emailValid && termsAccepted;
 
   const inputFields = [
       { id: 'customer_name', label: 'שם מלא', placeholder: 'הזיני את שמך המלא', width: 'full', icon: User, component: 'input', required: true },
@@ -124,6 +128,26 @@ export default function CustomerForm({ onSubmit, onBack }) {
                     </div>
                 )
             })}
+            
+            {/* Terms and Conditions Checkbox */}
+            <div className="col-span-2 flex items-start gap-3 mt-2">
+              <Checkbox 
+                id="terms" 
+                checked={termsAccepted} 
+                onCheckedChange={setTermsAccepted}
+                className="mt-1"
+              />
+              <Label htmlFor="terms" className="text-sm text-stone-600 cursor-pointer">
+                קראתי ואישרתי את{' '}
+                <Link 
+                  to={createPageUrl('Terms')} 
+                  target="_blank"
+                  className="text-rose-600 hover:text-rose-700 underline"
+                >
+                  תקנון האתר
+                </Link>
+              </Label>
+            </div>
           </form>
         </div>
 
