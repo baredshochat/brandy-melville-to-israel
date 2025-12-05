@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Order } from "@/entities/Order";
+import { ShipmentBatch } from "@/entities/ShipmentBatch";
 import { User } from "@/entities/User";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   DollarSign, 
   TrendingUp, 
@@ -21,7 +24,10 @@ import {
   ChevronUp,
   Loader2,
   Filter,
-  Trash2
+  Trash2,
+  Plus,
+  Link,
+  Unlink
 } from "lucide-react";
 
 // שערי המרה קבועים (אפשר לשפר בהמשך לשערים דינמיים)
@@ -39,6 +45,7 @@ const convertToILS = (amount, currency) => {
 
 export default function ProfitReports() {
   const [orders, setOrders] = useState([]);
+  const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [expandedOrders, setExpandedOrders] = useState(new Set());
@@ -48,6 +55,13 @@ export default function ProfitReports() {
   const [saving, setSaving] = useState(false);
   const [dateFilter, setDateFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [activeTab, setActiveTab] = useState('orders');
+  
+  // מצב ליצירת חבילה חדשה
+  const [showBatchDialog, setShowBatchDialog] = useState(false);
+  const [selectedOrderIds, setSelectedOrderIds] = useState(new Set());
+  const [newBatch, setNewBatch] = useState({ batch_name: '', total_shipping_cost: '', shipping_currency: 'USD', notes: '' });
+  const [editingBatch, setEditingBatch] = useState(null);
 
   useEffect(() => {
     const init = async () => {
@@ -70,13 +84,32 @@ export default function ProfitReports() {
   const loadOrders = async () => {
     setLoading(true);
     try {
-      const data = await Order.list('-created_date', 100);
-      setOrders(data || []);
+      const [ordersData, batchesData] = await Promise.all([
+        Order.list('-created_date', 100),
+        ShipmentBatch.list('-created_date', 50)
+      ]);
+      setOrders(ordersData || []);
+      setBatches(batchesData || []);
     } catch (e) {
-      console.error('Error loading orders:', e);
+      console.error('Error loading data:', e);
     } finally {
       setLoading(false);
     }
+  };
+
+  // מציאת חבילה שהזמנה שייכת אליה
+  const getOrderBatch = (orderId) => {
+    return batches.find(b => (b.order_ids || []).includes(orderId));
+  };
+
+  // חישוב עלות משלוח יחסית מחבילה
+  const getBatchShippingShare = (orderId) => {
+    const batch = getOrderBatch(orderId);
+    if (!batch || !batch.total_shipping_cost) return 0;
+    const orderCount = (batch.order_ids || []).length;
+    if (orderCount === 0) return 0;
+    const sharePerOrder = convertToILS(batch.total_shipping_cost, batch.shipping_currency || 'USD') / orderCount;
+    return sharePerOrder;
   };
 
   // סינון הזמנות לפי תאריך וסטטוס
@@ -136,8 +169,11 @@ export default function ProfitReports() {
       }
     });
     
-    // הוספת עלות משלוח
-    const shippingCost = convertToILS(order.actual_shipping_cost, order.actual_shipping_currency || 'ILS');
+    // הוספת עלות משלוח (ישיר או מחבילה)
+    let shippingCost = convertToILS(order.actual_shipping_cost, order.actual_shipping_currency || 'ILS');
+    if (shippingCost === 0) {
+      shippingCost = getBatchShippingShare(order.id);
+    }
     totalCost += shippingCost;
     
     const profit = totalRevenue - totalCost;
@@ -217,6 +253,81 @@ export default function ProfitReports() {
     ));
   };
 
+  // פונקציות לניהול חבילות
+  const toggleOrderSelection = (orderId) => {
+    setSelectedOrderIds(prev => {
+      const next = new Set(prev);
+      if (next.has(orderId)) next.delete(orderId);
+      else next.add(orderId);
+      return next;
+    });
+  };
+
+  const handleCreateBatch = async () => {
+    if (!newBatch.batch_name || !newBatch.total_shipping_cost || selectedOrderIds.size === 0) {
+      alert('יש למלא שם חבילה, עלות משלוח ולבחור לפחות הזמנה אחת');
+      return;
+    }
+    setSaving(true);
+    try {
+      await ShipmentBatch.create({
+        batch_name: newBatch.batch_name,
+        order_ids: Array.from(selectedOrderIds),
+        total_shipping_cost: Number(newBatch.total_shipping_cost),
+        shipping_currency: newBatch.shipping_currency,
+        notes: newBatch.notes,
+        status: 'pending'
+      });
+      await loadOrders();
+      setShowBatchDialog(false);
+      setNewBatch({ batch_name: '', total_shipping_cost: '', shipping_currency: 'USD', notes: '' });
+      setSelectedOrderIds(new Set());
+    } catch (e) {
+      console.error('Error creating batch:', e);
+      alert('שגיאה ביצירת חבילה');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteBatch = async (batchId) => {
+    if (!confirm('למחוק את החבילה?')) return;
+    try {
+      await ShipmentBatch.delete(batchId);
+      await loadOrders();
+    } catch (e) {
+      console.error('Error deleting batch:', e);
+    }
+  };
+
+  const handleUpdateBatch = async () => {
+    if (!editingBatch) return;
+    setSaving(true);
+    try {
+      await ShipmentBatch.update(editingBatch.id, {
+        batch_name: editingBatch.batch_name,
+        total_shipping_cost: Number(editingBatch.total_shipping_cost),
+        shipping_currency: editingBatch.shipping_currency,
+        notes: editingBatch.notes
+      });
+      await loadOrders();
+      setEditingBatch(null);
+    } catch (e) {
+      console.error('Error updating batch:', e);
+      alert('שגיאה בעדכון חבילה');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const removeOrderFromBatch = async (batchId, orderId) => {
+    const batch = batches.find(b => b.id === batchId);
+    if (!batch) return;
+    const newOrderIds = (batch.order_ids || []).filter(id => id !== orderId);
+    await ShipmentBatch.update(batchId, { order_ids: newOrderIds });
+    await loadOrders();
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
@@ -230,6 +341,14 @@ export default function ProfitReports() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-2xl font-bold text-stone-800">דוחות רווח נקי</h1>
         <div className="flex flex-wrap gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => setShowBatchDialog(true)}
+            className="gap-2"
+          >
+            <Link className="w-4 h-4" />
+            קישור הזמנות לחבילה
+          </Button>
           <Select value={dateFilter} onValueChange={setDateFilter}>
             <SelectTrigger className="w-36">
               <Calendar className="w-4 h-4 ml-2" />
@@ -323,6 +442,75 @@ export default function ProfitReports() {
         </div>
       )}
 
+      {/* טאבים */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="orders">הזמנות ({filteredOrders.length})</TabsTrigger>
+          <TabsTrigger value="batches">חבילות משלוח ({batches.length})</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="batches" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">חבילות משלוח משותפות</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {batches.length === 0 ? (
+                <p className="text-stone-500 text-center py-8">אין חבילות משלוח. לחצי על "קישור הזמנות לחבילה" ליצירת חבילה חדשה.</p>
+              ) : (
+                <div className="space-y-4">
+                  {batches.map(batch => {
+                    const batchOrders = orders.filter(o => (batch.order_ids || []).includes(o.id));
+                    const costPerOrder = batchOrders.length > 0 
+                      ? convertToILS(batch.total_shipping_cost, batch.shipping_currency || 'USD') / batchOrders.length 
+                      : 0;
+                    
+                    return (
+                      <Card key={batch.id} className="border-2 border-purple-200 bg-purple-50/50">
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-start mb-3">
+                            <div>
+                              <h3 className="font-semibold text-lg">{batch.batch_name}</h3>
+                              <p className="text-sm text-stone-500">
+                                {batchOrders.length} הזמנות • 
+                                עלות כוללת: {batch.shipping_currency === 'USD' ? '$' : batch.shipping_currency === 'EUR' ? '€' : batch.shipping_currency === 'GBP' ? '£' : '₪'}{batch.total_shipping_cost} • 
+                                עלות להזמנה: ₪{costPerOrder.toFixed(0)}
+                              </p>
+                              {batch.notes && <p className="text-xs text-stone-400 mt-1">{batch.notes}</p>}
+                            </div>
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="outline" onClick={() => setEditingBatch(batch)}>
+                                <Edit2 className="w-4 h-4" />
+                              </Button>
+                              <Button size="sm" variant="ghost" className="text-red-500" onClick={() => handleDeleteBatch(batch.id)}>
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {batchOrders.map(order => (
+                              <Badge key={order.id} variant="secondary" className="flex items-center gap-1">
+                                #{order.order_number} - {order.customer_name}
+                                <button 
+                                  onClick={() => removeOrderFromBatch(batch.id, order.id)}
+                                  className="mr-1 hover:text-red-500"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </Badge>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="orders" className="mt-4">
       {/* טבלת הזמנות */}
       <Card>
         <CardHeader>
@@ -358,7 +546,14 @@ export default function ProfitReports() {
                           </button>
                         </td>
                         <td className="p-3">
-                          <Badge variant="outline">#{order.order_number}</Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline">#{order.order_number}</Badge>
+                            {getOrderBatch(order.id) && (
+                              <Badge className="bg-purple-100 text-purple-700 text-xs">
+                                📦 {getOrderBatch(order.id).batch_name}
+                              </Badge>
+                            )}
+                          </div>
                         </td>
                         <td className="p-3 text-sm">
                           {new Date(order.created_date).toLocaleDateString('he-IL')}
@@ -439,11 +634,16 @@ export default function ProfitReports() {
                                       </tr>
                                     );
                                   })}
-                                  {order.actual_shipping_cost > 0 && (
+                                  {(order.actual_shipping_cost > 0 || getBatchShippingShare(order.id) > 0) && (
                                     <tr className="border-t border-stone-300">
-                                      <td colSpan={4} className="py-2 font-medium">עלות משלוח</td>
+                                      <td colSpan={4} className="py-2 font-medium">
+                                        עלות משלוח
+                                        {getBatchShippingShare(order.id) > 0 && !order.actual_shipping_cost && (
+                                          <span className="text-xs text-purple-600 mr-2">(מחבילה: {getOrderBatch(order.id)?.batch_name})</span>
+                                        )}
+                                      </td>
                                       <td className="py-2 text-orange-700">
-                                        ₪{convertToILS(order.actual_shipping_cost, order.actual_shipping_currency || 'ILS').toFixed(0)}
+                                        ₪{(order.actual_shipping_cost ? convertToILS(order.actual_shipping_cost, order.actual_shipping_currency || 'ILS') : getBatchShippingShare(order.id)).toFixed(0)}
                                       </td>
                                       <td></td>
                                     </tr>
@@ -462,6 +662,160 @@ export default function ProfitReports() {
           </div>
         </CardContent>
       </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* דיאלוג יצירת חבילה */}
+      <Dialog open={showBatchDialog} onOpenChange={setShowBatchDialog}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>קישור הזמנות לחבילת משלוח משותפת</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 mt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>שם החבילה</Label>
+                <Input
+                  placeholder="לדוגמה: משלוח דצמבר 2024"
+                  value={newBatch.batch_name}
+                  onChange={(e) => setNewBatch(prev => ({ ...prev, batch_name: e.target.value }))}
+                />
+              </div>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <Label>עלות משלוח כוללת</Label>
+                  <Input
+                    type="number"
+                    placeholder="0"
+                    value={newBatch.total_shipping_cost}
+                    onChange={(e) => setNewBatch(prev => ({ ...prev, total_shipping_cost: e.target.value }))}
+                  />
+                </div>
+                <div className="w-24">
+                  <Label>מטבע</Label>
+                  <Select value={newBatch.shipping_currency} onValueChange={(v) => setNewBatch(prev => ({ ...prev, shipping_currency: v }))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">$ USD</SelectItem>
+                      <SelectItem value="EUR">€ EUR</SelectItem>
+                      <SelectItem value="GBP">£ GBP</SelectItem>
+                      <SelectItem value="ILS">₪ ILS</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <Label>הערות (אופציונלי)</Label>
+              <Input
+                placeholder="הערות נוספות..."
+                value={newBatch.notes}
+                onChange={(e) => setNewBatch(prev => ({ ...prev, notes: e.target.value }))}
+              />
+            </div>
+
+            <div>
+              <Label className="mb-2 block">בחרי הזמנות לקישור ({selectedOrderIds.size} נבחרו)</Label>
+              <div className="max-h-64 overflow-y-auto border p-2 space-y-2">
+                {filteredOrders.filter(o => !getOrderBatch(o.id)).map(order => (
+                  <div 
+                    key={order.id} 
+                    className={`flex items-center gap-3 p-2 hover:bg-stone-50 cursor-pointer ${selectedOrderIds.has(order.id) ? 'bg-purple-50 border border-purple-200' : ''}`}
+                    onClick={() => toggleOrderSelection(order.id)}
+                  >
+                    <Checkbox checked={selectedOrderIds.has(order.id)} />
+                    <div className="flex-1">
+                      <span className="font-medium">#{order.order_number}</span>
+                      <span className="text-stone-500 mr-2">- {order.customer_name}</span>
+                      <span className="text-xs text-stone-400">{new Date(order.created_date).toLocaleDateString('he-IL')}</span>
+                    </div>
+                    <span className="text-sm text-stone-600">₪{order.total_price_ils?.toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {selectedOrderIds.size > 0 && newBatch.total_shipping_cost && (
+              <div className="bg-purple-50 p-3 border border-purple-200">
+                <p className="text-sm text-purple-800">
+                  💡 עלות משלוח להזמנה: ₪{(convertToILS(Number(newBatch.total_shipping_cost), newBatch.shipping_currency) / selectedOrderIds.size).toFixed(0)}
+                </p>
+              </div>
+            )}
+          </div>
+          
+          <div className="flex justify-end gap-2 mt-6">
+            <Button variant="outline" onClick={() => { setShowBatchDialog(false); setSelectedOrderIds(new Set()); }}>
+              ביטול
+            </Button>
+            <Button onClick={handleCreateBatch} disabled={saving} className="bg-purple-600 hover:bg-purple-700">
+              {saving ? <Loader2 className="w-4 h-4 ml-1 animate-spin" /> : <Plus className="w-4 h-4 ml-1" />}
+              יצירת חבילה
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* דיאלוג עריכת חבילה */}
+      <Dialog open={!!editingBatch} onOpenChange={() => setEditingBatch(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>עריכת חבילה</DialogTitle>
+          </DialogHeader>
+          {editingBatch && (
+            <div className="space-y-4 mt-4">
+              <div>
+                <Label>שם החבילה</Label>
+                <Input
+                  value={editingBatch.batch_name}
+                  onChange={(e) => setEditingBatch(prev => ({ ...prev, batch_name: e.target.value }))}
+                />
+              </div>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <Label>עלות משלוח</Label>
+                  <Input
+                    type="number"
+                    value={editingBatch.total_shipping_cost}
+                    onChange={(e) => setEditingBatch(prev => ({ ...prev, total_shipping_cost: e.target.value }))}
+                  />
+                </div>
+                <div className="w-24">
+                  <Label>מטבע</Label>
+                  <Select value={editingBatch.shipping_currency} onValueChange={(v) => setEditingBatch(prev => ({ ...prev, shipping_currency: v }))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">$ USD</SelectItem>
+                      <SelectItem value="EUR">€ EUR</SelectItem>
+                      <SelectItem value="GBP">£ GBP</SelectItem>
+                      <SelectItem value="ILS">₪ ILS</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label>הערות</Label>
+                <Input
+                  value={editingBatch.notes || ''}
+                  onChange={(e) => setEditingBatch(prev => ({ ...prev, notes: e.target.value }))}
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setEditingBatch(null)}>ביטול</Button>
+                <Button onClick={handleUpdateBatch} disabled={saving}>
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'שמירה'}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* דיאלוג עריכת עלויות */}
       <Dialog open={!!editingOrder} onOpenChange={() => setEditingOrder(null)}>
