@@ -523,16 +523,16 @@ export default function ProfitReports() {
             <table className="w-full">
               <thead className="bg-stone-50 border-b">
                 <tr>
-                  <th className="text-right p-3 w-10"></th>
-                  <th className="text-right p-3">מס׳ הזמנה</th>
-                  <th className="text-right p-3">תאריך</th>
-                  <th className="text-right p-3">לקוחה</th>
-                  <th className="text-right p-3">הכנסה</th>
-                  <th className="text-right p-3">עלות</th>
-                  <th className="text-right p-3">רווח</th>
-                  <th className="text-right p-3">מרווח</th>
-                  <th className="text-right p-3">פעולות</th>
-                </tr>
+                    <th className="text-left p-3 w-10"></th>
+                    <th className="text-left p-3">מס׳ הזמנה</th>
+                    <th className="text-left p-3">תאריך</th>
+                    <th className="text-left p-3">לקוחה</th>
+                    <th className="text-left p-3">הכנסה</th>
+                    <th className="text-left p-3">עלות</th>
+                    <th className="text-left p-3">רווח</th>
+                    <th className="text-left p-3">מרווח</th>
+                    <th className="text-left p-3">פעולות</th>
+                  </tr>
               </thead>
               <tbody>
                 {filteredOrders.map(order => {
