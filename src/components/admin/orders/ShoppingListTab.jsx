@@ -177,15 +177,16 @@ export default function ShoppingListTab({ orders, onUpdated }) {
               <table className="w-full">
                 <thead className="bg-stone-50 border-b">
                   <tr>
+                    <th className="text-right p-3">לקוחה</th>
+                    <th className="text-right p-3">מס׳ הזמנה</th>
                     <th className="text-right p-3">מוצר</th>
                     <th className="text-right p-3">SKU</th>
                     <th className="text-right p-3">צבע</th>
                     <th className="text-right p-3">מידה</th>
-                    <th className="text-right p-3">קישור</th> {/* New column header */}
+                    <th className="text-right p-3">קישור</th>
                     <th className="text-right p-3">אתר</th>
-                    <th className="text-right p-3">כמות כוללת</th>
-                    <th className="text-right p-3">תאריך הזמנה</th>
-                    <th className="text-right p-3">הזמנות מקור</th>
+                    <th className="text-right p-3">כמות</th>
+                    <th className="text-right p-3">תאריך</th>
                     <th className="text-right p-3">פעולות</th>
                   </tr>
                 </thead>
