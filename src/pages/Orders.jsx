@@ -1159,6 +1159,9 @@ export default function Orders() {
                                         {/* Reminder button for awaiting payment orders only */}
                                         {order.status === 'awaiting_payment' && (
                                           <div className="flex items-center gap-2">
+                                            <span className="text-[10px] text-stone-500">
+                                              תזכורת אחרונה: {order.last_reminder_date ? format(new Date(order.last_reminder_date), "dd/MM HH:mm") : 'טרם נשלחה'}
+                                            </span>
                                             <input
                                               type="number"
                                               min="0"
@@ -1171,11 +1174,6 @@ export default function Orders() {
                                               onClick={(e) => e.stopPropagation()}
                                               className={`w-10 h-6 text-center text-[10px] font-bold rounded-full border-0 ${order.reminder_count > 0 ? 'bg-amber-200 text-amber-800' : 'bg-stone-200 text-stone-600'}`}
                                             />
-                                            {order.last_reminder_date && (
-                                              <span className="text-[10px] text-stone-500">
-                                                אחרון: {format(new Date(order.last_reminder_date), "dd/MM HH:mm")}
-                                              </span>
-                                            )}
                                             <Button
                                               size="sm"
                                               variant="outline"
