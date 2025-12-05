@@ -751,8 +751,16 @@ export default function Orders() {
         body: emailHtml
       });
 
+      // Update reminder count and last reminder date
+      const newReminderCount = (order.reminder_count || 0) + 1;
+      await Order.update(order.id, {
+        reminder_count: newReminderCount,
+        last_reminder_date: new Date().toISOString()
+      });
+
       alert('מייל תזכורת נשלח בהצלחה!');
       setReminderDialog({ open: false, order: null, sending: false });
+      loadOrders(); // Reload to show updated count
     } catch (error) {
       console.error('Failed to send reminder email:', error);
       alert('שגיאה בשליחת המייל. נסי שוב.');
@@ -1150,15 +1158,27 @@ export default function Orders() {
 
                                         {/* Reminder button for awaiting payment orders only */}
                                         {order.status === 'awaiting_payment' && (
-                                          <Button
-                                            size="sm"
-                                            variant="outline"
-                                            className="text-xs h-7 px-2 border-amber-300 text-amber-700 hover:bg-amber-50"
-                                            onClick={(e) => { e.stopPropagation(); openReminderDialog(order); }}
-                                          >
-                                            <Mail className="w-3 h-3 ml-1" />
-                                            שלח תזכורת
-                                          </Button>
+                                          <div className="flex items-center gap-2">
+                                            <Button
+                                              size="sm"
+                                              variant="outline"
+                                              className="text-xs h-7 px-2 border-amber-300 text-amber-700 hover:bg-amber-50"
+                                              onClick={(e) => { e.stopPropagation(); openReminderDialog(order); }}
+                                            >
+                                              <Mail className="w-3 h-3 ml-1" />
+                                              שלח תזכורת
+                                              {order.reminder_count > 0 && (
+                                                <span className="mr-1 bg-amber-200 text-amber-800 px-1.5 py-0.5 text-[10px] font-bold rounded-full">
+                                                  {order.reminder_count}
+                                                </span>
+                                              )}
+                                            </Button>
+                                            {order.last_reminder_date && (
+                                              <span className="text-[10px] text-stone-500">
+                                                אחרון: {format(new Date(order.last_reminder_date), "dd/MM HH:mm")}
+                                              </span>
+                                            )}
+                                          </div>
                                         )}
                                       </div>
                                     </div>
