@@ -54,10 +54,12 @@ export default function MonthlyExpensesTab() {
     description: "",
     amount: "",
     recurrence: "single",
-    selectedMonths: []
+    selectedMonths: [],
+    targetYear: new Date().getFullYear()
   });
   
   const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
 
   useEffect(() => {
     loadExpenses();
@@ -103,26 +105,30 @@ export default function MonthlyExpensesTab() {
 
   const openAddDialog = () => {
     setEditingExpense(null);
+    const [year] = selectedMonth.split("-");
     setFormData({ 
       type: "fixed", 
       category: "", 
       description: "", 
       amount: "",
       recurrence: "single",
-      selectedMonths: []
+      selectedMonths: [],
+      targetYear: Number(year)
     });
     setShowDialog(true);
   };
 
   const openEditDialog = (expense) => {
     setEditingExpense(expense);
+    const [year] = selectedMonth.split("-");
     setFormData({
       type: expense.type,
       category: expense.category,
       description: expense.description || "",
       amount: expense.amount.toString(),
       recurrence: expense.recurrence || "single",
-      selectedMonths: expense.apply_to_months || []
+      selectedMonths: expense.apply_to_months || [],
+      targetYear: expense.year || Number(year)
     });
     setShowDialog(true);
   };
@@ -138,8 +144,6 @@ export default function MonthlyExpensesTab() {
     }
     setSaving(true);
     try {
-      const [selectedYear] = selectedMonth.split("-");
-      
       const expenseData = {
         type: formData.type,
         category: formData.category,
@@ -155,11 +159,11 @@ export default function MonthlyExpensesTab() {
         expenseData.apply_to_months = null;
       } else if (formData.recurrence === "full_year") {
         expenseData.month = null;
-        expenseData.year = Number(selectedYear);
+        expenseData.year = formData.targetYear;
         expenseData.apply_to_months = null;
       } else if (formData.recurrence === "custom") {
         expenseData.month = null;
-        expenseData.year = Number(selectedYear);
+        expenseData.year = formData.targetYear;
         expenseData.apply_to_months = formData.selectedMonths;
       }
 
@@ -188,6 +192,14 @@ export default function MonthlyExpensesTab() {
           : [...prev.selectedMonths, monthStr]
       };
     });
+  };
+
+  const handleYearChange = (newYear) => {
+    setFormData((prev) => ({
+      ...prev,
+      targetYear: newYear,
+      selectedMonths: [] // Reset selected months when year changes
+    }));
   };
 
   const handleDelete = async (expenseId) => {
@@ -445,18 +457,36 @@ export default function MonthlyExpensesTab() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="single">חודש נוכחי בלבד</SelectItem>
-                  <SelectItem value="full_year">כל השנה ({currentYear})</SelectItem>
+                  <SelectItem value="full_year">כל השנה</SelectItem>
                   <SelectItem value="custom">בחירת חודשים</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
+            {(formData.recurrence === "full_year" || formData.recurrence === "custom") && (
+              <div>
+                <Label>שנה</Label>
+                <Select value={String(formData.targetYear)} onValueChange={(v) => handleYearChange(Number(v))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {yearOptions.map((year) => (
+                      <SelectItem key={year} value={String(year)}>
+                        {year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {formData.recurrence === "custom" && (
               <div>
                 <Label className="mb-2 block">בחר חודשים</Label>
                 <div className="grid grid-cols-4 gap-2">
                   {MONTHS_HEB.map((monthName, idx) => {
-                    const monthStr = `${currentYear}-${String(idx + 1).padStart(2, "0")}`;
+                    const monthStr = `${formData.targetYear}-${String(idx + 1).padStart(2, "0")}`;
                     const isSelected = formData.selectedMonths.includes(monthStr);
                     return (
                       <Button
