@@ -45,7 +45,10 @@ import {
 export default function OrderDetailsDrawer({ order, open, onOpenChange, onUpdateOrder, onDeleteOrder, statusConfig }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({});
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false); // State for delete confirmation dialog
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isEditingItems, setIsEditingItems] = useState(false);
+  const [editingItems, setEditingItems] = useState([]);
+  const [savingItems, setSavingItems] = useState(false);
 
   if (!order) return null;
 
