@@ -243,6 +243,69 @@ function buildStatusUpdateEmailHTML({ customerName, orderNumber, statusLabel, tr
   `;
 }
 
+// Helper: Build abandoned cart reminder email
+function buildAbandonedCartReminderEmailHTML({ customerName, orderNumber, trackUrl, chatUrl }) {
+  const brand = "Brandy Melville to Israel";
+  const primary = "#443E41";
+  const accent = "#FFCAD4";
+  const border = "#FCE8EF";
+  const muted = "#6B7280";
+
+  return `
+  <!doctype html>
+  <html lang="he" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
+    <title>שכחת משהו מתוק בעגלה? 💖</title>
+  </head>
+  <body style="margin:0;background:#FFFDFC;font-family:Assistant,Arial,Helvetica,sans-serif" dir="rtl">
+    <div style="max-width:640px;margin:24px auto;background:#fff;border:1px solid ${border};">
+      <div style="padding:16px 20px;border-bottom:1px solid ${border};display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:32px;height:32px;background:${accent};color:#fff;display:flex;align-items:center;justify-content:center;border-radius:50%">💖</div>
+          <div>
+            <div style="font-weight:700;color:${primary}">${brand}</div>
+            <div style="font-size:12px;color:${muted}">הדרך הקלה להזמין ברנדי מחו״ל</div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:${muted}">מס׳ הזמנה: <strong style="color:${primary}">${orderNumber}</strong></div>
+      </div>
+
+      <div style="padding:22px 20px">
+        <h1 style="margin:0 0 8px 0;color:${primary};font-size:20px">היי ${customerName || 'יקרה'} 🌸</h1>
+        <p style="margin:0 0 14px 0;color:${primary};line-height:1.7">
+          שמנו לב שיש לך כמה פריטים הורסים שמחכים לך בעגלה! ✨
+        </p>
+        <p style="margin:0 0 14px 0;color:${primary};line-height:1.7">
+          אנחנו יודעות שהחיים עמוסים, אבל לא רצינו שתפספסי את הפיסים המושלמים שלך. 
+          הם עדיין שם ומחכים לך, בדיוק כמו שאהבת.
+        </p>
+
+        <div style="margin:16px 0;padding:14px;border:1px dashed ${border};background:${accent}11;color:${primary};text-align:center">
+          <strong>הפריטים שלך מחכים! 🛒</strong>
+        </div>
+
+        <div style="text-align:center;margin:18px 0 6px">
+          <a href="${trackUrl}" style="display:inline-block;background:${primary};color:#fff;text-decoration:none;padding:12px 24px;margin:4px 6px;font-weight:700;font-size:15px">להשלמת ההזמנה</a>
+          <a href="${chatUrl}" style="display:inline-block;background:#fff;color:${primary};border:2px solid ${accent};text-decoration:none;padding:10px 16px;margin:4px 6px;font-weight:700">צ׳אט עם הנציגה</a>
+        </div>
+
+        <p style="margin:20px 0 0 0;color:${primary};line-height:1.7;text-align:center">
+          אם יש לך שאלות או שאת צריכה עזרה במשהו, אנחנו כאן תמיד בשבילך! 💖
+        </p>
+
+        <p style="margin:16px 0 0 0;color:${muted};font-size:12px;text-align:center">
+          נתראה בקרוב,<br>צוות ${brand} 🌸
+        </p>
+      </div>
+    </div>
+  </body>
+  </html>
+  `;
+}
+
 // Helper: Build payment confirmation email to customer
 function buildPaymentConfirmationEmailHTML({ customerName, orderNumber, totalILS, trackUrl, chatUrl }) {
   const brand = "Brandy Melville to Israel";
@@ -345,6 +408,9 @@ export default function Orders() {
 
   // NEW: state for email preview dialog
   const [emailPreview, setEmailPreview] = useState({ open: false, to: "", subject: "", html: "" });
+
+  // State for reminder email confirmation dialog
+  const [reminderDialog, setReminderDialog] = useState({ open: false, order: null, sending: false });
 
   // helpers for email preview
   const openEmailPreview = (to, subject, html) => setEmailPreview({ open: true, to, subject, html });
@@ -632,6 +698,47 @@ export default function Orders() {
     } else {
       console.log('Bulk action:', action, 'on orders:', orderIds);
       // Implement other bulk actions here
+    }
+  };
+
+  // Open reminder confirmation dialog
+  const openReminderDialog = (order) => {
+    setReminderDialog({ open: true, order, sending: false });
+  };
+
+  // Send abandoned cart reminder email
+  const confirmSendReminder = async () => {
+    const order = reminderDialog.order;
+    if (!order || !isValidEmail(order.customer_email)) return;
+
+    setReminderDialog(prev => ({ ...prev, sending: true }));
+
+    try {
+      const trackOrderPageUrl = new URL(createPageUrl('TrackOrder'), window.location.origin).href;
+      const chatPageUrl = new URL(createPageUrl('Chat'), window.location.origin).href;
+
+      const emailHtml = buildAbandonedCartReminderEmailHTML({
+        customerName: order.customer_name,
+        orderNumber: order.order_number,
+        trackUrl: trackOrderPageUrl,
+        chatUrl: chatPageUrl
+      });
+
+      const subject = `היי! שכחת משהו מתוק בעגלה? 💖 • הזמנה #${order.order_number}`;
+
+      await SendEmail({
+        from_name: "Brandy Melville to Israel",
+        to: order.customer_email,
+        subject,
+        body: emailHtml
+      });
+
+      alert('מייל תזכורת נשלח בהצלחה!');
+      setReminderDialog({ open: false, order: null, sending: false });
+    } catch (error) {
+      console.error('Failed to send reminder email:', error);
+      alert('שגיאה בשליחת המייל. נסי שוב.');
+      setReminderDialog(prev => ({ ...prev, sending: false }));
     }
   };
 
@@ -1016,6 +1123,19 @@ export default function Orders() {
                                         <span className="text-xs sm:text-sm text-stone-700 px-2 py-0.5 bg-stone-50 border border-stone-200 rounded ml-1">
                                           {statusConfig[order.status]?.label || order.status}
                                         </span>
+
+                                        {/* Reminder button for pending payments */}
+                                        {order.payment_status === 'pending' && (
+                                          <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="mr-auto text-xs h-7 px-2 border-amber-300 text-amber-700 hover:bg-amber-50"
+                                            onClick={(e) => { e.stopPropagation(); openReminderDialog(order); }}
+                                          >
+                                            <Mail className="w-3 h-3 ml-1" />
+                                            שלח תזכורת
+                                          </Button>
+                                        )}
                                       </div>
                                     </div>
                                   </td>
@@ -1236,6 +1356,58 @@ export default function Orders() {
           </div >
           <DialogFooter>
             <Button onClick={closeEmailPreview}>סגור</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reminder Email Confirmation Dialog */}
+      <Dialog open={reminderDialog.open} onOpenChange={(open) => !reminderDialog.sending && setReminderDialog({ open, order: null, sending: false })}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="w-5 h-5 text-amber-600" />
+              שליחת תזכורת תשלום
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-stone-700">
+              האם את בטוחה שברצונך לשלוח מייל תזכורת ללקוחה?
+            </p>
+            {reminderDialog.order && (
+              <div className="bg-stone-50 p-3 rounded border border-stone-200">
+                <div className="text-sm">
+                  <div><strong>הזמנה:</strong> #{reminderDialog.order.order_number}</div>
+                  <div><strong>לקוחה:</strong> {reminderDialog.order.customer_name}</div>
+                  <div><strong>אימייל:</strong> {reminderDialog.order.customer_email}</div>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setReminderDialog({ open: false, order: null, sending: false })}
+              disabled={reminderDialog.sending}
+            >
+              ביטול
+            </Button>
+            <Button
+              onClick={confirmSendReminder}
+              disabled={reminderDialog.sending}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              {reminderDialog.sending ? (
+                <>
+                  <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                  שולח...
+                </>
+              ) : (
+                <>
+                  <Mail className="w-4 h-4 ml-2" />
+                  שלח תזכורת
+                </>
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
