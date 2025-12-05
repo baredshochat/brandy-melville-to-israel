@@ -444,8 +444,13 @@ export default function Home() {
       if (editItemIdParam) {
         handleEditing(editItemIdParam);
       } else {
-        if (siteParam) setSelectedSite(siteParam);
-        if (stepParam && !isNaN(parseInt(stepParam))) setStep(parseInt(stepParam));
+        // Set site first, then step - order matters for cart loading
+        if (siteParam) {
+          setSelectedSite(siteParam);
+        }
+        if (stepParam && !isNaN(parseInt(stepParam))) {
+          setStep(parseInt(stepParam));
+        }
       }
     } catch (error) {
       console.error("Error processing URL parameters:", error);
