@@ -19,6 +19,7 @@ import ExchangeRates from './pages/ExchangeRates';
 import ManageCoupons from './pages/ManageCoupons';
 import ReturnsPolicy from './pages/ReturnsPolicy';
 import ChatLogs from './pages/ChatLogs';
+import ProfitReports from './pages/ProfitReports';
 import __Layout from './Layout.jsx';
 
 
@@ -44,6 +45,7 @@ export const PAGES = {
     "ManageCoupons": ManageCoupons,
     "ReturnsPolicy": ReturnsPolicy,
     "ChatLogs": ChatLogs,
+    "ProfitReports": ProfitReports,
 }
 
 export const pagesConfig = {
