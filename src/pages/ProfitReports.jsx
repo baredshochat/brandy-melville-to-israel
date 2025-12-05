@@ -20,7 +20,8 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
-  Filter
+  Filter,
+  Trash2
 } from "lucide-react";
 
 // שערי המרה קבועים (אפשר לשפר בהמשך לשערים דינמיים)
@@ -382,10 +383,25 @@ export default function ProfitReports() {
                           ) : '-'}
                         </td>
                         <td className="p-3">
-                          <Button size="sm" variant="outline" onClick={() => openEditDialog(order)}>
-                            <Edit2 className="w-4 h-4 ml-1" />
-                            עריכה
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline" onClick={() => openEditDialog(order)}>
+                              <Edit2 className="w-4 h-4 ml-1" />
+                              עריכה
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                              onClick={async () => {
+                                if (confirm(`למחוק את הזמנה #${order.order_number}?`)) {
+                                  await Order.delete(order.id);
+                                  loadOrders();
+                                }
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                       
