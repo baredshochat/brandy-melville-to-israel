@@ -613,7 +613,8 @@ export default function ProfitReports() {
                                     <th className="text-right pb-2">פריט</th>
                                     <th className="text-right pb-2">צבע / מידה</th>
                                     <th className="text-right pb-2">כמות</th>
-                                    <th className="text-right pb-2">מחיר מכירה</th>
+                                    <th className="text-right pb-2">מחיר באתר</th>
+                                    <th className="text-right pb-2">מחיר ללקוחה</th>
                                     <th className="text-right pb-2">עלות בפועל</th>
                                     <th className="text-right pb-2">רווח</th>
                                   </tr>
@@ -621,12 +622,18 @@ export default function ProfitReports() {
                                 <tbody>
                                   {(order.items || []).map((item, idx) => {
                                     const { soldPrice, costPrice, profit: itemProfit, hasCost } = calculateItemProfit(item);
+                                    const currencySymbol = item.original_currency === 'USD' ? '$' : item.original_currency === 'EUR' ? '€' : item.original_currency === 'GBP' ? '£' : '₪';
+                                    const originalPriceDisplay = `${currencySymbol}${Number(item.original_price || 0).toFixed(0)}`;
+                                    // חישוב מחיר ללקוחה - המחיר הכולל חלקי מספר הפריטים (הערכה)
+                                    const totalItems = (order.items || []).reduce((sum, it) => sum + (it.quantity || 1), 0);
+                                    const customerPricePerItem = totalItems > 0 ? ((order.total_price_ils || 0) / totalItems) * (item.quantity || 1) : 0;
                                     return (
                                       <tr key={idx} className="border-t border-stone-200">
                                         <td className="py-2">{item.product_name}</td>
                                         <td className="py-2">{[item.color, item.size].filter(Boolean).join(' / ') || '-'}</td>
                                         <td className="py-2">{item.quantity || 1}</td>
-                                        <td className="py-2 text-blue-700">₪{soldPrice.toFixed(0)}</td>
+                                        <td className="py-2 text-stone-600">{originalPriceDisplay}</td>
+                                        <td className="py-2 text-blue-700 font-medium">₪{customerPricePerItem.toFixed(0)}</td>
                                         <td className="py-2 text-orange-700">
                                           {hasCost ? `₪${costPrice.toFixed(0)}` : <span className="text-amber-500">לא הוזן</span>}
                                         </td>
