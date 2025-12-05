@@ -645,7 +645,7 @@ export default function ProfitReports() {
                                   })}
                                   {(order.actual_shipping_cost > 0 || getBatchShippingShare(order.id) > 0) && (
                                     <tr className="border-t border-stone-300">
-                                      <td colSpan={4} className="py-2 font-medium">
+                                      <td colSpan={5} className="py-2 font-medium">
                                         עלות משלוח
                                         {getBatchShippingShare(order.id) > 0 && !order.actual_shipping_cost && (
                                           <span className="text-xs text-purple-600 mr-2">(מחבילה: {getOrderBatch(order.id)?.batch_name})</span>
