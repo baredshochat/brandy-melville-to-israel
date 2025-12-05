@@ -731,8 +731,8 @@ export default function Orders() {
     setReminderDialog(prev => ({ ...prev, sending: true }));
 
     try {
-      // Link to Home page with step=4 (cart) so customer can complete the order
-      const trackOrderUrl = new URL(createPageUrl('Home') + `?site=${encodeURIComponent(order.site || 'eu')}&step=4`, window.location.origin).href;
+      // Link to payment page for this specific order
+      const trackOrderUrl = new URL(createPageUrl('CompletePayment') + `?orderId=${encodeURIComponent(order.id)}`, window.location.origin).href;
       const chatPageUrl = new URL(createPageUrl('Chat'), window.location.origin).href;
 
       const emailHtml = buildAbandonedCartReminderEmailHTML({
