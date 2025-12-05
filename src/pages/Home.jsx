@@ -696,7 +696,8 @@ export default function Home() {
 
   const handlePriceConfirm = (price, weight, breakdown) => { setTotalPriceILS(price); setTotalWeight(weight); setPriceBreakdown(breakdown); setStep(6); };
 
-  // CHANGED: on customer submit create order, send email, and go to Tranzila payment
+  // CHANGED: on customer submit create order with awaiting_payment status
+  // Cart items are NOT deleted until payment is confirmed
   const handleCustomerSubmit = async (data) => {
     setCustomerData(data);
     setLoading(true);
@@ -704,13 +705,7 @@ export default function Home() {
       const order = await submitOrder(data);
       setCurrentOrder(order);
 
-      // Email will be sent manually by admin after reviewing the order
-
-      // Clear cart items before going to payment
-      const itemsToDelete = [...cart];
-      await Promise.allSettled(itemsToDelete.map(item => CartItem.delete(item.id)));
-      refreshCart();
-      setCart([]);
+      // Do NOT clear cart items here - they will be cleared only after successful payment
 
       setStep(7); // Go to Tranzila payment step
     } catch (error) {
@@ -741,13 +736,13 @@ export default function Home() {
                 order_number: orderNumber,
                 site: selectedSite,
                 items: itemsWithCustomerPrice,
-        total_price_ils: totalPriceILS,
-        total_weight_kg: totalWeight,
-        price_breakdown: priceBreakdown,
-        ...customerPayload, // Use the customerPayload
-        status: 'pending',
-        payment_status: 'pending'
-      });
+              total_price_ils: totalPriceILS,
+              total_weight_kg: totalWeight,
+              price_breakdown: priceBreakdown,
+              ...customerPayload, // Use the customerPayload
+              status: 'awaiting_payment',
+              payment_status: 'pending'
+              });
       // Normalize possible Response shapes
       if (typeof Response !== 'undefined' && newOrder instanceof Response) {
         newOrder = await newOrder.json();
@@ -765,10 +760,19 @@ export default function Home() {
   // Handle successful payment completion
   const handlePaymentSuccess = async () => {
     try {
-      // Update order payment status
+      // Update order payment status AND move to pending (confirmed) status
       if (currentOrder?.id) {
-        await Order.update(currentOrder.id, { payment_status: 'completed' });
+        await Order.update(currentOrder.id, { 
+          payment_status: 'completed',
+          status: 'pending' // Move from awaiting_payment to pending
+        });
       }
+
+      // NOW clear cart items since payment was successful
+      const itemsToDelete = [...cart];
+      await Promise.allSettled(itemsToDelete.map(item => CartItem.delete(item.id)));
+      refreshCart();
+      setCart([]);
 
       const trackOrderPageUrl = new URL(createPageUrl('TrackOrder'), window.location.origin).href;
       const chatPageUrl = new URL(createPageUrl('Chat'), window.location.origin).href;
@@ -803,12 +807,6 @@ export default function Home() {
           console.error('Failed to send email:', emailError);
         }
       }
-      
-      // Clear cart items
-      const itemsToDelete = [...cart];
-      await Promise.allSettled(itemsToDelete.map(item => CartItem.delete(item.id)));
-      refreshCart();
-      setCart([]);
 
       setStep(8); // Go to success page
     } catch (error) {
