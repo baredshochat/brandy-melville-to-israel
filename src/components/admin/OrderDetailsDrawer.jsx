@@ -488,10 +488,30 @@ Return valid JSON only.`,
                               placeholder="הדביקי קישור למוצר..."
                               value={item.product_url || ''}
                               onChange={(e) => updateItem(index, 'product_url', e.target.value)}
+                              onBlur={(e) => {
+                                const url = e.target.value;
+                                if (url && url.includes('brandymelville') && !item.product_name) {
+                                  fetchProductFromUrl(index, url);
+                                }
+                              }}
                               className="text-xs"
                               dir="ltr"
                             />
                           </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 mt-5"
+                            onClick={() => fetchProductFromUrl(index, item.product_url)}
+                            disabled={!item.product_url || fetchingProduct === index}
+                            title="שלוף פרטי מוצר"
+                          >
+                            {fetchingProduct === index ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              "שלוף"
+                            )}
+                          </Button>
                           {item.product_url && (
                             <>
                               <Button
