@@ -475,17 +475,11 @@ export default function Home() {
     setStep(2);
   };
 
-  const handleCartImported = (items) => {
+  const handleCartImported = async (items) => {
     const safe = Array.isArray(items) ? items : [];
-    if (safe.length === 1) {
-      // Item was already created in CartImport, just go to cart
-      // Don't set currentItem/editingItem to avoid double-creation in handleProductConfirm
-      loadCart();
-      setStep(4);
-    } else {
-      loadCart();
-      setStep(4);
-    }
+    // Item was already created in CartImport, reload cart and go to cart view
+    await loadCart();
+    setStep(4);
   };
 
   const handleUrlSubmit = async (url) => {
