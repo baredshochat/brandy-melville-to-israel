@@ -605,7 +605,7 @@ export default function ProfitReports() {
                       {/* פירוט פריטים */}
                       {isExpanded && (
                         <tr>
-                          <td colSpan={9} className="p-0">
+                          <td colSpan={10} className="p-0">
                             <div className="bg-stone-100 p-4">
                               <table className="w-full text-sm">
                                 <thead>
