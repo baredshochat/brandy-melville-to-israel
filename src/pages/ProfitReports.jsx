@@ -649,17 +649,20 @@ export default function ProfitReports() {
                                   })}
                                   {(order.actual_shipping_cost > 0 || getBatchShippingShare(order.id) > 0) && (
                                     <tr className="border-t border-stone-300 bg-stone-200/50">
-                                      <td colSpan={4} className="py-2 font-medium">
+                                      <td style={{width: '25%'}} className="py-2 font-medium">
                                         עלות משלוח
                                         {getBatchShippingShare(order.id) > 0 && !order.actual_shipping_cost && (
                                           <span className="text-xs text-purple-600 mr-2">(מחבילה: {getOrderBatch(order.id)?.batch_name})</span>
                                         )}
                                       </td>
-                                      <td className="py-2"></td>
-                                      <td className="py-2 text-orange-700 font-medium">
+                                      <td style={{width: '15%'}} className="py-2"></td>
+                                      <td style={{width: '10%'}} className="py-2"></td>
+                                      <td style={{width: '12%'}} className="py-2"></td>
+                                      <td style={{width: '14%'}} className="py-2"></td>
+                                      <td style={{width: '14%'}} className="py-2 text-orange-700 font-medium">
                                         ₪{(order.actual_shipping_cost ? convertToILS(order.actual_shipping_cost, order.actual_shipping_currency || 'ILS') : getBatchShippingShare(order.id)).toFixed(0)}
                                       </td>
-                                      <td className="py-2"></td>
+                                      <td style={{width: '10%'}} className="py-2"></td>
                                     </tr>
                                   )}
                                 </tbody>
