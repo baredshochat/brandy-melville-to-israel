@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -35,8 +34,12 @@ import {
   Save,
   X,
   Info,
-  AlertTriangle, // Added for delete functionality
-  BarChart3
+  AlertTriangle,
+  BarChart3,
+  ExternalLink,
+  Plus,
+  Trash2,
+  Loader2
 } from 'lucide-react';
 
 export default function OrderDetailsDrawer({ order, open, onOpenChange, onUpdateOrder, onDeleteOrder, statusConfig }) {
