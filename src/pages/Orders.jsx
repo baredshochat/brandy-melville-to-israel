@@ -724,7 +724,7 @@ export default function Orders() {
         chatUrl: chatPageUrl
       });
 
-      const subject = `היי! שכחת משהו מתוק בעגלה? 💖 • הזמנה #${order.order_number}`;
+      const subject = `היי! שכחת משהו בעגלה? 💖 • הזמנה #${order.order_number}`;
 
       await SendEmail({
         from_name: "Brandy Melville to Israel",
