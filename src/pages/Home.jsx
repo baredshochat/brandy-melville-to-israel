@@ -446,14 +446,16 @@ export default function Home() {
 
       if (editItemIdParam) {
         handleEditing(editItemIdParam);
-      } else {
-        // Set site first, then step - order matters for cart loading
-        if (siteParam) {
-          setSelectedSite(siteParam);
-        }
+      } else if (siteParam) {
+        // Set site and let the useEffect for loadCart handle loading
+        setSelectedSite(siteParam);
+        // Step will be set after cart is loaded via separate effect
         if (stepParam && !isNaN(parseInt(stepParam))) {
-          setStep(parseInt(stepParam));
+          // Defer step change to allow cart to load first
+          setTimeout(() => setStep(parseInt(stepParam)), 100);
         }
+      } else if (stepParam && !isNaN(parseInt(stepParam))) {
+        setStep(parseInt(stepParam));
       }
     } catch (error) {
       console.error("Error processing URL parameters:", error);
