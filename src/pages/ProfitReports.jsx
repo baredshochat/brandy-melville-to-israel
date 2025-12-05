@@ -27,7 +27,9 @@ import {
   Trash2,
   Plus,
   Link2,
-  Unlink
+  Unlink,
+  Copy,
+  ExternalLink
 } from "lucide-react";
 
 // שערי המרה קבועים (אפשר לשפר בהמשך לשערים דינמיים)
@@ -821,17 +823,150 @@ export default function ProfitReports() {
       <Dialog open={!!editingOrder} onOpenChange={() => setEditingOrder(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>עריכת עלויות - הזמנה #{editingOrder?.order_number}</DialogTitle>
+            <DialogTitle>עריכת הזמנה #{editingOrder?.order_number}</DialogTitle>
           </DialogHeader>
           
           <div className="space-y-4 mt-4">
-            <h3 className="font-semibold text-stone-700">עלויות פריטים</h3>
+            <div className="flex justify-between items-center">
+              <h3 className="font-semibold text-stone-700">פריטים בהזמנה</h3>
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => setEditingItems(prev => [...prev, {
+                  product_name: '',
+                  product_url: '',
+                  color: '',
+                  size: '',
+                  quantity: 1,
+                  original_price: '',
+                  original_currency: 'EUR',
+                  actual_cost_price: '',
+                  actual_cost_currency: 'ILS'
+                }])}
+              >
+                <Plus className="w-4 h-4 ml-1" />
+                הוסף פריט
+              </Button>
+            </div>
             {editingItems.map((item, idx) => (
-              <div key={idx} className="p-3 bg-stone-50 border space-y-2">
-                <div className="font-medium text-sm">{item.product_name}</div>
-                <div className="text-xs text-stone-500">
-                  {[item.color, item.size].filter(Boolean).join(' / ')} • כמות: {item.quantity || 1}
+              <div key={idx} className="p-3 bg-stone-50 border space-y-3">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="שם המוצר"
+                      value={item.product_name || ''}
+                      onChange={(e) => updateItemCost(idx, 'product_name', e.target.value)}
+                      className="h-8 text-sm font-medium"
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-red-500 hover:text-red-700 mr-2"
+                    onClick={() => setEditingItems(prev => prev.filter((_, i) => i !== idx))}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
+                
+                {/* קישור למוצר */}
+                <div className="flex gap-2 items-center">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="קישור למוצר"
+                      value={item.product_url || ''}
+                      onChange={(e) => updateItemCost(idx, 'product_url', e.target.value)}
+                      className="h-8 text-xs"
+                      dir="ltr"
+                    />
+                  </div>
+                  {item.product_url && (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0"
+                        onClick={() => {
+                          navigator.clipboard.writeText(item.product_url);
+                          alert('הקישור הועתק!');
+                        }}
+                        title="העתק קישור"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                      <a href={item.product_url} target="_blank" rel="noopener noreferrer">
+                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="פתח קישור">
+                          <ExternalLink className="w-4 h-4" />
+                        </Button>
+                      </a>
+                    </>
+                  )}
+                </div>
+
+                {/* צבע, מידה, כמות */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <Label className="text-xs">צבע</Label>
+                    <Input
+                      placeholder="צבע"
+                      value={item.color || ''}
+                      onChange={(e) => updateItemCost(idx, 'color', e.target.value)}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">מידה</Label>
+                    <Input
+                      placeholder="מידה"
+                      value={item.size || ''}
+                      onChange={(e) => updateItemCost(idx, 'size', e.target.value)}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">כמות</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={item.quantity || 1}
+                      onChange={(e) => updateItemCost(idx, 'quantity', parseInt(e.target.value) || 1)}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                </div>
+
+                {/* מחיר מכירה */}
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Label className="text-xs">מחיר מכירה</Label>
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      value={item.original_price || ''}
+                      onChange={(e) => updateItemCost(idx, 'original_price', e.target.value)}
+                      className="h-8"
+                    />
+                  </div>
+                  <div className="w-24">
+                    <Label className="text-xs">מטבע</Label>
+                    <Select 
+                      value={item.original_currency || 'EUR'} 
+                      onValueChange={(v) => updateItemCost(idx, 'original_currency', v)}
+                    >
+                      <SelectTrigger className="h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="EUR">€ EUR</SelectItem>
+                        <SelectItem value="USD">$ USD</SelectItem>
+                        <SelectItem value="GBP">£ GBP</SelectItem>
+                        <SelectItem value="ILS">₪ ILS</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* עלות בפועל */}
                 <div className="flex gap-2 items-end">
                   <div className="flex-1">
                     <Label className="text-xs">עלות בפועל</Label>
@@ -840,7 +975,7 @@ export default function ProfitReports() {
                       placeholder="0"
                       value={item.actual_cost_price}
                       onChange={(e) => updateItemCost(idx, 'actual_cost_price', e.target.value)}
-                      className="h-9"
+                      className="h-8"
                     />
                   </div>
                   <div className="w-24">
@@ -849,7 +984,7 @@ export default function ProfitReports() {
                       value={item.actual_cost_currency} 
                       onValueChange={(v) => updateItemCost(idx, 'actual_cost_currency', v)}
                     >
-                      <SelectTrigger className="h-9">
+                      <SelectTrigger className="h-8">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
