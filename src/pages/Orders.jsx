@@ -413,6 +413,9 @@ export default function Orders() {
   // State for reminder email confirmation dialog
   const [reminderDialog, setReminderDialog] = useState({ open: false, order: null, sending: false });
 
+  // NEW: active view mode - 'pending' (received orders) or 'awaiting_payment' or 'all'
+  const [activeView, setActiveView] = useState('pending');
+
   // helpers for email preview
   const openEmailPreview = (to, subject, html) => setEmailPreview({ open: true, to, subject, html });
   const closeEmailPreview = () => setEmailPreview(prev => ({ ...prev, open: false }));
@@ -639,14 +642,15 @@ export default function Orders() {
   };
 
   // Filter and search logic
-  // UPDATE: filteredOrders → only confirmed orders (not awaiting_payment) are shown by default
+  // UPDATE: filteredOrders → based on activeView mode
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
       // Show only orders with full details (incl. valid email)
       if (!isCompleteOrder(order)) return false;
       
-      // Hide awaiting_payment orders from main view (unless explicitly filtered)
-      if (filters.status === 'all' && order.status === 'awaiting_payment') return false;
+      // Filter based on activeView
+      if (activeView === 'pending' && order.status !== 'pending') return false;
+      if (activeView === 'awaiting_payment' && order.status !== 'awaiting_payment') return false;
 
       // Search filter
       if (searchQuery) {
@@ -664,9 +668,8 @@ export default function Orders() {
         }
       }
 
-      // Basic filters
+      // Basic filters (only apply if not using activeView for status)
       const siteMatch = filters.site === 'all' || order.site === filters.site;
-      const statusMatch = filters.status === 'all' || order.status === filters.status;
       const dateMatch = filters.dateRange === 'all' ||
         new Date(order.created_date) >= subDays(new Date(), parseInt(filters.dateRange));
 
@@ -678,9 +681,9 @@ export default function Orders() {
       const marginMatch = !filters.minMargin ||
         ((order.calculatedPricing?.breakdown?.profit_pct_of_final || 0) * 100) >= parseFloat(filters.minMargin);
 
-      return siteMatch && statusMatch && dateMatch && amountMatch && marginMatch;
+      return siteMatch && dateMatch && amountMatch && marginMatch;
     });
-  }, [orders, searchQuery, filters]);
+  }, [orders, searchQuery, filters, activeView]);
 
   // Count awaiting payment orders separately
   const awaitingPaymentOrders = useMemo(() => {
@@ -821,29 +824,27 @@ export default function Orders() {
               </Button>
             </div>
 
-            {/* KPI Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {/* KPI Cards - Click to switch view */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Awaiting Payment - prominent warning */}
-              {kpis.awaitingPayment > 0 && (
-                <Card
-                  className={`cursor-pointer hover:shadow-md transition-shadow border-red-200 bg-red-50 ${filters.status === 'awaiting_payment' ? 'ring-2 ring-red-400' : ''}`}
-                  onClick={() => setFilters({...filters, status: filters.status === 'awaiting_payment' ? 'all' : 'awaiting_payment'})}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-red-700 mb-1">ממתינות לתשלום</p>
-                        <p className="text-2xl font-bold text-red-800">{kpis.awaitingPayment}</p>
-                      </div>
-                      <AlertTriangle className="w-8 h-8 text-red-500" />
+              <Card
+                className={`cursor-pointer hover:shadow-md transition-shadow border-red-200 bg-red-50 ${activeView === 'awaiting_payment' ? 'ring-2 ring-red-400' : ''}`}
+                onClick={() => setActiveView('awaiting_payment')}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-red-700 mb-1">ממתינות לתשלום</p>
+                      <p className="text-2xl font-bold text-red-800">{kpis.awaitingPayment}</p>
                     </div>
-                  </CardContent>
-                </Card>
-              )}
+                    <AlertTriangle className="w-8 h-8 text-red-500" />
+                  </div>
+                </CardContent>
+              </Card>
               
               <Card
-                className={`cursor-pointer hover:shadow-md transition-shadow ${filters.status === 'pending' ? 'ring-2 ring-stone-400' : ''}`}
-                onClick={() => setFilters({...filters, status: filters.status === 'pending' ? 'all' : 'pending'})}
+                className={`cursor-pointer hover:shadow-md transition-shadow ${activeView === 'pending' ? 'ring-2 ring-stone-400' : ''}`}
+                onClick={() => setActiveView('pending')}
               >
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
@@ -856,22 +857,7 @@ export default function Orders() {
                 </CardContent>
               </Card>
 
-              <Card
-                className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => setFilters({...filters, status: 'delivered'})}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-stone-600 mb-1">הזמנות שהושלמו</p>
-                      <p className="text-2xl font-bold text-green-700">{kpis.completedOrders}</p>
-                    </div>
-                    <CheckCircle className="w-8 h-8 text-green-500" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="cursor-pointer hover:shadow-md transition-shadow">
+              <Card className="hover:shadow-md transition-shadow">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
@@ -883,12 +869,12 @@ export default function Orders() {
                 </CardContent>
               </Card>
 
-              <Card className="cursor-pointer hover:shadow-md transition-shadow">
+              <Card className="hover:shadow-md transition-shadow">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-stone-600 mb-1">סה״כ הזמנות</p>
-                      <p className="text-2xl font-bold text-stone-900">{kpis.totalOrders}</p>
+                      <p className="text-sm text-stone-600 mb-1">סה״כ הזמנות במערכת</p>
+                      <p className="text-2xl font-bold text-stone-900">{orders.filter(o => isCompleteOrder(o)).length}</p>
                     </div>
                     <Package className="w-8 h-8 text-stone-400" />
                   </div>
@@ -996,7 +982,9 @@ export default function Orders() {
             <Card>
               <CardHeader>
                 <div className="flex justify-between items-center">
-                  <CardTitle>הזמנות ({filteredOrders.length})</CardTitle>
+                  <CardTitle>
+                    {activeView === 'awaiting_payment' ? 'ממתינות לתשלום' : 'הזמנות שהתקבלו'} ({filteredOrders.length})
+                  </CardTitle>
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm">
                       <Settings className="w-4 h-4 mr-2" />
