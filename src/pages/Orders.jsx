@@ -69,7 +69,8 @@ const isCompleteOrder = (order) => {
 
 // Status configuration
 const statusConfig = {
-  pending: { label: "ממתין", style: "bg-stone-200 text-stone-800", color: "stone" },
+  awaiting_payment: { label: "ממתין לתשלום", style: "bg-red-100 text-red-800", color: "red" },
+  pending: { label: "התקבלה", style: "bg-stone-200 text-stone-800", color: "stone" },
   ordered: { label: "הוזמן", style: "bg-gray-200 text-gray-800", color: "gray" },
   warehouse: { label: "במחסן", style: "bg-blue-100 text-blue-800", color: "blue" },
   shipping_to_israel: { label: "בדרך לישראל", style: "bg-orange-100 text-orange-800", color: "orange" },
@@ -475,7 +476,8 @@ export default function Orders() {
       console.error("Error loading status steps:", e);
       // Fallback ברירת מחדל
       setStatusStepsMap({
-        pending: { label: "ממתין", step: 1 },
+        awaiting_payment: { label: "ממתין לתשלום", step: 0 },
+        pending: { label: "התקבלה", step: 1 },
         ordered: { label: "הוזמן", step: 2 },
         warehouse: { label: "במחסן", step: 3 },
         shipping_to_israel: { label: "בדרך לישראל", step: 4 },
@@ -637,11 +639,14 @@ export default function Orders() {
   };
 
   // Filter and search logic
-  // UPDATE: filteredOrders → only complete orders are shown (even if not paid)
+  // UPDATE: filteredOrders → only confirmed orders (not awaiting_payment) are shown by default
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
       // Show only orders with full details (incl. valid email)
       if (!isCompleteOrder(order)) return false;
+      
+      // Hide awaiting_payment orders from main view (unless explicitly filtered)
+      if (filters.status === 'all' && order.status === 'awaiting_payment') return false;
 
       // Search filter
       if (searchQuery) {
@@ -677,15 +682,21 @@ export default function Orders() {
     });
   }, [orders, searchQuery, filters]);
 
+  // Count awaiting payment orders separately
+  const awaitingPaymentOrders = useMemo(() => {
+    return orders.filter(order => isCompleteOrder(order) && order.status === 'awaiting_payment');
+  }, [orders]);
+
   // KPI calculations
   const kpis = useMemo(() => {
     const totalOrders = filteredOrders.length;
     const totalRevenue = filteredOrders.reduce((sum, order) => sum + (order.total_price_ils || 0), 0);
     const pendingOrders = filteredOrders.filter(order => order.status === 'pending').length;
     const completedOrders = filteredOrders.filter(order => order.status === 'delivered').length;
+    const awaitingPayment = awaitingPaymentOrders.length;
 
-    return { totalOrders, totalRevenue, pendingOrders, completedOrders };
-  }, [filteredOrders]);
+    return { totalOrders, totalRevenue, pendingOrders, completedOrders, awaitingPayment };
+  }, [filteredOrders, awaitingPaymentOrders]);
 
   const handleRowClick = (order) => {
     setSelectedOrder(order);
@@ -810,7 +821,25 @@ export default function Orders() {
             </div>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              {/* Awaiting Payment - prominent warning */}
+              {kpis.awaitingPayment > 0 && (
+                <Card
+                  className="cursor-pointer hover:shadow-md transition-shadow border-red-200 bg-red-50"
+                  onClick={() => setFilters({...filters, status: 'awaiting_payment'})}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-red-700 mb-1">ממתינות לתשלום</p>
+                        <p className="text-2xl font-bold text-red-800">{kpis.awaitingPayment}</p>
+                      </div>
+                      <AlertTriangle className="w-8 h-8 text-red-500" />
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              
               <Card
                 className="cursor-pointer hover:shadow-md transition-shadow"
                 onClick={() => setFilters({...filters, status: 'pending'})}
@@ -818,7 +847,7 @@ export default function Orders() {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-stone-600 mb-1">הזמנות ממתינות</p>
+                      <p className="text-sm text-stone-600 mb-1">הזמנות שהתקבלו</p>
                       <p className="text-2xl font-bold text-stone-900">{kpis.pendingOrders}</p>
                     </div>
                     <Clock className="w-8 h-8 text-stone-400" />
