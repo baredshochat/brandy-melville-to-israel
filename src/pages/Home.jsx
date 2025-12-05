@@ -381,22 +381,18 @@ export default function Home() {
   const loadCart = useCallback(async () => {
     if (!selectedSite) { setCart([]); return; }
     try {
-      // Only load cart if user is logged in - anonymous users won't have persistent cart
-      if (user) {
-        const items = await CartItem.filter({ created_by: user.email, site: selectedSite });
-        setCart(Array.isArray(items) ? items : []);
-      } else {
-        // For non-logged-in users, don't load cart from DB (prevents loading other users' items)
-        setCart([]);
-      }
+      // Load cart items for the selected site
+      // The backend will automatically filter by created_by for logged-in users
+      const items = await CartItem.filter({ site: selectedSite });
+      setCart(Array.isArray(items) ? items : []);
     } catch (e) {
       console.error("Failed to load cart items:", e);
       setCart([]);
     }
-  }, [user, selectedSite]);
+  }, [selectedSite]);
 
-  // Only load cart after user is loaded to ensure proper filtering
-  useEffect(() => { if (userLoaded && loadCart) { loadCart(); } }, [userLoaded, loadCart]);
+  // Load cart when site changes
+  useEffect(() => { if (selectedSite && loadCart) { loadCart(); } }, [selectedSite, loadCart]);
 
   useEffect(() => {
     try {
