@@ -219,8 +219,7 @@ export default function ShoppingListTab({ orders, onUpdated }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((r) => (
-                    <tr key={r.key} className={`border-b ${r.rowColor || ''}`}>
+                  {rows.filter(r => !hiddenGroups.has(r.key)).map((r) => (
                       <td className="p-3">
                         <div className="font-medium">{r.customer_name || '—'}</div>
                         <div className="text-xs text-stone-500">{r.customer_email || ''}</div>
