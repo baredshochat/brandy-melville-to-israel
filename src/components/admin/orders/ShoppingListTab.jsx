@@ -32,7 +32,7 @@ export default function ShoppingListTab({ orders, onUpdated }) {
         const ps = it.purchase_status || "needs_order";
         // מראים רק פריטים שצריך להזמין (או שלא סומנו עדיין)
         if (ps === "needs_order") {
-          const key = groupKey(it, site);
+          const key = groupKey(it, site, order.id); // מפריד לפי הזמנה
           if (!dict[key]) {
             dict[key] = {
               key,
@@ -44,7 +44,11 @@ export default function ShoppingListTab({ orders, onUpdated }) {
               product_url: "", // Default to empty
               urls: [], // Array to store unique URLs for this group
               total_qty: 0,
-              orders: []
+              orders: [],
+              customer_name: order.customer_name,
+              customer_email: order.customer_email,
+              order_number: order.order_number,
+              created_date: order.created_date
             };
           }
           dict[key].total_qty += Number(it.quantity || 1);
@@ -68,11 +72,13 @@ export default function ShoppingListTab({ orders, onUpdated }) {
         (r.product_name || "").toLowerCase().includes(q) ||
         (r.product_sku || "").toLowerCase().includes(q) ||
         (r.color || "").toLowerCase().includes(q) ||
-        (r.size || "").toLowerCase().includes(q)
+        (r.size || "").toLowerCase().includes(q) ||
+        (r.customer_name || "").toLowerCase().includes(q) ||
+        (r.order_number || "").toLowerCase().includes(q)
       );
     }
-    // סדר לפי אתר ואז שם מוצר
-    return arr.sort((a,b) => (a.site||"").localeCompare(b.site||"") || (a.product_name||"").localeCompare(b.product_name||""));
+    // סדר לפי תאריך הזמנה (חדש ראשון) ואז לפי לקוח
+    return arr.sort((a,b) => new Date(b.created_date) - new Date(a.created_date) || (a.customer_name||"").localeCompare(b.customer_name||""));
   }, [orders, siteFilter, search]);
 
   const deleteGroup = async (group) => {
