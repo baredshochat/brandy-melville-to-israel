@@ -19,6 +19,17 @@ function groupKey(item, site, orderId) {
   return base.join("|");
 }
 
+const ORDER_COLORS = [
+  'bg-rose-50 border-r-4 border-r-rose-300',
+  'bg-blue-50 border-r-4 border-r-blue-300',
+  'bg-green-50 border-r-4 border-r-green-300',
+  'bg-amber-50 border-r-4 border-r-amber-300',
+  'bg-purple-50 border-r-4 border-r-purple-300',
+  'bg-cyan-50 border-r-4 border-r-cyan-300',
+  'bg-orange-50 border-r-4 border-r-orange-300',
+  'bg-indigo-50 border-r-4 border-r-indigo-300',
+];
+
 export default function ShoppingListTab({ orders, onUpdated }) {
   const [siteFilter, setSiteFilter] = useState("all");
   const [search, setSearch] = useState("");
