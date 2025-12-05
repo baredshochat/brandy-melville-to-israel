@@ -22,13 +22,13 @@ export default function Layout({ children }) {
     if (!window.gtag) {
       const script = document.createElement('script');
       script.async = true;
-      script.src = 'https://www.googletagmanager.com/gtag/js?id=G-RZX9L8WVLH';
+      script.src = 'https://www.googletagmanager.com/gtag/js?id=G-VCRC7EKKQH';
       document.head.appendChild(script);
 
       window.dataLayer = window.dataLayer || [];
       window.gtag = function() { window.dataLayer.push(arguments); };
       window.gtag('js', new Date());
-      window.gtag('config', 'G-RZX9L8WVLH');
+      window.gtag('config', 'G-VCRC7EKKQH');
     }
 
     const checkUser = async () => {
