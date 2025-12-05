@@ -91,11 +91,13 @@ export default function ProfitReports() {
   const loadOrders = async () => {
     setLoading(true);
     try {
-      const [ordersData, batchesData] = await Promise.all([
-        Order.filter({ status: 'pending' }, '-created_date', 100),
+      const [allOrdersData, batchesData] = await Promise.all([
+        Order.list('-created_date', 500),
         ShipmentBatch.list('-created_date', 50)
       ]);
-      setOrders(ordersData || []);
+      // Filter out orders that are awaiting payment
+      const ordersData = (allOrdersData || []).filter(o => o.status !== 'awaiting_payment');
+      setOrders(ordersData);
       setBatches(batchesData || []);
     } catch (e) {
       console.error('Error loading data:', e);
