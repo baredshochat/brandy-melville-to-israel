@@ -129,6 +129,9 @@ export default function ShoppingListTab({ orders, onUpdated }) {
   };
 
   const markGroupAsOrdered = async (group) => {
+    // מיד מסתיר את הפריט מהתצוגה
+    setHiddenGroups(prev => new Set([...prev, group.key]));
+    
     // מעדכן את כל הפריטים התואמים בכל ההזמנות ל-ordered + שומר רפרנס ספק אם הוזן
     const ordersMap = new Map();
     group.orders.forEach(({ order_id, item_index }) => {
