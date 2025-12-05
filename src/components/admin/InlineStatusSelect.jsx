@@ -3,7 +3,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export default function InlineStatusSelect({ value, onChange, disabled = false, className = "", options }) {
   const defaultOptions = [
-    { value: "pending", label: "ממתין" },
+    { value: "awaiting_payment", label: "ממתין לתשלום" },
+    { value: "pending", label: "התקבלה" },
     { value: "ordered", label: "הוזמן" },
     { value: "warehouse", label: "במחסן" },
     { value: "shipping_to_israel", label: "בדרך לישראל" },
