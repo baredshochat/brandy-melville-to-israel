@@ -605,18 +605,18 @@ export default function ProfitReports() {
                       {/* פירוט פריטים */}
                       {isExpanded && (
                         <tr>
-                          <td colSpan={10} className="p-0">
+                          <td colSpan={9} className="p-0">
                             <div className="bg-stone-100 p-4">
                               <table className="w-full text-sm">
                                 <thead>
                                   <tr className="text-stone-600">
-                                    <th className="text-right pb-2">פריט</th>
-                                    <th className="text-right pb-2">צבע / מידה</th>
-                                    <th className="text-right pb-2">כמות</th>
-                                    <th className="text-right pb-2">מחיר באתר</th>
-                                    <th className="text-right pb-2">מחיר ללקוחה</th>
-                                    <th className="text-right pb-2">עלות בפועל</th>
-                                    <th className="text-right pb-2">רווח</th>
+                                    <th className="text-right pb-2 w-1/4">פריט</th>
+                                    <th className="text-right pb-2 w-1/6">צבע / מידה</th>
+                                    <th className="text-right pb-2 w-16">כמות</th>
+                                    <th className="text-right pb-2 w-24">מחיר באתר</th>
+                                    <th className="text-right pb-2 w-28">מחיר ללקוחה</th>
+                                    <th className="text-right pb-2 w-28">עלות בפועל</th>
+                                    <th className="text-right pb-2 w-24">רווח</th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -648,17 +648,18 @@ export default function ProfitReports() {
                                     );
                                   })}
                                   {(order.actual_shipping_cost > 0 || getBatchShippingShare(order.id) > 0) && (
-                                    <tr className="border-t border-stone-300">
-                                      <td colSpan={5} className="py-2 font-medium">
+                                    <tr className="border-t border-stone-300 bg-stone-200/50">
+                                      <td colSpan={4} className="py-2 font-medium">
                                         עלות משלוח
                                         {getBatchShippingShare(order.id) > 0 && !order.actual_shipping_cost && (
                                           <span className="text-xs text-purple-600 mr-2">(מחבילה: {getOrderBatch(order.id)?.batch_name})</span>
                                         )}
                                       </td>
-                                      <td className="py-2 text-orange-700">
+                                      <td className="py-2"></td>
+                                      <td className="py-2 text-orange-700 font-medium">
                                         ₪{(order.actual_shipping_cost ? convertToILS(order.actual_shipping_cost, order.actual_shipping_currency || 'ILS') : getBatchShippingShare(order.id)).toFixed(0)}
                                       </td>
-                                      <td></td>
+                                      <td className="py-2"></td>
                                     </tr>
                                   )}
                                 </tbody>
