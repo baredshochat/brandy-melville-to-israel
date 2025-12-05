@@ -115,7 +115,12 @@ Return valid JSON only.`,
     setEditData({
       status: order.status,
       payment_status: order.payment_status || 'pending',
-      internal_notes: order.internal_notes || ''
+      internal_notes: order.internal_notes || '',
+      customer_name: order.customer_name || '',
+      customer_email: order.customer_email || '',
+      customer_phone: order.customer_phone || '',
+      shipping_address: order.shipping_address || '',
+      city: order.city || ''
     });
     setIsEditing(true);
   };
