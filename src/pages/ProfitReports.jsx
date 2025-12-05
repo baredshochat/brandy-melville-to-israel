@@ -121,7 +121,8 @@ export default function ProfitReports() {
 
   // סינון הזמנות לפי תאריך וסטטוס
   const filteredOrders = useMemo(() => {
-    let result = [...orders];
+    // רק הזמנות ששולמו
+    let result = orders.filter(o => o.payment_status === 'completed');
     
     // סינון לפי תאריך
     if (dateFilter !== 'all') {
