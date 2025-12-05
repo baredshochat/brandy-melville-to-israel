@@ -29,8 +29,10 @@ import {
   Link2,
   Unlink,
   Copy,
-  ExternalLink
+  ExternalLink,
+  Receipt
 } from "lucide-react";
+import MonthlyExpensesTab from "../components/admin/MonthlyExpensesTab";
 
 // שערי המרה קבועים (אפשר לשפר בהמשך לשערים דינמיים)
 const EXCHANGE_RATES = {
