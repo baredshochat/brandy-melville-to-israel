@@ -768,11 +768,8 @@ export default function Home() {
         });
       }
 
-      // NOW clear cart items since payment was successful
-      const itemsToDelete = [...cart];
-      await Promise.allSettled(itemsToDelete.map(item => CartItem.delete(item.id)));
-      refreshCart();
-      setCart([]);
+      // Do NOT delete cart items - they are saved in the order anyway
+      // The cart will be cleared when user starts a new order (selects a site)
 
       const trackOrderPageUrl = new URL(createPageUrl('TrackOrder'), window.location.origin).href;
       const chatPageUrl = new URL(createPageUrl('Chat'), window.location.origin).href;
