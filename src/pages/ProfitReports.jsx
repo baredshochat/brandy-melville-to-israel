@@ -610,7 +610,7 @@ export default function ProfitReports() {
                               <table className="w-full text-sm table-fixed">
                                 <thead>
                                   <tr className="text-stone-600">
-                                    <th className="text-right pb-2" style={{width: '25%'}}>פריט</th>
+                                    <th className="text-left pb-2" style={{width: '25%'}}>פריט</th>
                                     <th className="text-right pb-2" style={{width: '15%'}}>צבע / מידה</th>
                                     <th className="text-right pb-2" style={{width: '10%'}}>כמות</th>
                                     <th className="text-right pb-2" style={{width: '12%'}}>מחיר באתר</th>
