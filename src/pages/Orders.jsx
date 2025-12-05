@@ -691,12 +691,13 @@ export default function Orders() {
   const kpis = useMemo(() => {
     const totalOrders = filteredOrders.length;
     const totalRevenue = filteredOrders.reduce((sum, order) => sum + (order.total_price_ils || 0), 0);
-    const pendingOrders = filteredOrders.filter(order => order.status === 'pending').length;
+    // Count pending orders from ALL orders (not just filtered) since they're hidden by default
+    const pendingOrders = orders.filter(order => isCompleteOrder(order) && order.status === 'pending').length;
     const completedOrders = filteredOrders.filter(order => order.status === 'delivered').length;
     const awaitingPayment = awaitingPaymentOrders.length;
 
     return { totalOrders, totalRevenue, pendingOrders, completedOrders, awaitingPayment };
-  }, [filteredOrders, awaitingPaymentOrders]);
+  }, [orders, filteredOrders, awaitingPaymentOrders]);
 
   const handleRowClick = (order) => {
     setSelectedOrder(order);
