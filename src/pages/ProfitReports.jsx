@@ -69,7 +69,7 @@ export default function ProfitReports() {
   const loadOrders = async () => {
     setLoading(true);
     try {
-      const data = await Order.filter({ payment_status: 'completed' }, '-created_date');
+      const data = await Order.list('-created_date', 100);
       setOrders(data || []);
     } catch (e) {
       console.error('Error loading orders:', e);
