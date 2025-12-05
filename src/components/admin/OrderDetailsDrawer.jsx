@@ -20,6 +20,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
+import { InvokeLLM } from "@/integrations/Core";
 import {
   Package,
   User,
