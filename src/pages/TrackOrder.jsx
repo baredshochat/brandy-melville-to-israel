@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from "react";
 import { Order } from "@/entities/Order";
 import { OrderStatusSteps } from "@/entities/OrderStatusSteps";
@@ -21,6 +20,34 @@ export default function TrackOrder() {
 
   // Check if this is a local order
   const isLocalOrder = order?.site === 'local';
+
+  // Check for orderNumber in URL params and auto-search
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const orderNumberParam = params.get('orderNumber');
+    if (orderNumberParam) {
+      setOrderNumber(orderNumberParam);
+      // Auto-search after setting the order number
+      const autoSearch = async () => {
+        setLoading(true);
+        setError('');
+        try {
+          const normalized = orderNumberParam.trim().toUpperCase();
+          const results = await Order.filter({ order_number: normalized });
+          if (results.length > 0) {
+            setOrder(results[0]);
+          } else {
+            setError('מספר ההזמנה לא נמצא במערכת שלנו');
+          }
+        } catch (err) {
+          setError('אירעה שגיאה בחיפוש ההזמנה');
+        } finally {
+          setLoading(false);
+        }
+      };
+      autoSearch();
+    }
+  }, []);
 
   // Load status steps from database
   useEffect(() => {
