@@ -18,6 +18,19 @@ export default function Layout({ children }) {
     // FIX: Set a clear, branded document title
     document.title = "Brandy Melville to Israel";
 
+    // Google Analytics
+    if (!window.gtag) {
+      const script = document.createElement('script');
+      script.async = true;
+      script.src = 'https://www.googletagmanager.com/gtag/js?id=G-RZX9L8WVLH';
+      document.head.appendChild(script);
+
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = function() { window.dataLayer.push(arguments); };
+      window.gtag('js', new Date());
+      window.gtag('config', 'G-RZX9L8WVLH');
+    }
+
     const checkUser = async () => {
       try {
         const user = await User.me();
