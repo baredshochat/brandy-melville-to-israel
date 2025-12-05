@@ -66,6 +66,47 @@ export default function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate
     setIsEditing(false);
   };
 
+  const handleEditItems = () => {
+    setEditingItems((order.items || []).map(item => ({ ...item })));
+    setIsEditingItems(true);
+  };
+
+  const handleSaveItems = async () => {
+    setSavingItems(true);
+    try {
+      await onUpdateOrder(order.id, { items: editingItems });
+      setIsEditingItems(false);
+    } catch (e) {
+      console.error('Error saving items:', e);
+      alert('שגיאה בשמירה');
+    } finally {
+      setSavingItems(false);
+    }
+  };
+
+  const updateItem = (index, field, value) => {
+    setEditingItems(prev => prev.map((item, i) => 
+      i === index ? { ...item, [field]: value } : item
+    ));
+  };
+
+  const addNewItem = () => {
+    setEditingItems(prev => [...prev, {
+      product_name: '',
+      product_url: '',
+      product_sku: '',
+      color: '',
+      size: '',
+      quantity: 1,
+      original_price: '',
+      original_currency: 'EUR'
+    }]);
+  };
+
+  const removeItem = (index) => {
+    setEditingItems(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleDelete = async () => {
     await onDeleteOrder(order.id);
     setShowDeleteConfirm(false); // Close dialog after action
