@@ -50,8 +50,66 @@ export default function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate
   const [isEditingItems, setIsEditingItems] = useState(false);
   const [editingItems, setEditingItems] = useState([]);
   const [savingItems, setSavingItems] = useState(false);
+  const [fetchingProduct, setFetchingProduct] = useState(null); // index of item being fetched
 
   if (!order) return null;
+
+  const fetchProductFromUrl = async (index, url) => {
+    if (!url || !url.includes('brandymelville')) return;
+    
+    setFetchingProduct(index);
+    try {
+      const siteMatch = url.match(/(us|eu|uk)\.brandymelville/);
+      const site = siteMatch ? siteMatch[1] : 'eu';
+      const currency = site === 'us' ? 'USD' : site === 'uk' ? 'GBP' : 'EUR';
+
+      const raw = await InvokeLLM({
+        prompt: `Extract product data from this Brandy Melville URL: ${url}
+
+EXTRACT:
+- product_name: The product name (from og:title or h1)
+- product_sku: The exact SKU/product code if found
+- price: The numeric price only
+- available_colors: Array of color options
+- available_sizes: Array of size options
+
+Return valid JSON only.`,
+        add_context_from_internet: true,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            product_name: { type: "string" },
+            product_sku: { type: ["string", "null"] },
+            price: { type: "number" },
+            available_colors: { type: "array", items: { type: "string" } },
+            available_sizes: { type: "array", items: { type: "string" } }
+          },
+          required: ["product_name", "price"]
+        }
+      });
+
+      const result = typeof raw === 'string' ? JSON.parse(raw) : (raw?.data || raw);
+      
+      if (result?.product_name) {
+        setEditingItems(prev => prev.map((item, i) => 
+          i === index ? {
+            ...item,
+            product_name: result.product_name || item.product_name,
+            product_sku: result.product_sku || item.product_sku,
+            original_price: result.price || item.original_price,
+            original_currency: currency,
+            available_colors: result.available_colors || [],
+            available_sizes: result.available_sizes || []
+          } : item
+        ));
+      }
+    } catch (e) {
+      console.error('Error fetching product:', e);
+      alert('לא הצלחנו לשלוף את פרטי המוצר');
+    } finally {
+      setFetchingProduct(null);
+    }
+  };
 
   const handleEdit = () => {
     setEditData({
