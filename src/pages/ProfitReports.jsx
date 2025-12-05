@@ -92,7 +92,7 @@ export default function ProfitReports() {
     setLoading(true);
     try {
       const [ordersData, batchesData] = await Promise.all([
-        Order.list('-created_date', 100),
+        Order.filter({ status: 'pending' }, '-created_date', 100),
         ShipmentBatch.list('-created_date', 50)
       ]);
       setOrders(ordersData || []);
