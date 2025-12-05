@@ -26,7 +26,7 @@ import {
   Filter,
   Trash2,
   Plus,
-  Link,
+  Link2,
   Unlink
 } from "lucide-react";
 
@@ -346,7 +346,7 @@ export default function ProfitReports() {
             onClick={() => setShowBatchDialog(true)}
             className="gap-2"
           >
-            <Link className="w-4 h-4" />
+            <Link2 className="w-4 h-4" />
             קישור הזמנות לחבילה
           </Button>
           <Select value={dateFilter} onValueChange={setDateFilter}>
