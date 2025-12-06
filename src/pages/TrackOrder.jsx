@@ -4,6 +4,8 @@ import { OrderStatusSteps } from "@/entities/OrderStatusSteps";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Loader2, Clock, Heart, Package, Check, MessageSquare } from "lucide-react";
+import LottieLoader from '../components/ui/LottieLoader';
+import LottieSuccess from '../components/ui/LottieSuccess';
 import { format } from "date-fns";
 import { he } from 'date-fns/locale';
 import { motion, AnimatePresence } from "framer-motion";
@@ -198,7 +200,7 @@ export default function TrackOrder() {
 
               {loading ?
               <div className="flex items-center gap-3">
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <LottieLoader size={24} />
                   מחפשים...
                 </div> :
 
@@ -263,15 +265,15 @@ export default function TrackOrder() {
                 }
                   
                   {currentStatusInfo && currentStatusInfo.estimatedDays === 0 &&
-                <div className="mt-4 p-4 bg-rose-50/50 border border-rose-200/50">
-                      <div className="flex items-center justify-center gap-2">
-                        <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
+                  <div className="mt-4 p-4 bg-rose-50/50 border border-rose-200/50">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <LottieSuccess size={60} />
                         <span className="text-rose-800 font-medium">
                           ההזמנה נמסרה! ✨
                         </span>
                       </div>
                     </div>
-                }
+                  }
                 </div>
 
                 {/* Status Timeline */}

@@ -16,6 +16,7 @@ import PriceCalculator from "../components/order/PriceCalculator";
 import CustomerForm from "../components/order/CustomerForm";
 import LoadingCalculation from "../components/order/LoadingCalculation";
 import { Heart } from "lucide-react";
+import LottieSuccess from '../components/ui/LottieSuccess';
 import CartImport from '../components/order/CartImport';
 import TranzilaPayment from '../components/payment/TranzilaPayment';
 import DiscountBanner from '../components/home/DiscountBanner';
@@ -852,7 +853,7 @@ export default function Home() {
       case 8: // Success page
         return (
           <div className="text-center p-8 max-w-lg mx-auto bg-stone-50 border-2 border-rose-200/50 shadow-lg" dir="rtl">
-            <div className="flex justify-center mb-6"><Heart className="w-20 h-20 text-rose-400 fill-rose-400" /></div>
+            <div className="flex justify-center mb-6"><LottieSuccess size={100} /></div>
             <h2 className="text-3xl font-semibold text-stone-900 mb-3">ההזמנה נשלחה בהצלחה!</h2>
             <p className="text-base text-stone-600 mb-2">מספר הזמנה: {currentOrder?.order_number}</p>
             <p className="text-base text-stone-600 mb-2">סכום לתשלום: ₪{Math.round(totalPriceILS)}</p>
