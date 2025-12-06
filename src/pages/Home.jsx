@@ -20,6 +20,7 @@ import LottieSuccess from '../components/ui/LottieSuccess';
 import CartImport from '../components/order/CartImport';
 import TranzilaPayment from '../components/payment/TranzilaPayment';
 import DiscountBanner from '../components/home/DiscountBanner';
+import { extractProductMetadata, mergeMetadataWithLLM } from '../components/order/MetadataExtractor';
 
 // ---- Helpers ----
 async function normalizeLLMResult(res) {
@@ -491,6 +492,10 @@ export default function Home() {
     try {
       const siteInfo = { us: { currency: 'USD' }, eu: { currency: 'EUR' }, uk: { currency: 'GBP' } };
 
+      // שלב 1: חילוץ מטא-דאטה מובנה (מהיר ומדויק)
+      console.log('🔍 Extracting structured metadata...');
+      const metadata = await extractProductMetadata(originalUrl);
+
       const raw = await InvokeLLM({
         prompt: `You are extracting product data from this Brandy Melville URL: ${url}
 
@@ -544,8 +549,12 @@ export default function Home() {
         }
       });
 
-      const result = await normalizeLLMResult(raw);
-      console.log("Product extraction result (normalized):", result);
+      const llmResult = await normalizeLLMResult(raw);
+      console.log("LLM extraction result:", llmResult);
+
+      // שלב 3: שילוב תוצאות (מטא-דאטה + LLM)
+      const result = mergeMetadataWithLLM(metadata, llmResult);
+      console.log("✅ Final merged result:", result);
 
       // Fallback name from URL if needed
       let productName = (typeof result?.product_name === 'string' ? result.product_name.trim() : '') || nameFromUrl(url) || '';
