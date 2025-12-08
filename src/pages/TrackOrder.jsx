@@ -84,8 +84,10 @@ export default function TrackOrder() {
         setStatusSteps(stepsObj);
       } catch (error) {
         console.error("Failed to load status steps:", error);
-        // Fallback to default steps if loading fails
+      } finally {
+        // Always set default steps as fallback
         setStatusSteps({
+          awaiting_payment: { label: "ממתין לתשלום", step: 0, estimatedDays: 0, timeRange: "השלימי תשלום" },
           pending: { label: "ההזמנה התקבלה", step: 1, estimatedDays: 21, timeRange: "3-4 שבועות" },
           ordered: { label: "הוזמן מ-Brandy", step: 2, estimatedDays: 18, timeRange: "2.5-3 שבועות" },
           warehouse: { label: "הגיע למחסן בחול", step: 3, estimatedDays: 14, timeRange: "2-3 שבועות" },
@@ -94,7 +96,6 @@ export default function TrackOrder() {
           shipping_to_customer: { label: "נמסר לשליח", step: 6, estimatedDays: 2, timeRange: "1-3 ימים" },
           delivered: { label: "נמסר ללקוחה", step: 7, estimatedDays: 0, timeRange: "הושלם" }
         });
-      } finally {
         setStatusLoading(false);
       }
     };
