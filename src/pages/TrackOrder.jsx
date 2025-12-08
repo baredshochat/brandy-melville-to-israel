@@ -20,6 +20,18 @@ export default function TrackOrder() {
   const [statusSteps, setStatusSteps] = useState({});
   const [statusLoading, setStatusLoading] = useState(true);
 
+  // Default status steps as fallback
+  const defaultStatusSteps = {
+    awaiting_payment: { label: "ממתין לתשלום", step: 0, estimatedDays: 0, timeRange: "השלימי תשלום" },
+    pending: { label: "ההזמנה התקבלה", step: 1, estimatedDays: 21, timeRange: "3-4 שבועות" },
+    ordered: { label: "הוזמן מ-Brandy", step: 2, estimatedDays: 18, timeRange: "2.5-3 שבועות" },
+    warehouse: { label: "הגיע למחסן בחול", step: 3, estimatedDays: 14, timeRange: "2-3 שבועות" },
+    shipping_to_israel: { label: "בדרך לישראל", step: 4, estimatedDays: 10, timeRange: "1.5-2 שבועות" },
+    in_israel: { label: "הגיע למכס בארץ", step: 5, estimatedDays: 5, timeRange: "3-7 ימים" },
+    shipping_to_customer: { label: "נמסר לשליח", step: 6, estimatedDays: 2, timeRange: "1-3 ימים" },
+    delivered: { label: "נמסר ללקוחה", step: 7, estimatedDays: 0, timeRange: "הושלם" }
+  };
+
   // Check if this is a local order
   const isLocalOrder = order?.site === 'local';
 
@@ -54,14 +66,15 @@ export default function TrackOrder() {
   // Load status steps from database
   useEffect(() => {
     const loadStatusSteps = async () => {
+      setStatusSteps(defaultStatusSteps);
+      setStatusLoading(false);
+      
       try {
         const steps = await OrderStatusSteps.list();
+        if (!steps || steps.length === 0) return;
 
-        // Remove duplicates by keeping only the latest record for each status_key
         const uniqueSteps = [];
         const seenStatusKeys = new Set();
-
-        // Sort by created_date descending to get the latest records first
         const sortedSteps = steps.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
 
         for (const step of sortedSteps) {
@@ -71,7 +84,6 @@ export default function TrackOrder() {
           }
         }
 
-        // Create steps object with proper structure
         const stepsObj = {};
         uniqueSteps.forEach((step) => {
           stepsObj[step.status_key] = {
@@ -81,22 +93,10 @@ export default function TrackOrder() {
             timeRange: step.time_range_text
           };
         });
-        setStatusSteps(stepsObj);
+        
+        setStatusSteps({ ...defaultStatusSteps, ...stepsObj });
       } catch (error) {
         console.error("Failed to load status steps:", error);
-      } finally {
-        // Always set default steps as fallback
-        setStatusSteps({
-          awaiting_payment: { label: "ממתין לתשלום", step: 0, estimatedDays: 0, timeRange: "השלימי תשלום" },
-          pending: { label: "ההזמנה התקבלה", step: 1, estimatedDays: 21, timeRange: "3-4 שבועות" },
-          ordered: { label: "הוזמן מ-Brandy", step: 2, estimatedDays: 18, timeRange: "2.5-3 שבועות" },
-          warehouse: { label: "הגיע למחסן בחול", step: 3, estimatedDays: 14, timeRange: "2-3 שבועות" },
-          shipping_to_israel: { label: "בדרך לישראל", step: 4, estimatedDays: 10, timeRange: "1.5-2 שבועות" },
-          in_israel: { label: "הגיע למכס בארץ", step: 5, estimatedDays: 5, timeRange: "3-7 ימים" },
-          shipping_to_customer: { label: "נמסר לשליח", step: 6, estimatedDays: 2, timeRange: "1-3 ימים" },
-          delivered: { label: "נמסר ללקוחה", step: 7, estimatedDays: 0, timeRange: "הושלם" }
-        });
-        setStatusLoading(false);
       }
     };
     loadStatusSteps();
@@ -142,13 +142,14 @@ export default function TrackOrder() {
     };
   }, []);
 
-  const currentStatusSource = isLocalOrder ? localStatusSteps : statusSteps;
-  const currentStep = order ? currentStatusSource[order.status]?.step || 0 : 0;
-  const currentStatusInfo = order ? currentStatusSource[order.status] : null;
+  const currentStatusSource = isLocalOrder ? localStatusSteps : (statusSteps || defaultStatusSteps);
+  const currentStep = order && currentStatusSource[order.status] ? currentStatusSource[order.status].step : 0;
+  const currentStatusInfo = order && currentStatusSource[order.status] ? currentStatusSource[order.status] : null;
 
   // MEMO: סדר הסטטוסים למניעת sort בכל רינדור
   const sortedStatusEntries = useMemo(() => {
-    return Object.entries(statusSteps).sort(([, a], [, b]) => a.step - b.step);
+    const stepsToUse = statusSteps || defaultStatusSteps;
+    return Object.entries(stepsToUse).sort(([, a], [, b]) => a.step - b.step);
   }, [statusSteps]);
 
   const localSortedEntries = useMemo(() => {
