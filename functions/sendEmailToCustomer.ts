@@ -45,16 +45,23 @@ Deno.serve(async (req) => {
       })
     });
 
+    const responseText = await response.text();
+    console.log('SendGrid response:', response.status, responseText);
+    
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('SendGrid error:', errorText);
+      console.error('SendGrid error:', responseText);
       return Response.json({ 
         error: `SendGrid error: ${response.status}`,
-        details: errorText
+        details: responseText
       }, { status: response.status });
     }
 
-    return Response.json({ success: true, message: 'Email sent successfully' });
+    return Response.json({ 
+      success: true, 
+      message: 'Email sent successfully',
+      sendgrid_status: response.status,
+      details: responseText 
+    });
 
   } catch (error) {
     console.error('Error sending email:', error);
