@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Order } from "@/entities/Order";
 import { User } from "@/entities/User";
 import { SendEmail } from "@/integrations/Core";
+import { sendEmailToCustomer } from "@/functions/sendEmailToCustomer";
 import { createPageUrl } from "@/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -544,7 +545,7 @@ export default function Orders() {
             const subject = `עדכון סטטוס להזמנה #${order.order_number}: ${statusLabel}`;
 
             try {
-              await SendEmail({
+              await sendEmailToCustomer({
                 from_name: "Brandy Melville to Israel",
                 to: order.customer_email,
                 subject,
@@ -574,7 +575,7 @@ export default function Orders() {
 
             const subject = `תשלום התקבל • הזמנה #${order.order_number}`;
 
-            await SendEmail({
+            await sendEmailToCustomer({
               from_name: "Brandy Melville to Israel",
               to: order.customer_email,
               subject,
@@ -804,7 +805,7 @@ export default function Orders() {
 
       const subject = `עדכון סטטוס להזמנה #${order.order_number}: ${statusLabel}`;
 
-      await SendEmail({
+      await sendEmailToCustomer({
         from_name: "Brandy Melville to Israel",
         to: (order.customer_email || '').trim(),
         subject,
