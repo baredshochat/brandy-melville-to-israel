@@ -111,14 +111,21 @@ export default function TrackOrder() {
     setOrder(null);
 
     try {
-      const normalized = orderNumber.trim().toUpperCase(); // Normalize input
+      const normalized = orderNumber.trim().toUpperCase();
       const results = await Order.filter({ order_number: normalized });
       if (results.length > 0) {
-        setOrder(results[0]);
+        const foundOrder = results[0];
+        // Check if order has required data for display
+        if (!foundOrder.items || foundOrder.items.length === 0) {
+          setError('ההזמנה נמצאה אך היא ריקה - אנא פנה לתמיכה');
+          return;
+        }
+        setOrder(foundOrder);
       } else {
         setError('מספר ההזמנה לא נמצא במערכת שלנו');
       }
     } catch (err) {
+      console.error('Search error:', err);
       setError('אירעה שגיאה בחיפוש ההזמנה');
     } finally {
       setLoading(false);
