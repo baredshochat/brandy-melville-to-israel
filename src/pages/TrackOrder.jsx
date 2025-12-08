@@ -159,38 +159,21 @@ export default function TrackOrder() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-50 via-rose-50/30 to-stone-100">
       {/* Hero Section with Background */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-stone-100 to-rose-100/40 py-20">
-        <div className="absolute inset-0 opacity-20">
-          <img
-            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/b7a7981b1_IMG_9486.jpg"
-            alt="Brandy aesthetic"
-            className="w-full h-full object-cover" />
-
-        </div>
+      <div className="relative overflow-hidden bg-gradient-to-r from-stone-100 to-rose-100/40 py-12 sm:py-20">
         <div className="relative max-w-lg mx-auto text-center px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}>
-
-            <div className="flex justify-center mb-6">
-              <Heart className="w-12 h-12 text-rose-400 fill-rose-400/20" />
-            </div>
-            <h1 className="text-5xl font-light text-stone-800 mb-4 tracking-wide">
-              איפה ההזמנה שלי?
-            </h1>
-            <p className="text-lg text-stone-600 font-light">הזיני את מספר ההזמנה שלך לקבלת סטטוס עדכני</p>
-          </motion.div>
+          <div className="flex justify-center mb-4 sm:mb-6">
+            <Heart className="w-10 h-10 sm:w-12 sm:h-12 text-rose-400 fill-rose-400/20" />
+          </div>
+          <h1 className="text-3xl sm:text-5xl font-light text-stone-800 mb-3 sm:mb-4 tracking-wide">
+            איפה ההזמנה שלי?
+          </h1>
+          <p className="text-base sm:text-lg text-stone-600 font-light">הזיני את מספר ההזמנה שלך</p>
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 -mt-10 relative z-10">
+      <div className="max-w-lg mx-auto px-4 -mt-6 sm:-mt-10 relative z-10">
         {/* Search Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-white/95 backdrop-blur-sm border border-white/50 shadow-2xl shadow-stone-200/50 p-8">
+        <div className="bg-white/95 backdrop-blur-sm border border-white/50 shadow-2xl shadow-stone-200/50 p-6 sm:p-8">
 
           <form onSubmit={searchOrder} className="space-y-4">
             <div className="relative">
@@ -234,13 +217,8 @@ export default function TrackOrder() {
               </motion.div>
             }
 
-            {order &&
-            <motion.div
-              key="order"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="mt-8">
+            {order && statusSteps && Object.keys(statusSteps).length > 0 &&
+            <div className="mt-8">
 
                 {/* Order Header */}
                 <div className="text-center mb-8 p-6 bg-gradient-to-r from-stone-50 to-rose-50/30 border border-stone-200/50">
@@ -287,7 +265,8 @@ export default function TrackOrder() {
 
                 {/* Status Timeline */}
                 <div className="space-y-0">
-                  {(isLocalOrder ? localSortedEntries : sortedStatusEntries).map(([statusKey, statusInfo], index, arr) => {
+                  {(isLocalOrder ? localSortedEntries : sortedStatusEntries).filter(Boolean).map(([statusKey, statusInfo], index, arr) => {
+                    if (!statusInfo || typeof statusInfo.step === 'undefined') return null;
                     const isActive = statusInfo.step <= currentStep;
                     const isCurrent = statusInfo.step === currentStep;
                     const isLast = index === arr.length - 1;
@@ -378,11 +357,11 @@ export default function TrackOrder() {
                   }
                     </div>
                   </div>
-              }
-              </motion.div>
-            }
-          </AnimatePresence>
-        </motion.div>
+                  }
+                  </div>
+                  }
+                  </AnimatePresence>
+                  </div>
 
         {/* Footer Message */}
         <div className="text-center mt-12 px-4">
