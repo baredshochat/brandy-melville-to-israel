@@ -726,14 +726,17 @@ export default function Orders() {
   // Send abandoned cart reminder email
   const confirmSendReminder = async () => {
     const order = reminderDialog.order;
-    if (!order || !isValidEmail(order.customer_email)) return;
+    if (!order || !isValidEmail(order.customer_email)) {
+      alert('אימייל לקוחה לא תקין');
+      return;
+    }
 
     setReminderDialog(prev => ({ ...prev, sending: true }));
 
     try {
       // Link to payment page for this specific order
-      const trackOrderUrl = new URL(createPageUrl('CompletePayment') + `?orderId=${encodeURIComponent(order.id)}`, window.location.origin).href;
-      const chatPageUrl = new URL(createPageUrl('Chat'), window.location.origin).href;
+      const trackOrderUrl = `${window.location.origin}${createPageUrl('CompletePayment')}?orderId=${encodeURIComponent(order.id)}`;
+      const chatPageUrl = `${window.location.origin}${createPageUrl('Chat')}`;
 
       const emailHtml = buildAbandonedCartReminderEmailHTML({
         customerName: order.customer_name,
@@ -742,7 +745,7 @@ export default function Orders() {
         chatUrl: chatPageUrl
       });
 
-      const subject = `היי! שכחת משהו בעגלה? 💖 • הזמנה #${order.order_number}`;
+      const subject = `היי! שכחת משהו בעגלה - הזמנה #${order.order_number}`;
 
       await SendEmail({
         from_name: "Brandy Melville to Israel",
@@ -760,10 +763,11 @@ export default function Orders() {
 
       alert('מייל תזכורת נשלח בהצלחה!');
       setReminderDialog({ open: false, order: null, sending: false });
-      loadOrders(); // Reload to show updated count
+      loadOrders();
     } catch (error) {
       console.error('Failed to send reminder email:', error);
-      alert('שגיאה בשליחת המייל. נסי שוב.');
+      const errorMsg = error?.message || error?.toString() || 'שגיאה לא ידועה';
+      alert(`שגיאה בשליחת המייל:\n${errorMsg}\n\nנסי שוב או פנה לתמיכה.`);
       setReminderDialog(prev => ({ ...prev, sending: false }));
     }
   };
