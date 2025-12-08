@@ -13,14 +13,7 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 
 export default function TrackOrder() {
-  const [orderNumber, setOrderNumber] = useState('');
-  const [order, setOrder] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [statusSteps, setStatusSteps] = useState({});
-  const [statusLoading, setStatusLoading] = useState(true);
-
-  // Default status steps as fallback
+  // Default status steps as constant
   const defaultStatusSteps = {
     awaiting_payment: { label: "ממתין לתשלום", step: 0, estimatedDays: 0, timeRange: "השלימי תשלום" },
     pending: { label: "ההזמנה התקבלה", step: 1, estimatedDays: 21, timeRange: "3-4 שבועות" },
@@ -31,6 +24,13 @@ export default function TrackOrder() {
     shipping_to_customer: { label: "נמסר לשליח", step: 6, estimatedDays: 2, timeRange: "1-3 ימים" },
     delivered: { label: "נמסר ללקוחה", step: 7, estimatedDays: 0, timeRange: "הושלם" }
   };
+
+  const [orderNumber, setOrderNumber] = useState('');
+  const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [statusSteps, setStatusSteps] = useState(defaultStatusSteps);
+  const [statusLoading, setStatusLoading] = useState(true);
 
   // Check if this is a local order
   const isLocalOrder = order?.site === 'local';
