@@ -795,8 +795,8 @@ export default function Orders() {
       const statusLabel = statusConfig[order.status]?.label || order.status;
 
       const emailHtml = buildStatusUpdateEmailHTML({
-        customerName: order.customer_name,
-        orderNumber: order.order_number,
+        customerName: (order.customer_name || '').trim(),
+        orderNumber: (order.order_number || '').trim(),
         statusLabel,
         trackUrl: trackOrderUrl,
         chatUrl: chatPageUrl
@@ -806,7 +806,7 @@ export default function Orders() {
 
       await SendEmail({
         from_name: "Brandy Melville to Israel",
-        to: order.customer_email,
+        to: (order.customer_email || '').trim(),
         subject,
         body: emailHtml
       });
