@@ -338,7 +338,7 @@ function buildPaymentConfirmationEmailHTML({ customerName, orderNumber, totalILS
       </div>
 
       <div style="padding:22px 20px">
-        <h1 style="margin:0 0 8px 0;color:${primary};font-size:20px>היי ${customerName || 'יקרה'} 🌸</h1>
+        <h1 style="margin:0 0 8px 0;color:${primary};font-size:20px">היי ${customerName || 'יקרה'} 🌸</h1>
         <p style="margin:0 0 10px 0;color:${primary};line-height:1.7">
           התשלום להזמנה שלך התקבל בהצלחה! אנחנו מתחילות לטפל בהזמנה שלך. סכום ששולם: <strong>₪${Number(totalILS || 0).toLocaleString()}</strong>.
         </p>
