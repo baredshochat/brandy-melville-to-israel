@@ -577,7 +577,7 @@ export default function Orders() {
 
             await sendEmailToCustomer({
               from_name: "Brandy Melville to Israel",
-              to: order.customer_email,
+              to: (order.customer_email || '').trim(),
               subject,
               body: emailHtml
             });
