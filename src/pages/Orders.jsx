@@ -751,7 +751,7 @@ export default function Orders() {
 
       const subject = `היי! שכחת משהו בעגלה - הזמנה #${order.order_number}`;
 
-      await SendEmail({
+      await sendEmailToCustomer({
         from_name: "Brandy Melville to Israel",
         to: order.customer_email,
         subject,
