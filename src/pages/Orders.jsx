@@ -413,6 +413,9 @@ export default function Orders() {
   // State for reminder email confirmation dialog
   const [reminderDialog, setReminderDialog] = useState({ open: false, order: null, sending: false });
 
+  // State for status update email dialog
+  const [statusUpdateDialog, setStatusUpdateDialog] = useState({ open: false, order: null, sending: false });
+
   // NEW: active view mode - 'received' (all confirmed orders) or 'awaiting_payment'
   const [activeView, setActiveView] = useState('received');
 
@@ -769,6 +772,52 @@ export default function Orders() {
       const errorMsg = error?.message || error?.toString() || 'שגיאה לא ידועה';
       alert(`שגיאה בשליחת המייל:\n${errorMsg}\n\nנסי שוב או פנה לתמיכה.`);
       setReminderDialog(prev => ({ ...prev, sending: false }));
+    }
+  };
+
+  // Send status update email
+  const openStatusUpdateDialog = (order) => {
+    setStatusUpdateDialog({ open: true, order, sending: false });
+  };
+
+  const confirmSendStatusUpdate = async () => {
+    const order = statusUpdateDialog.order;
+    if (!order || !isValidEmail(order.customer_email)) {
+      alert('אימייל לקוחה לא תקין');
+      return;
+    }
+
+    setStatusUpdateDialog(prev => ({ ...prev, sending: true }));
+
+    try {
+      const trackOrderUrl = `${window.location.origin}${createPageUrl('TrackOrder')}?orderNumber=${encodeURIComponent(order.order_number)}`;
+      const chatPageUrl = `${window.location.origin}${createPageUrl('Chat')}`;
+      const statusLabel = statusConfig[order.status]?.label || order.status;
+
+      const emailHtml = buildStatusUpdateEmailHTML({
+        customerName: order.customer_name,
+        orderNumber: order.order_number,
+        statusLabel,
+        trackUrl: trackOrderUrl,
+        chatUrl: chatPageUrl
+      });
+
+      const subject = `עדכון סטטוס להזמנה #${order.order_number}: ${statusLabel}`;
+
+      await SendEmail({
+        from_name: "Brandy Melville to Israel",
+        to: order.customer_email,
+        subject,
+        body: emailHtml
+      });
+
+      alert('מייל עדכון סטטוס נשלח בהצלחה!');
+      setStatusUpdateDialog({ open: false, order: null, sending: false });
+    } catch (error) {
+      console.error('Failed to send status update email:', error);
+      const errorMsg = error?.message || error?.toString() || 'שגיאה לא ידועה';
+      alert(`שגיאה בשליחת המייל:\n${errorMsg}\n\nנסי שוב או פנה לתמיכה.`);
+      setStatusUpdateDialog(prev => ({ ...prev, sending: false }));
     }
   };
 
@@ -1199,6 +1248,19 @@ export default function Orders() {
                                             </Button>
                                           </div>
                                         )}
+
+                                        {/* Status update email button for confirmed orders */}
+                                        {order.status !== 'awaiting_payment' && (
+                                          <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="text-xs h-7 px-2 border-blue-300 text-blue-700 hover:bg-blue-50"
+                                            onClick={(e) => { e.stopPropagation(); openStatusUpdateDialog(order); }}
+                                          >
+                                            <Mail className="w-3 h-3 ml-1" />
+                                            שלח עדכון סטטוס
+                                          </Button>
+                                        )}
                                       </div>
                                     </div>
                                   </td>
@@ -1468,6 +1530,59 @@ export default function Orders() {
                 <>
                   <Mail className="w-4 h-4 ml-2" />
                   שלח תזכורת
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Status Update Email Confirmation Dialog */}
+      <Dialog open={statusUpdateDialog.open} onOpenChange={(open) => !statusUpdateDialog.sending && setStatusUpdateDialog({ open, order: null, sending: false })}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="w-5 h-5 text-blue-600" />
+              שליחת עדכון סטטוס
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-stone-700">
+              האם את בטוחה שברצונך לשלוח ללקוחה מייל עדכון עם הסטטוס הנוכחי של ההזמנה?
+            </p>
+            {statusUpdateDialog.order && (
+              <div className="bg-stone-50 p-3 rounded border border-stone-200">
+                <div className="text-sm space-y-1">
+                  <div><strong>הזמנה:</strong> #{statusUpdateDialog.order.order_number}</div>
+                  <div><strong>לקוחה:</strong> {statusUpdateDialog.order.customer_name}</div>
+                  <div><strong>אימייל:</strong> {statusUpdateDialog.order.customer_email}</div>
+                  <div><strong>סטטוס נוכחי:</strong> <Badge className={statusConfig[statusUpdateDialog.order.status]?.style}>{statusConfig[statusUpdateDialog.order.status]?.label}</Badge></div>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setStatusUpdateDialog({ open: false, order: null, sending: false })}
+              disabled={statusUpdateDialog.sending}
+            >
+              ביטול
+            </Button>
+            <Button
+              onClick={confirmSendStatusUpdate}
+              disabled={statusUpdateDialog.sending}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {statusUpdateDialog.sending ? (
+                <>
+                  <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                  שולח...
+                </>
+              ) : (
+                <>
+                  <Mail className="w-4 h-4 ml-2" />
+                  שלח עדכון
                 </>
               )}
             </Button>
