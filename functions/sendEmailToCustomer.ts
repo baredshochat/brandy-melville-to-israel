@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
           to: [{ email: to.trim() }]
         }],
         from: {
-          email: 'noreply@brandymelville.co.il',
+          email: 'Brandyorder@gmail.com',
           name: from_name || 'Brandy Melville to Israel'
         },
         subject: subject,
