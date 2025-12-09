@@ -17,7 +17,7 @@ const statusOptions = [
 
 export default function ShoppingListTab({ orders, onUpdated }) {
   const [siteFilter, setSiteFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("needs_order");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
 
   const rows = useMemo(() => {
@@ -26,8 +26,8 @@ export default function ShoppingListTab({ orders, onUpdated }) {
       const site = order.site;
       const orderStatus = order.status;
       
-      // רק הזמנות מחו"ל (בריטניה או אירופה) שסטטוס שלהן pending
-      const isValidOrder = (site === 'uk' || site === 'eu') && orderStatus === 'pending';
+      // רק הזמנות מחו"ל (בריטניה או אירופה)
+      const isValidOrder = (site === 'uk' || site === 'eu');
       if (!isValidOrder) return;
       
       (order.items || []).forEach((it, idx) => {
