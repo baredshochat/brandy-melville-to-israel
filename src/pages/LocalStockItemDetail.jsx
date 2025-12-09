@@ -2,9 +2,13 @@ import React, { useState, useEffect } from "react";
 import { LocalStockItem } from "@/entities/LocalStockItem";
 import { CartItem } from "@/entities/CartItem";
 import { User } from "@/entities/User";
+import { BackInStockNotification } from "@/entities/BackInStockNotification";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, ShoppingCart, Loader2, CheckCircle, Heart } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { ArrowRight, ShoppingCart, Loader2, CheckCircle, Heart, Bell } from "lucide-react";
 import { motion } from "framer-motion";
 import { createPageUrl } from "@/utils";
 
@@ -15,6 +19,10 @@ export default function LocalStockItemDetail() {
   const [addingToCart, setAddingToCart] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [notifyDialogOpen, setNotifyDialogOpen] = useState(false);
+  const [notifyEmail, setNotifyEmail] = useState('');
+  const [notifyName, setNotifyName] = useState('');
+  const [submittingNotification, setSubmittingNotification] = useState(false);
 
   useEffect(() => {
     User.me().then(u => {
@@ -217,59 +225,78 @@ export default function LocalStockItemDetail() {
               )}
             </div>
 
-            {/* Price */}
+            {/* Price / Sold Out */}
             <div className="pt-6 border-t border-stone-200">
-              <p className="text-4xl font-bold text-stone-900">
-                ₪{item.price_ils}
-              </p>
-              {item.free_shipping ? (
-                <p className="text-sm text-green-600 mt-2 font-medium">
-                  ✨ משלוח חינם!
-                </p>
+              {item.quantity_available > 0 && item.is_available ? (
+                <>
+                  <p className="text-4xl font-bold text-stone-900">
+                    ₪{item.price_ils}
+                  </p>
+                  {item.free_shipping ? (
+                    <p className="text-sm text-green-600 mt-2 font-medium">
+                      ✨ משלוח חינם!
+                    </p>
+                  ) : (
+                    <p className="text-sm text-stone-500 mt-2">
+                      + 30 ש״ח משלוח עד הבית
+                    </p>
+                  )}
+                </>
               ) : (
-                <p className="text-sm text-stone-500 mt-2">
-                  + 30 ש״ח משלוח עד הבית
-                </p>
+                <div className="p-4 bg-stone-100 border-2 border-stone-300 text-center">
+                  <p className="text-3xl font-bold text-stone-700 mb-2">Sold Out</p>
+                  <p className="text-sm text-stone-600">הפריט אזל מהמלאי</p>
+                </div>
               )}
             </div>
 
             {/* Action Buttons */}
             <div className="flex flex-col gap-3">
-              <Button
-                onClick={() => handleAddToCart(true)}
-                disabled={addingToCart || addedToCart || !item.is_available}
-                className="w-full h-14 bg-rose-500 hover:bg-rose-600 text-white text-lg"
-              >
-                {addingToCart ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin ml-2" />
-                    מוסיף לסל...
-                  </>
-                ) : !item.is_available ? (
-                  'אזל מהמלאי'
-                ) : (
-                  'לרכישה'
-                )}
-              </Button>
-              
-              <Button
-                onClick={() => handleAddToCart(false)}
-                disabled={addingToCart || addedToCart || !item.is_available}
-                variant="outline"
-                className="w-full h-12 border-stone-300 text-stone-800 hover:bg-stone-100 text-base"
-              >
-                {addedToCart ? (
-                  <>
-                    <CheckCircle className="w-5 h-5 ml-2 text-green-600" />
-                    נוסף לסל!
-                  </>
-                ) : (
-                  <>
-                    <ShoppingCart className="w-5 h-5 ml-2" />
-                    הוסף לסל
-                  </>
-                )}
-              </Button>
+              {item.quantity_available > 0 && item.is_available ? (
+                <>
+                  <Button
+                    onClick={() => handleAddToCart(true)}
+                    disabled={addingToCart || addedToCart}
+                    className="w-full h-14 bg-rose-500 hover:bg-rose-600 text-white text-lg"
+                  >
+                    {addingToCart ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin ml-2" />
+                        מוסיף לסל...
+                      </>
+                    ) : (
+                      'לרכישה'
+                    )}
+                  </Button>
+                  
+                  <Button
+                    onClick={() => handleAddToCart(false)}
+                    disabled={addingToCart || addedToCart}
+                    variant="outline"
+                    className="w-full h-12 border-stone-300 text-stone-800 hover:bg-stone-100 text-base"
+                  >
+                    {addedToCart ? (
+                      <>
+                        <CheckCircle className="w-5 h-5 ml-2 text-green-600" />
+                        נוסף לסל!
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingCart className="w-5 h-5 ml-2" />
+                        הוסף לסל
+                      </>
+                    )}
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  onClick={() => setNotifyDialogOpen(true)}
+                  className="w-full h-14 bg-rose-500 hover:bg-rose-600 text-white text-lg flex items-center justify-center gap-2"
+                >
+                  <Bell className="w-5 h-5" />
+                  NOTIFY ME WHEN AVAILABLE
+                </Button>
+              )}
             </div>
 
             {/* Info Box */}
@@ -300,6 +327,50 @@ export default function LocalStockItemDetail() {
           </div>
         </div>
       </div>
+
+      {/* Notify Dialog */}
+      <Dialog open={notifyDialogOpen} onOpenChange={setNotifyDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Notify When Available</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-stone-600">
+              נעדכן אותך במייל ברגע ש{item?.product_name} יחזור למלאי! 💖
+            </p>
+            <div className="space-y-2">
+              <Label>שם (אופציונלי)</Label>
+              <Input
+                value={notifyName}
+                onChange={(e) => setNotifyName(e.target.value)}
+                placeholder="השם שלך"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>אימייל *</Label>
+              <Input
+                type="email"
+                value={notifyEmail}
+                onChange={(e) => setNotifyEmail(e.target.value)}
+                placeholder="example@email.com"
+                required
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNotifyDialogOpen(false)}>
+              ביטול
+            </Button>
+            <Button
+              onClick={handleSubmitNotification}
+              disabled={!notifyEmail || submittingNotification}
+              className="bg-rose-500 hover:bg-rose-600"
+            >
+              {submittingNotification ? 'שומר...' : 'עדכן אותי'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
