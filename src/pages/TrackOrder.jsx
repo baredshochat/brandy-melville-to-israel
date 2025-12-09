@@ -75,14 +75,14 @@ export default function TrackOrder() {
     }
   }, [location.search]);
 
-  // Load status steps from database
+  // Load status steps only once, with timeout for fast mobile load
   useEffect(() => {
+    setStatusSteps(defaultStatusSteps);
+    setStatusLoading(false);
+    
+    // Don't block page load - load custom steps in background
     const loadStatusSteps = async () => {
-      setStatusSteps(defaultStatusSteps);
-      setStatusLoading(false);
-      
       try {
-        // Try to load custom status steps, but don't fail if unauthorized
         const steps = await OrderStatusSteps.list();
         if (!steps || steps.length === 0) return;
 
@@ -109,11 +109,12 @@ export default function TrackOrder() {
         
         setStatusSteps({ ...defaultStatusSteps, ...stepsObj });
       } catch (error) {
-        // Silently fail if unauthorized (guest user) - use default steps
-        console.log("Using default status steps (guest mode)");
+        // Silent fail - already using defaults
       }
     };
-    loadStatusSteps();
+    
+    // Defer loading for better mobile performance
+    setTimeout(loadStatusSteps, 100);
   }, []);
 
   const searchOrder = async (e) => {
@@ -192,7 +193,7 @@ export default function TrackOrder() {
 
       <div className="max-w-lg mx-auto px-3 sm:px-4 -mt-4 sm:-mt-6 md:-mt-10 relative z-10">
         {/* Search Card */}
-        <div className="bg-white/95 backdrop-blur-sm border border-white/50 shadow-xl sm:shadow-2xl shadow-stone-200/50 p-4 sm:p-6 md:p-8">
+        <div className="bg-white border border-stone-200 shadow-lg p-4 sm:p-6">
 
           <form onSubmit={searchOrder} className="space-y-3 sm:space-y-4">
             <div className="relative">
@@ -200,47 +201,54 @@ export default function TrackOrder() {
                 value={orderNumber}
                 onChange={(e) => setOrderNumber(e.target.value)}
                 placeholder="לדוגמה: BM12345"
-                className="h-12 sm:h-14 text-base sm:text-lg text-center bg-stone-50/50 border-stone-200 focus:border-rose-300 focus:ring-rose-200 placeholder:text-stone-400 font-light tracking-wide"
-                style={{ fontFamily: 'system-ui' }} />
+                className="h-12 sm:h-14 text-base sm:text-lg text-center bg-stone-50 border-stone-200 focus:border-rose-300 focus:ring-rose-200 placeholder:text-stone-400"
+                inputMode="text"
+                autoComplete="off"
+                autoCapitalize="characters" />
 
             </div>
             <Button
               type="submit"
-              disabled={loading}
-              className="w-full h-12 sm:h-14 bg-stone-800 hover:bg-stone-900 text-white text-base sm:text-lg font-light tracking-wide transition-all duration-300">
+              disabled={loading || !orderNumber.trim()}
+              className="w-full h-12 sm:h-14 bg-stone-800 hover:bg-stone-900 text-white text-base sm:text-lg transition-colors disabled:opacity-50">
 
-              {loading ?
-            <div className="flex items-center gap-2 sm:gap-3">
-                  <LottieLoader size={20} className="sm:w-6 sm:h-6" />
-                  <span className="text-sm sm:text-base">מחפשים...</span>
-                </div> :
-
-            <div className="flex items-center gap-2 sm:gap-3">
-                  <Search className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span className="text-sm sm:text-base">איפה ההזמנה שלי?</span>
+              {loading ? (
+                <div className="flex items-center gap-2 justify-center">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>מחפש...</span>
                 </div>
-            }
+              ) : (
+                <div className="flex items-center gap-2 justify-center">
+                  <Search className="w-5 h-5" />
+                  <span>איפה ההזמנה שלי?</span>
+                </div>
+              )}
             </Button>
           </form>
 
           <AnimatePresence mode="wait">
-            {error &&
-            <motion.div
-              key="error"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="mt-4 sm:mt-6 p-3 sm:p-4 bg-rose-50 border border-rose-200 text-center">
-
-                <p className="text-sm sm:text-base text-rose-800 font-light">{error}</p>
+            {error && (
+              <motion.div
+                key="error"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="mt-4 p-3 sm:p-4 bg-rose-50 border border-rose-200 text-center"
+              >
+                <p className="text-sm sm:text-base text-rose-800">{error}</p>
               </motion.div>
-            }
+            )}
 
-            {order && statusSteps && Object.keys(statusSteps).length > 0 &&
-            <div className="mt-6 sm:mt-8">
+            {order && statusSteps && Object.keys(statusSteps).length > 0 && (
+              <motion.div 
+                key="order"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="mt-6 sm:mt-8"
+              >
 
                 {/* Order Header */}
-                <div className="text-center mb-6 sm:mb-8 p-4 sm:p-6 bg-gradient-to-r from-stone-50 to-rose-50/30 border border-stone-200/50">
+                <div className="text-center mb-6 p-4 sm:p-6 bg-gradient-to-r from-stone-50 to-rose-50/30 border border-stone-200">
                   <div className="mb-2">
                     {isLocalOrder && (
                       <span className="inline-block px-2 sm:px-3 py-1 bg-rose-100 text-rose-800 text-xs font-medium">
@@ -256,30 +264,30 @@ export default function TrackOrder() {
                   </p>
                   
                   {/* Updated Time Estimate */}
-                  {currentStatusInfo && currentStatusInfo.estimatedDays > 0 &&
-                  <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-white/70 border border-rose-200/50">
+                  {currentStatusInfo && currentStatusInfo.estimatedDays > 0 && (
+                    <div className="mt-3 p-3 bg-white border border-rose-200">
                       <div className="flex items-center justify-center gap-2">
-                        <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-rose-400" />
-                        <span className="text-sm sm:text-base text-stone-700 font-light">
-                          זמן הגעה משוער: {currentStatusInfo.timeRange}
+                        <Clock className="w-4 h-4 text-rose-400" />
+                        <span className="text-sm text-stone-700">
+                          זמן הגעה: {currentStatusInfo.timeRange}
                         </span>
                       </div>
-                      <p className="text-[10px] sm:text-xs text-stone-500 mt-1 font-light">
-                        {isLocalOrder ? 'ימי עסקים (לא כולל שישי-שבת וחגים)' : 'לפי הסטטוס הנוכחי'}
+                      <p className="text-xs text-stone-500 mt-1">
+                        {isLocalOrder ? 'ימי עסקים' : 'משוער'}
                       </p>
                     </div>
-                  }
+                  )}
 
-                  {currentStatusInfo && currentStatusInfo.estimatedDays === 0 &&
-                  <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-rose-50/50 border border-rose-200/50">
-                      <div className="flex flex-col items-center justify-center gap-2">
-                        <LottieSuccess size={50} className="sm:w-[60px] sm:h-[60px]" />
-                        <span className="text-sm sm:text-base text-rose-800 font-medium">
+                  {currentStatusInfo && currentStatusInfo.estimatedDays === 0 && (
+                    <div className="mt-3 p-3 bg-rose-50 border border-rose-200">
+                      <div className="flex flex-col items-center gap-2">
+                        <Check className="w-12 h-12 text-rose-500" />
+                        <span className="text-sm text-rose-800 font-medium">
                           ההזמנה נמסרה! ✨
                         </span>
                       </div>
                     </div>
-                  }
+                  )}
                   </div>
 
                 {/* Status Timeline */}
@@ -378,8 +386,10 @@ export default function TrackOrder() {
                   </div>
                   }
                   </div>
-                  }
-                  </AnimatePresence>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
                   </div>
 
         {/* Footer Message */}
