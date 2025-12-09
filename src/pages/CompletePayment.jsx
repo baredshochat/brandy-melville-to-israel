@@ -106,14 +106,22 @@ export default function CompletePayment() {
       try {
         const params = new URLSearchParams(window.location.search);
         const orderId = params.get('orderId');
+        const orderNumber = params.get('orderNumber');
         
-        if (!orderId) {
+        if (!orderId && !orderNumber) {
           setError('לא נמצא מזהה הזמנה');
           setLoading(false);
           return;
         }
 
-        const orderData = await Order.get(orderId);
+        // Try to load by orderId first, then by orderNumber
+        let orderData;
+        if (orderId) {
+          orderData = await Order.get(orderId);
+        } else if (orderNumber) {
+          const results = await Order.filter({ order_number: orderNumber.trim().toUpperCase() });
+          orderData = results && results.length > 0 ? results[0] : null;
+        }
         
         if (!orderData) {
           setError('ההזמנה לא נמצאה');
