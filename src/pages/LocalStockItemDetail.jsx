@@ -17,7 +17,13 @@ export default function LocalStockItemDetail() {
   const [selectedImage, setSelectedImage] = useState(0);
 
   useEffect(() => {
-    User.me().then(setUser).catch(() => setUser(null));
+    User.me().then(u => {
+      setUser(u);
+      if (u) {
+        setNotifyEmail(u.email || '');
+        setNotifyName(u.full_name || '');
+      }
+    }).catch(() => setUser(null));
     loadItem();
   }, []);
 
@@ -83,6 +89,29 @@ export default function LocalStockItemDetail() {
       alert("שגיאה בהוספת הפריט לסל.");
     } finally {
       setAddingToCart(false);
+    }
+  };
+
+  const handleSubmitNotification = async () => {
+    if (!notifyEmail || !item) return;
+    
+    setSubmittingNotification(true);
+    try {
+      await BackInStockNotification.create({
+        local_stock_item_id: item.id,
+        product_name: item.product_name,
+        customer_email: notifyEmail,
+        customer_name: notifyName,
+        notified: false
+      });
+      
+      alert('נרשמת בהצלחה! נעדכן אותך כשהפריט יחזור למלאי 💖');
+      setNotifyDialogOpen(false);
+    } catch (error) {
+      console.error('Error submitting notification:', error);
+      alert('שגיאה בשמירת הבקשה');
+    } finally {
+      setSubmittingNotification(false);
     }
   };
 

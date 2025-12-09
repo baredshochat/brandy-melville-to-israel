@@ -216,7 +216,7 @@ export default function LocalStock() {
               transition={{ delay: index * 0.05 }}>
                   <Card
                     className="h-full overflow-hidden hover:shadow-lg transition-all duration-300 bg-white cursor-pointer group border-0 shadow-none"
-                    onClick={() => (item.quantity_available > 0 && item.is_available) && (window.location.href = createPageUrl('LocalStockItemDetail') + '?id=' + item.id)}>
+                    onClick={() => window.location.href = createPageUrl('LocalStockItemDetail') + '?id=' + item.id}>
                       <CardContent className="p-0 relative">
                         {item.image_url &&
                     <div className="w-full bg-stone-50 overflow-hidden relative flex items-center justify-center" style={{ minHeight: '280px' }}>
@@ -259,7 +259,7 @@ export default function LocalStock() {
                                   className="flex items-center gap-1 text-[10px] text-rose-600 hover:text-rose-700 underline"
                                 >
                                   <Bell className="w-3 h-3" />
-                                  עדכן כשחזר
+                                  NOTIFY ME WHEN AVAILABLE
                                 </button>
                               </>
                             ) : (
