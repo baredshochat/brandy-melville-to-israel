@@ -525,15 +525,30 @@ export default function Home() {
       - Examples: "Duffel Bag", "Priscilla Pants", "Rosa Top"
 
       PRICE - CRITICAL - READ VERY CAREFULLY:
-      - Find the CURRENT ACTIVE price that the customer would pay NOW
-      - IGNORE any crossed-out prices (old/sale prices with strikethrough)
-      - IGNORE any "was" or "original" prices
-      - Look for the main price near the "Add to Cart" button
-      - Look in the product JSON-LD data for "price" or "offers.price"
-      - The price should be in format: £XX.XX, $XX.XX, €XX.XX
-      - Return ONLY the numeric value (e.g., 15 for £15.00)
-      - If you see multiple prices, take the LOWEST non-crossed-out price (the current sale price)
-      - VALIDATE: Make sure the price makes sense for clothing (typically £10-50)
+      ⚠️ THIS IS THE MOST IMPORTANT FIELD - GET IT RIGHT!
+      
+      YOU MUST EXTRACT THE EXACT PRICE THE CUSTOMER PAYS RIGHT NOW.
+      
+      What to look for (IN THIS ORDER):
+      1. Look in JSON-LD structured data: <script type="application/ld+json"> for "price" or "offers.price"
+      2. Look for meta tags: <meta property="product:price:amount" content="XX.XX">
+      3. Look for the main displayed price near "Add to Cart" or "Add to Bag" button
+      4. Look for price in the page's main heading area with the product name
+      
+      ABSOLUTE RULES:
+      - ❌ NEVER use crossed-out prices (text-decoration: line-through)
+      - ❌ NEVER use "was" / "original" / "regular" prices
+      - ❌ NEVER use prices with any strikethrough styling
+      - ✅ ONLY use the CURRENT ACTIVE price (the one customer will actually pay)
+      - ✅ If JSON-LD data exists, it is usually the most accurate source
+      - ✅ Return ONLY the numeric value (e.g., for £15.00 return: 15)
+      - ✅ If you see both sale and regular price, take the LOWER one (sale price)
+      - ⚠️ DOUBLE CHECK: Does this price make sense for clothing? (typically £10-60, $15-80, €15-70)
+      
+      Example scenarios:
+      - Page shows: "£24.00" (crossed out) and "£15.00" → Return: 15
+      - JSON-LD shows: "price": "15.00" → Return: 15
+      - Page shows only: "£15" → Return: 15
 
       DESCRIPTION:
       - Find the product description text
