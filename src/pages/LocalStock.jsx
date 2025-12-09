@@ -38,7 +38,8 @@ export default function LocalStock() {
     setLoading(true);
     try {
       const data = await LocalStockItem.filter({ is_available: true });
-      setItems(data);
+      const inStockItems = data.filter(item => item.quantity_available > 0);
+      setItems(inStockItems);
     } catch (error) {
       console.error("Error loading local stock items:", error);
     } finally {
