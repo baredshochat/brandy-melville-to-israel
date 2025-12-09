@@ -1159,6 +1159,7 @@ export default function Orders() {
                             <th className="text-right p-3 font-medium">מספר הזמנה</th>
                             <th className="text-right p-3 font-medium">לקוח</th>
                             <th className="text-right p-3 font-medium">תאריך</th>
+                            <th className="text-right p-3 font-medium">מייל אחרון</th>
                             <th className="text-right p-3 font-medium w-56">פעולות</th>
                           </tr>
                         </thead>
@@ -1170,6 +1171,7 @@ export default function Orders() {
 
                             // NEW: Status progress calculations
                             const daysSince = order.created_date ? differenceInDays(new Date(), new Date(order.created_date)) : null; // Calculate days since creation
+                            const lastEmailDate = order.last_email_sent_date ? new Date(order.last_email_sent_date) : null;
 
                             return (
                               <React.Fragment key={order.id}>
@@ -1213,6 +1215,17 @@ export default function Orders() {
                                     )}
                                   </td>
 
+                                  <td className="p-3 text-sm">
+                                    {lastEmailDate ? (
+                                      <div className="text-xs">
+                                        <div className="font-semibold text-stone-700">{order.last_email_sent_type}</div>
+                                        <div className="text-stone-500">{format(lastEmailDate, "dd/MM/yy HH:mm")}</div>
+                                      </div>
+                                    ) : (
+                                      <span className="text-stone-400">—</span>
+                                    )}
+                                  </td>
+
                                   <td className="p-3" onClick={(e) => e.stopPropagation()}>
                                     {/* Quick status updater */}
                                     <InlineStatusSelect
@@ -1252,7 +1265,7 @@ export default function Orders() {
 
                                 {/* NEW: full-width horizontal status stepper row */}
                                 <tr className="bg-transparent">
-                                  <td colSpan={5} className="px-3 pb-3">
+                                  <td colSpan={6} className="px-3 pb-3">
                                     <div className="p-2 rounded-md border border-stone-200 bg-white/70">
                                       <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto py-1">
                                         <span className="text-[11px] font-semibold tracking-wide text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded">
@@ -1292,73 +1305,38 @@ export default function Orders() {
 
                                         {/* Reminder button for awaiting payment orders only */}
                                         {order.status === 'awaiting_payment' && (
-                                          <div className="flex items-center gap-2">
-                                            <div className="flex items-center gap-1 text-[10px] text-stone-500">
-                                              <span>תזכורת אחרונה:</span>
-                                              <input
-                                                type="datetime-local"
-                                                value={order.last_reminder_date ? new Date(order.last_reminder_date).toISOString().slice(0, 16) : ''}
-                                                onChange={(e) => {
-                                                  e.stopPropagation();
-                                                  handleUpdateOrder(order.id, { last_reminder_date: e.target.value ? new Date(e.target.value).toISOString() : null });
-                                                }}
-                                                onClick={(e) => e.stopPropagation()}
-                                                className="bg-transparent border-b border-stone-300 text-[10px] text-stone-600 px-1"
-                                              />
-                                            </div>
-                                            <input
-                                              type="number"
-                                              min="0"
-                                              value={order.reminder_count || 0}
-                                              onChange={(e) => {
-                                                e.stopPropagation();
-                                                const newCount = parseInt(e.target.value) || 0;
-                                                handleUpdateOrder(order.id, { reminder_count: newCount });
-                                              }}
-                                              onClick={(e) => e.stopPropagation()}
-                                              className={`w-10 h-6 text-center text-[10px] font-bold rounded-full border-0 ${order.reminder_count > 0 ? 'bg-amber-200 text-amber-800' : 'bg-stone-200 text-stone-600'}`}
-                                            />
-                                            <Button
-                                              size="sm"
-                                              variant="outline"
-                                              className="text-xs h-7 px-2 border-amber-300 text-amber-700 hover:bg-amber-50"
-                                              onClick={(e) => { e.stopPropagation(); openReminderDialog(order); }}
-                                            >
-                                              <Mail className="w-3 h-3 ml-1" />
-                                              שלח תזכורת
-                                            </Button>
-                                          </div>
+                                          <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="text-xs h-7 px-2 border-amber-300 text-amber-700 hover:bg-amber-50"
+                                            onClick={(e) => { e.stopPropagation(); openReminderDialog(order); }}
+                                          >
+                                            <Mail className="w-3 h-3 ml-1" />
+                                            שלח תזכורת
+                                          </Button>
                                         )}
 
                                         {/* Status update email button for confirmed orders */}
                                         {order.status !== 'awaiting_payment' && (
-                                          <div className="flex flex-col items-end gap-1">
-                                            <Button
-                                              size="sm"
-                                              variant="outline"
-                                              className="text-xs h-7 px-2 border-blue-300 text-blue-700 hover:bg-blue-50"
-                                              onClick={(e) => { e.stopPropagation(); openStatusUpdateDialog(order); }}
-                                            >
-                                              <Mail className="w-3 h-3 ml-1" />
-                                              שלח עדכון סטטוס
-                                            </Button>
-                                            {order.last_email_sent_date && (
-                                              <div className="text-[9px] text-stone-500">
-                                                <div className="font-semibold">{order.last_email_sent_type}</div>
-                                                <div>{new Date(order.last_email_sent_date).toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'short' })}</div>
-                                              </div>
-                                            )}
-                                          </div>
+                                          <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="text-xs h-7 px-2 border-blue-300 text-blue-700 hover:bg-blue-50"
+                                            onClick={(e) => { e.stopPropagation(); openStatusUpdateDialog(order); }}
+                                          >
+                                            <Mail className="w-3 h-3 ml-1" />
+                                            שלח עדכון סטטוס
+                                          </Button>
                                         )}
                                       </div>
                                     </div>
                                   </td>
                                 </tr>
 
-                                {/* Expanded details row spans all 5 columns */}
+                                {/* Expanded details row spans all 6 columns */}
                                 {isExpanded && (
                                   <tr className="bg-stone-50 border-b border-stone-100">
-                                    <td colSpan={5} className="p-4">
+                                    <td colSpan={6} className="p-4">
                                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                                         <div className="space-y-1">
                                           <div className="text-stone-500">סה״כ בש״ח</div>
