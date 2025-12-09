@@ -147,7 +147,7 @@ export default function TrackOrder() {
   const localStatusSteps = useMemo(() => {
     return {
       pending: { label: "ההזמנה התקבלה", step: 1, estimatedDays: 3, timeRange: "מעבדים..." },
-      ordered: { label: "בהכנה", step: 2, estimatedDays: 5, timeRange: "3-7 ימי עסקים" },
+      ordered: { label: "באריזה", step: 2, estimatedDays: 5, timeRange: "3-7 ימי עסקים" },
       shipping_to_customer: { label: "נמסר לשליח", step: 3, estimatedDays: 1, timeRange: "1-3 ימים" },
       delivered: { label: "נמסר ללקוחה", step: 4, estimatedDays: 0, timeRange: "הושלם" }
     };

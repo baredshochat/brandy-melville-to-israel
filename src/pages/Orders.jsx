@@ -70,14 +70,54 @@ const isCompleteOrder = (order) => {
 
 // Status configuration
 const statusConfig = {
-  awaiting_payment: { label: "ממתין לתשלום", style: "bg-red-100 text-red-800", color: "red" },
-  pending: { label: "התקבלה", style: "bg-stone-200 text-stone-800", color: "stone" },
-  ordered: { label: "הוזמן", style: "bg-gray-200 text-gray-800", color: "gray" },
-  warehouse: { label: "במחסן", style: "bg-blue-100 text-blue-800", color: "blue" },
-  shipping_to_israel: { label: "בדרך לישראל", style: "bg-orange-100 text-orange-800", color: "orange" },
-  in_israel: { label: "בארץ", style: "bg-purple-100 text-purple-800", color: "purple" },
-  shipping_to_customer: { label: "בדרך ללקוחה", style: "bg-amber-100 text-amber-800", color: "amber" },
-  delivered: { label: "נמסר", style: "bg-green-100 text-green-800", color: "green" }
+  awaiting_payment: { 
+    label: "ממתין לתשלום", 
+    style: "bg-red-100 text-red-800", 
+    color: "red",
+    description: "ההזמנה ממתינה לתשלום. לאחר השלמת התשלום, נתחיל לטפל בה באהבה! 💖"
+  },
+  pending: { 
+    label: "התקבלה", 
+    style: "bg-stone-200 text-stone-800", 
+    color: "stone",
+    description: "איזה כיף! ההזמנה התקבלה אצלנו במערכת ואנחנו מתחילים לטפל בה עבורך! ✨"
+  },
+  ordered: { 
+    label: "הוזמן", 
+    style: "bg-gray-200 text-gray-800", 
+    color: "gray",
+    description: "הפריטים המהממים שלך הוזמנו מספק Brandy Melville בחו״ל."
+  },
+  warehouse: { 
+    label: "במחסן", 
+    style: "bg-blue-100 text-blue-800", 
+    color: "blue",
+    description: "ההזמנה הגיעה למחסן שלנו בחו״ל ועוברת בדיקת איכות קפדנית."
+  },
+  shipping_to_israel: { 
+    label: "בדרך לישראל", 
+    style: "bg-orange-100 text-orange-800", 
+    color: "orange",
+    description: "ההזמנה שלך בדרכה לישראל! עוד קצת סבלנות והיא אצלך. ✈️"
+  },
+  in_israel: { 
+    label: "בארץ", 
+    style: "bg-purple-100 text-purple-800", 
+    color: "purple",
+    description: "ההזמנה הגיעה לישראל, ואנחנו דואגים לשחרור מהיר מהמכס."
+  },
+  shipping_to_customer: { 
+    label: "בדרך ללקוחה", 
+    style: "bg-amber-100 text-amber-800", 
+    color: "amber",
+    description: "ההזמנה נמסרה לשליח המקסים שלנו והיא בדרכה אלייך! 📦 תיהי זמינה בימים הקרובים לתיאום המסירה"
+  },
+  delivered: { 
+    label: "נמסר", 
+    style: "bg-green-100 text-green-800", 
+    color: "green",
+    description: "יש! ההזמנה נמסרה בהצלחה! תתחדשי ותיהני מהפריטים! 😊"
+  }
 };
 
 const siteInfo = {
@@ -533,11 +573,13 @@ export default function Orders() {
             const trackOrderPageUrl = new URL(createPageUrl('TrackOrder'), window.location.origin).href;
             const chatPageUrl = new URL(createPageUrl('Chat'), window.location.origin).href;
             const statusLabel = statusConfig[data.status]?.label || data.status;
+            const statusDescription = statusConfig[data.status]?.description || '';
 
             const emailHtml = buildStatusUpdateEmailHTML({
               customerName: order.customer_name,
               orderNumber: order.order_number,
               statusLabel,
+              statusDescription,
               trackUrl: trackOrderPageUrl,
               chatUrl: chatPageUrl
             });
@@ -794,11 +836,13 @@ export default function Orders() {
       const trackOrderUrl = `${window.location.origin}${createPageUrl('TrackOrder')}?orderNumber=${encodeURIComponent(order.order_number)}`;
       const chatPageUrl = `${window.location.origin}${createPageUrl('Chat')}`;
       const statusLabel = statusConfig[order.status]?.label || order.status;
+      const statusDescription = statusConfig[order.status]?.description || '';
 
       const emailHtml = buildStatusUpdateEmailHTML({
         customerName: (order.customer_name || '').trim(),
         orderNumber: (order.order_number || '').trim(),
         statusLabel,
+        statusDescription,
         trackUrl: trackOrderUrl,
         chatUrl: chatPageUrl
       });
