@@ -903,6 +903,17 @@ export default function Orders() {
     return Object.entries(statusStepsMap).sort(([, a], [, b]) => a.step - b.step);
   }, [statusStepsMap]);
 
+  // Local stock simplified status steps (only 3 steps)
+  const localStatusStepsMap = useMemo(() => ({
+    pending: { label: "התקבלה", step: 1 },
+    shipping_to_customer: { label: "נמסר לשליח", step: 2 },
+    delivered: { label: "נמסר ללקוחה", step: 3 }
+  }), []);
+
+  const localSortedEntries = useMemo(() => {
+    return Object.entries(localStatusStepsMap).sort(([, a], [, b]) => a.step - b.step);
+  }, [localStatusStepsMap]);
+
 
   if (userRole !== 'admin') {
     return (
@@ -1271,8 +1282,9 @@ export default function Orders() {
                                         <span className="text-[11px] font-semibold tracking-wide text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded">
                                           סטטוס
                                         </span>
-                                        {sortedStatusEntries.map(([statusKey, statusInfo], idx, arr) => {
-                                          const currentOrderStep = statusStepsMap[order.status]?.step || 0;
+                                        {(order.site === 'local' ? localSortedEntries : sortedStatusEntries).map(([statusKey, statusInfo], idx, arr) => {
+                                          const currentStepsMap = order.site === 'local' ? localStatusStepsMap : statusStepsMap;
+                                          const currentOrderStep = currentStepsMap[order.status]?.step || 0;
                                           const isActive = statusInfo.step <= currentOrderStep;
                                           const isCurrent = statusInfo.step === currentOrderStep;
                                           const isLast = idx === arr.length - 1;
