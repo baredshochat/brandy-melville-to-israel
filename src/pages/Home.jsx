@@ -479,9 +479,17 @@ export default function Home() {
 
   const handleCartImported = async (items) => {
     const safe = Array.isArray(items) ? items : [];
-    // Item was already created in CartImport, reload cart and go to cart view
     await loadCart();
-    setStep(4);
+    
+    // If only one item was imported, go to edit it
+    if (safe.length === 1) {
+      setEditingItem(safe[0]);
+      setCurrentItem(safe[0]);
+      setStep(3);
+    } else {
+      // Multiple items - go to cart view
+      setStep(4);
+    }
   };
 
   const handleUrlSubmit = async (url) => {
