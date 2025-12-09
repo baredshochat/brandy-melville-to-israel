@@ -291,7 +291,7 @@ function buildStatusUpdateEmailHTML({ customerName, orderNumber, statusLabel, st
 
 // Helper: Build abandoned cart reminder email
 function buildAbandonedCartReminderEmailHTML({ customerName, orderNumber, trackUrl, chatUrl }) {
-  const brand = "Brandy Melville to Israel";
+  const brand = "Brandy Order IL";
   const primary = "#443E41";
   const accent = "#FFCAD4";
   const border = "#FCE8EF";
@@ -304,7 +304,7 @@ function buildAbandonedCartReminderEmailHTML({ customerName, orderNumber, trackU
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
-    <title>שכחת משהו מתוק בעגלה? 💖</title>
+    <title>היי! שכחת משהו מושלם בעגלה? 💖✨</title>
   </head>
   <body style="margin:0;background:#FFFDFC;font-family:Assistant,Arial,Helvetica,sans-serif" dir="rtl">
     <div style="max-width:640px;margin:24px auto;background:#fff;border:1px solid ${border};">
@@ -313,7 +313,7 @@ function buildAbandonedCartReminderEmailHTML({ customerName, orderNumber, trackU
           <div style="width:32px;height:32px;background:${accent};color:#fff;display:flex;align-items:center;justify-content:center;border-radius:50%">💖</div>
           <div>
             <div style="font-weight:700;color:${primary}">${brand}</div>
-            <div style="font-size:12px;color:${muted}">הדרך הקלה להזמין ברנדי מחו״ל</div>
+            <div style="font-size:12px;color:${muted}">הדרך הקלה להזמין ברנדי</div>
           </div>
         </div>
         <div style="font-size:12px;color:${muted}">מס׳ הזמנה: <strong style="color:${primary}">${orderNumber}</strong></div>
@@ -331,6 +331,10 @@ function buildAbandonedCartReminderEmailHTML({ customerName, orderNumber, trackU
 
         <div style="margin:16px 0;padding:14px;border:1px dashed ${border};background:${accent}11;color:${primary};text-align:center">
           <strong>הפריטים שלך מחכים! 🛒</strong>
+        </div>
+
+        <div style="margin:16px 0;padding:12px;border:1px solid ${accent};background:#fff8f9;color:${primary};font-size:14px;line-height:1.6">
+          <strong>חשוב לדעת:</strong> בלי אישור תשלום, לא נוכל לשמור לך את הפריטים וההזמנה עלולה להתבטל. אל תחכי יותר מדי!
         </div>
 
         <div style="text-align:center;margin:18px 0 6px">
