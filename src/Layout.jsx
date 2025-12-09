@@ -5,7 +5,6 @@ import { Home, Package, Truck, Settings, Heart, FileText, Calculator, MessageSqu
 import { User } from "@/entities/User";
 import SheetNav from './components/layout/SheetNav';
 import CartPopover from './components/layout/CartPopover';
-import { checkCountry } from '@/functions/checkCountry';
 
 const MAINTENANCE_MODE = false; // שנה ל-true כדי לסגור את האתר
 
@@ -14,8 +13,6 @@ export default function Layout({ children }) {
   const [userRole, setUserRole] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [countryAllowed, setCountryAllowed] = useState(true);
-  const [checkingCountry, setCheckingCountry] = useState(true);
 
   useEffect(() => {
     // FIX: Set a clear, branded document title
@@ -52,21 +49,7 @@ export default function Layout({ children }) {
       }
     };
     
-    const checkCountryAccess = async () => {
-      try {
-        const result = await checkCountry({});
-        setCountryAllowed(result.allowed);
-      } catch (error) {
-        console.error('Error checking country:', error);
-        // On error, allow access
-        setCountryAllowed(true);
-      } finally {
-        setCheckingCountry(false);
-      }
-    };
-    
     checkUser();
-    checkCountryAccess();
   }, [location.pathname]); // Re-check on route change
 
   const allNavLinks = [
@@ -129,19 +112,7 @@ export default function Layout({ children }) {
         </header>
 
         <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-10">
-          {checkingCountry ? (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-              <Heart className="w-16 h-16 text-rose-300 mb-6 animate-pulse" />
-              <p className="text-lg text-stone-600">בודק מיקום...</p>
-            </div>
-          ) : !countryAllowed && userRole !== 'admin' ? (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-              <Heart className="w-16 h-16 text-rose-300 mb-6" />
-              <h1 className="text-3xl font-semibold text-stone-800 mb-4">שירות זמין בישראל בלבד 🇮🇱</h1>
-              <p className="text-lg text-stone-600 mb-2">מצטערים, האתר זמין רק למשתמשים מישראל</p>
-              <p className="text-stone-500">אנחנו משלוחים רק בתוך ישראל 💖</p>
-            </div>
-          ) : MAINTENANCE_MODE && userRole !== 'admin' ? (
+          {MAINTENANCE_MODE && userRole !== 'admin' ? (
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
               <Heart className="w-16 h-16 text-rose-300 mb-6" />
               <h1 className="text-3xl font-semibold text-stone-800 mb-4">האתר בבנייה 🚧</h1>
