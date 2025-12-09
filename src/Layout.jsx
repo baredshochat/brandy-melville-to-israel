@@ -5,6 +5,7 @@ import { Home, Package, Truck, Settings, Heart, FileText, Calculator, MessageSqu
 import { User } from "@/entities/User";
 import SheetNav from './components/layout/SheetNav';
 import CartPopover from './components/layout/CartPopover';
+import { checkCountry } from '@/functions/checkCountry';
 
 const MAINTENANCE_MODE = false; // שנה ל-true כדי לסגור את האתר
 
@@ -51,10 +52,9 @@ export default function Layout({ children }) {
       }
     };
     
-    const checkCountry = async () => {
+    const checkCountryAccess = async () => {
       try {
-        const { checkCountry: checkCountryFn } = await import('@/functions/checkCountry');
-        const result = await checkCountryFn({});
+        const result = await checkCountry({});
         setCountryAllowed(result.allowed);
       } catch (error) {
         console.error('Error checking country:', error);
@@ -66,7 +66,7 @@ export default function Layout({ children }) {
     };
     
     checkUser();
-    checkCountry();
+    checkCountryAccess();
   }, [location.pathname]); // Re-check on route change
 
   const allNavLinks = [
