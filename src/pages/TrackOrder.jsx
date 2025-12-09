@@ -9,10 +9,11 @@ import LottieSuccess from '../components/ui/LottieSuccess';
 import { format } from "date-fns";
 import { he } from 'date-fns/locale';
 import { motion, AnimatePresence } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 
 export default function TrackOrder() {
+  const location = useLocation();
   // Default status steps as constant
   const defaultStatusSteps = {
     awaiting_payment: { label: "ממתין לתשלום", step: 0, estimatedDays: 0, timeRange: "השלימי תשלום" },
@@ -37,7 +38,7 @@ export default function TrackOrder() {
 
   // Check for orderNumber in URL params and auto-search
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(location.search);
     const orderNumberParam = params.get('orderNumber');
     if (orderNumberParam) {
       setOrderNumber(orderNumberParam);
@@ -61,7 +62,7 @@ export default function TrackOrder() {
       };
       autoSearch();
     }
-  }, []);
+  }, [location.search]);
 
   // Load status steps from database
   useEffect(() => {
