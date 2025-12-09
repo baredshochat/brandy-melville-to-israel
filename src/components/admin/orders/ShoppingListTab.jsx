@@ -10,14 +10,12 @@ import { Filter, ListOrdered, ExternalLink, Trash2 } from "lucide-react";
 const statusOptions = [
   { value: "needs_order", label: "צריך להזמין" },
   { value: "ordered", label: "הוזמן" },
-  { value: "warehouse", label: "במחסן בחו״ל" },
-  { value: "in_transit", label: "בדרך לישראל" },
-  { value: "shipped_to_customer", label: "נשלח ללקוחה" }
+  { value: "warehouse", label: "הגיע" }
 ];
 
 export default function ShoppingListTab({ orders, onUpdated }) {
   const [siteFilter, setSiteFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("needs_order");
   const [search, setSearch] = useState("");
 
   const rows = useMemo(() => {
@@ -26,14 +24,14 @@ export default function ShoppingListTab({ orders, onUpdated }) {
       const site = order.site;
       const orderStatus = order.status;
       
-      // רק הזמנות מחו"ל (בריטניה או אירופה)
-      const isValidOrder = (site === 'uk' || site === 'eu');
+      // רק הזמנות מחו"ל (בריטניה או אירופה) שסטטוס שלהן pending
+      const isValidOrder = (site === 'uk' || site === 'eu') && orderStatus === 'pending';
       if (!isValidOrder) return;
       
       (order.items || []).forEach((it, idx) => {
         const ps = it.purchase_status || "needs_order";
-        // מציגים פריטים בכל הסטטוסים עד שנשלח ללקוחה
-        if (["needs_order", "ordered", "warehouse", "in_transit", "shipped_to_customer"].includes(ps)) {
+        // מציגים פריטים בסטטוסים: needs_order, ordered, warehouse
+        if (["needs_order", "ordered", "warehouse"].includes(ps)) {
           out.push({
             order_id: order.id,
             order_number: order.order_number,
@@ -165,14 +163,9 @@ export default function ShoppingListTab({ orders, onUpdated }) {
                 </thead>
                 <tbody>
                   {rows.map((r) => {
-                    const statusColors = {
-                      needs_order: 'bg-white',
-                      ordered: 'bg-stone-100',
-                      warehouse: 'bg-stone-200',
-                      in_transit: 'bg-blue-100',
-                      shipped_to_customer: 'bg-green-100'
-                    };
-                    const rowBgClass = statusColors[r.purchase_status] || 'bg-white';
+                    const isOrdered = r.purchase_status === 'ordered';
+                    const isWarehouse = r.purchase_status === 'warehouse';
+                    const rowBgClass = isWarehouse ? 'bg-stone-200' : isOrdered ? 'bg-stone-100' : 'bg-white';
                     
                     return (
                       <tr key={`${r.order_id}-${r.index}`} className={`border-b hover:bg-stone-50 ${rowBgClass}`}>
