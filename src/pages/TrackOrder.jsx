@@ -3,8 +3,6 @@ import { OrderStatusSteps } from "@/entities/OrderStatusSteps";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Loader2, Clock, Heart, Package, Check, MessageSquare } from "lucide-react";
-import LottieLoader from '../components/ui/LottieLoader';
-import LottieSuccess from '../components/ui/LottieSuccess';
 import { format } from "date-fns";
 import { he } from 'date-fns/locale';
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,13 +12,6 @@ import { trackOrder } from "@/functions/trackOrder";
 
 export default function TrackOrder() {
   const location = useLocation();
-  
-  // Safely handle the page load without requiring authentication
-  const [mounted, setMounted] = useState(false);
-  
-  useEffect(() => {
-    setMounted(true);
-  }, []);
   
   // Default status steps as constant
   const defaultStatusSteps = {
@@ -166,15 +157,6 @@ export default function TrackOrder() {
   const localSortedEntries = useMemo(() => {
     return Object.entries(localStatusSteps).sort(([, a], [, b]) => a.step - b.step);
   }, [localStatusSteps]);
-
-  // Ensure the component is mounted before rendering
-  if (!mounted) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-stone-50 via-rose-50/30 to-stone-100 flex items-center justify-center">
-        <LottieLoader size={60} />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-50 via-rose-50/30 to-stone-100">
