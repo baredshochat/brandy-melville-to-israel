@@ -4,6 +4,7 @@ import { CartItem } from "@/entities/CartItem";
 import { User } from "@/entities/User";
 import { LocalStockItem } from "@/entities/LocalStockItem";
 import { SkuImage } from "@/entities/SkuImage";
+import { ModeratedProductLink } from "@/entities/ModeratedProductLink";
 import { InvokeLLM, SendEmail } from "@/integrations/Core";
 import { AnimatePresence } from "framer-motion";
 import { createPageUrl } from "@/utils";
@@ -402,6 +403,7 @@ export default function Home() {
       const siteParam = params.get('site');
       const stepParam = params.get('step');
       const editItemIdParam = params.get('editItemId');
+      const productUrlParam = params.get('productUrl');
 
       const handleEditing = async (itemId) => {
         setLoading(true);
@@ -448,6 +450,12 @@ export default function Home() {
 
       if (editItemIdParam) {
         handleEditing(editItemIdParam);
+      } else if (productUrlParam && siteParam) {
+        // Handle direct product URL from query parameter
+        setSelectedSite(siteParam);
+        setProductUrl(productUrlParam);
+        // Automatically load the product
+        setTimeout(() => handleUrlSubmit(productUrlParam), 100);
       } else if (siteParam) {
         // Set site and let the useEffect for loadCart handle loading
         setSelectedSite(siteParam);
@@ -499,6 +507,60 @@ export default function Home() {
     setProductUrl(originalUrl);
     try {
       const siteInfo = { us: { currency: 'USD' }, eu: { currency: 'EUR' }, uk: { currency: 'GBP' } };
+
+      // PRIORITY: Check if this URL has a moderated price override
+      console.log('🔍 Checking for moderated price for URL:', originalUrl);
+      let moderatedLink = null;
+      try {
+        const moderatedLinks = await ModeratedProductLink.filter({ 
+          original_url: originalUrl,
+          is_active: true 
+        });
+        if (moderatedLinks && moderatedLinks.length > 0) {
+          moderatedLink = moderatedLinks[0];
+          console.log('✅ Found moderated price:', moderatedLink);
+        }
+      } catch (e) {
+        console.log('No moderated price found, proceeding with AI extraction');
+      }
+
+      // If we have a moderated price, use it directly and skip AI extraction
+      if (moderatedLink) {
+        const expectedCurrency = siteInfo[selectedSite]?.currency || 'USD';
+
+        // Use the moderated data
+        const productName = moderatedLink.product_name || nameFromUrl(url) || 'מוצר Brandy Melville';
+        const extractedSku = moderatedLink.product_sku || 'SKU לא נמצא';
+
+        // Check for existing image
+        let finalImageUrl = null;
+        if (extractedSku && extractedSku !== 'SKU לא נמצא') {
+          const existingImage = await findImageForSku(extractedSku);
+          if (existingImage) {
+            console.log('✅ Using existing image from database for SKU:', extractedSku, existingImage);
+            finalImageUrl = existingImage;
+          }
+        }
+
+        setCurrentItem({
+          product_url: originalUrl,
+          product_name: productName,
+          product_sku: extractedSku,
+          product_description: moderatedLink.admin_notes || 'תיאור לא זמין',
+          original_price: moderatedLink.moderated_price,
+          color: '',
+          size: '',
+          quantity: 1,
+          original_currency: moderatedLink.moderated_currency,
+          item_image_url: finalImageUrl,
+          available_colors: [],
+          available_sizes: [],
+          site: selectedSite
+        });
+        setStep(3);
+        setLoading(false);
+        return;
+      }
 
       // שלב 1: חילוץ מטא-דאטה מובנה (מהיר ומדויק)
       console.log('🔍 Extracting structured metadata...');
