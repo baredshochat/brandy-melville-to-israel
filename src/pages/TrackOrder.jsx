@@ -362,35 +362,33 @@ export default function TrackOrder() {
                 </div>
 
                 {/* Order Items Preview */}
-                {order?.items && Array.isArray(order.items) && order.items.length > 0 &&
-              <div className="mt-6 sm:mt-8 p-4 sm:p-6 bg-white/50 border border-stone-200/50">
+                {order?.items && Array.isArray(order.items) && order.items.length > 0 && (
+                  <div className="mt-6 sm:mt-8 p-4 sm:p-6 bg-white/50 border border-stone-200/50">
                     <h4 className="text-base sm:text-lg font-light text-stone-800 mb-3 sm:mb-4">הפריטים שלך</h4>
                     <div className="space-y-2 sm:space-y-3">
-                      {order?.items?.slice(0, 3).map((item, index) =>
-                  <div key={index} className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
+                      {order.items.slice(0, 3).map((item, index) => (
+                        <div key={index} className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
                           <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-rose-300 flex-shrink-0"></div>
                           <span className="font-light text-stone-700 line-clamp-1">{item.product_name}</span>
                           <span className="text-stone-500">·</span>
                           <span className="text-stone-500 font-light whitespace-nowrap">כמות: {item.quantity}</span>
                         </div>
-                  )}
-                      {order?.items && order.items.length > 3 &&
-                  <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
+                      ))}
+                      {order.items.length > 3 && (
+                        <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
                           <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-stone-300 flex-shrink-0"></div>
                           <span className="text-stone-500 font-light">
                             +{order.items.length - 3} פריטים נוספים
                           </span>
                         </div>
-                  }
+                      )}
                     </div>
-                  </div>
-                  }
                   </div>
                 )}
               </motion.div>
             )}
           </AnimatePresence>
-                  </div>
+        </div>
 
         {/* Footer Message */}
         <div className="text-center mt-8 sm:mt-12 px-3 sm:px-4 pb-6">
