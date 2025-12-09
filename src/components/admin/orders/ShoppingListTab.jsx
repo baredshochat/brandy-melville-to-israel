@@ -5,29 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Order } from "@/entities/Order";
-import { Package, Check, Filter, ListOrdered, Truck, ExternalLink, Trash2 } from "lucide-react";
+import { Filter, ListOrdered, ExternalLink, Trash2 } from "lucide-react";
 
-function groupKey(item, site, orderId) {
-  const base = [
-    item.product_sku || "",
-    (item.product_name || "").toLowerCase().trim(),
-    (item.color || "").toLowerCase().trim(),
-    (item.size || "").toLowerCase().trim(),
-    site || "",
-    orderId || "" // הפרדה לפי הזמנה/לקוח
-  ];
-  return base.join("|");
-}
-
-const ORDER_COLORS = [
-  'bg-rose-50 border-r-4 border-r-rose-300',
-  'bg-blue-50 border-r-4 border-r-blue-300',
-  'bg-green-50 border-r-4 border-r-green-300',
-  'bg-amber-50 border-r-4 border-r-amber-300',
-  'bg-purple-50 border-r-4 border-r-purple-300',
-  'bg-cyan-50 border-r-4 border-r-cyan-300',
-  'bg-orange-50 border-r-4 border-r-orange-300',
-  'bg-indigo-50 border-r-4 border-r-indigo-300',
+const statusOptions = [
+  { value: "needs_order", label: "צריך להזמין" },
+  { value: "ordered", label: "הוזמן" },
+  { value: "warehouse", label: "הגיע" }
 ];
 
 export default function ShoppingListTab({ orders, onUpdated }) {
@@ -88,57 +71,31 @@ export default function ShoppingListTab({ orders, onUpdated }) {
     return arr.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
   }, [orders, siteFilter, statusFilter, search]);
 
-  const deleteGroup = async (group) => {
-    if (!confirm(`למחוק את כל הפריטים של "${group.product_name}" מרשימת הקניות?`)) return;
+  const updateRow = async (row, changes) => {
+    const order = orders.find(o => o.id === row.order_id);
+    if (!order) return;
     
-    const ordersMap = new Map();
-    group.orders.forEach(({ order_id, item_index }) => {
-      if (!ordersMap.has(order_id)) ordersMap.set(order_id, []);
-      ordersMap.get(order_id).push(item_index);
+    // אם יש שינוי בסטטוס, נוסיף גם תאריך
+    if (changes.purchase_status) {
+      changes.last_purchase_status_date = new Date().toISOString();
+    }
+    
+    const newItems = (order.items || []).map((it, i) => {
+      if (i === row.index) {
+        return { ...it, ...changes };
+      }
+      return it;
     });
-
-    const promises = [];
-    ordersMap.forEach((indexes, orderId) => {
-      const o = orders.find(x => x.id === orderId);
-      if (!o) return;
-      // Remove items by filtering out the indexes
-      const newItems = (o.items || []).filter((it, i) => !indexes.includes(i));
-      promises.push(Order.update(orderId, { items: newItems }));
-    });
-
-    await Promise.all(promises);
+    await Order.update(order.id, { items: newItems });
     if (onUpdated) onUpdated();
   };
 
-  const markGroupAsOrdered = async (group) => {
-    // מיד מסתיר את הפריט מהתצוגה
-    setHiddenGroups(prev => new Set([...prev, group.key]));
-    
-    // מעדכן את כל הפריטים התואמים בכל ההזמנות ל-ordered + שומר רפרנס ספק אם הוזן
-    const ordersMap = new Map();
-    group.orders.forEach(({ order_id, item_index }) => {
-      if (!ordersMap.has(order_id)) ordersMap.set(order_id, []);
-      ordersMap.get(order_id).push(item_index);
-    });
-
-    const promises = [];
-    ordersMap.forEach((indexes, orderId) => {
-      const o = orders.find(x => x.id === orderId);
-      if (!o) return;
-      const newItems = (o.items || []).map((it, i) => {
-        if (indexes.includes(i)) {
-          return {
-            ...it,
-            purchase_status: "ordered",
-            supplier_order_ref: updateRef || it.supplier_order_ref || ""
-          };
-        }
-        return it;
-      });
-      promises.push(Order.update(orderId, { items: newItems }));
-    });
-
-    await Promise.all(promises);
+  const deleteItem = async (row) => {
+    if (!confirm(`האם למחוק את הפריט ${row.product_name} מההזמנה #${row.order_number}?`)) return;
+    const order = orders.find(o => o.id === row.order_id);
+    if (!order) return;
+    const newItems = (order.items || []).filter((it, i) => i !== row.index);
+    await Order.update(order.id, { items: newItems });
     if (onUpdated) onUpdated();
   };
 
@@ -148,7 +105,7 @@ export default function ShoppingListTab({ orders, onUpdated }) {
         <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <CardTitle className="flex items-center gap-2">
             <ListOrdered className="w-5 h-5" />
-            רשימת קניות - מה צריך להזמין מהספק
+            רשימת קניות - פריטים להזמנה מהספק
           </CardTitle>
           <div className="flex flex-col md:flex-row gap-2 md:items-center">
             <div className="flex items-center gap-2">
