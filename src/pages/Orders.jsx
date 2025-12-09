@@ -597,6 +597,14 @@ export default function Orders() {
                 subject,
                 body: emailHtml
               });
+              
+              // Update last email sent info
+              const now = new Date().toISOString();
+              await Order.update(orderId, {
+                last_email_sent_type: 'עדכון סטטוס',
+                last_email_sent_date: now,
+                last_email_sent_subject: subject
+              });
             } catch (emailError) {
               console.warn('Failed to send status update email:', emailError);
             }
@@ -628,8 +636,14 @@ export default function Orders() {
               body: emailHtml
             });
 
-            // Mark as emailed to avoid duplicates
-            await Order.update(orderId, { email_sent_to_customer: true });
+            // Mark as emailed to avoid duplicates and update last email info
+            const now = new Date().toISOString();
+            await Order.update(orderId, { 
+              email_sent_to_customer: true,
+              last_email_sent_type: 'אישור תשלום',
+              last_email_sent_date: now,
+              last_email_sent_subject: subject
+            });
           } catch (e) {
             console.warn('Payment confirmation email failed:', e);
           }
@@ -806,9 +820,13 @@ export default function Orders() {
 
       // Update reminder count and last reminder date
       const newReminderCount = (order.reminder_count || 0) + 1;
+      const now = new Date().toISOString();
       await Order.update(order.id, {
         reminder_count: newReminderCount,
-        last_reminder_date: new Date().toISOString()
+        last_reminder_date: now,
+        last_email_sent_type: 'תזכורת תשלום',
+        last_email_sent_date: now,
+        last_email_sent_subject: subject
       });
 
       alert('מייל תזכורת נשלח בהצלחה!');
@@ -860,8 +878,17 @@ export default function Orders() {
         body: emailHtml
       });
 
+      // Update last email sent info
+      const now = new Date().toISOString();
+      await Order.update(order.id, {
+        last_email_sent_type: 'עדכון סטטוס',
+        last_email_sent_date: now,
+        last_email_sent_subject: subject
+      });
+
       alert('מייל עדכון סטטוס נשלח בהצלחה!');
       setStatusUpdateDialog({ open: false, order: null, sending: false });
+      loadOrders();
     } catch (error) {
       console.error('Failed to send status update email:', error);
       const errorMsg = error?.message || error?.toString() || 'שגיאה לא ידועה';
@@ -1305,15 +1332,23 @@ export default function Orders() {
 
                                         {/* Status update email button for confirmed orders */}
                                         {order.status !== 'awaiting_payment' && (
-                                          <Button
-                                            size="sm"
-                                            variant="outline"
-                                            className="text-xs h-7 px-2 border-blue-300 text-blue-700 hover:bg-blue-50"
-                                            onClick={(e) => { e.stopPropagation(); openStatusUpdateDialog(order); }}
-                                          >
-                                            <Mail className="w-3 h-3 ml-1" />
-                                            שלח עדכון סטטוס
-                                          </Button>
+                                          <div className="flex flex-col items-end gap-1">
+                                            <Button
+                                              size="sm"
+                                              variant="outline"
+                                              className="text-xs h-7 px-2 border-blue-300 text-blue-700 hover:bg-blue-50"
+                                              onClick={(e) => { e.stopPropagation(); openStatusUpdateDialog(order); }}
+                                            >
+                                              <Mail className="w-3 h-3 ml-1" />
+                                              שלח עדכון סטטוס
+                                            </Button>
+                                            {order.last_email_sent_date && (
+                                              <div className="text-[9px] text-stone-500">
+                                                <div className="font-semibold">{order.last_email_sent_type}</div>
+                                                <div>{new Date(order.last_email_sent_date).toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'short' })}</div>
+                                              </div>
+                                            )}
+                                          </div>
                                         )}
                                       </div>
                                     </div>
