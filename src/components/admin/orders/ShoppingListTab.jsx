@@ -40,6 +40,12 @@ export default function ShoppingListTab({ orders, onUpdated }) {
     const dict = {};
     (orders || []).forEach((order) => {
       const site = order.site;
+      const orderStatus = order.status;
+      
+      // רק הזמנות מחו"ל (בריטניה או אירופה) שסטטוס שלהן pending
+      const isValidOrder = (site === 'uk' || site === 'eu') && orderStatus === 'pending';
+      if (!isValidOrder) return;
+      
       (order.items || []).forEach((it, idx) => {
         const ps = it.purchase_status || "needs_order";
         // מראים רק פריטים שצריך להזמין (או שלא סומנו עדיין)
