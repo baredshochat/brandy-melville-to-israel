@@ -31,6 +31,7 @@ export default function ProductPreview({ productData, onConfirm, onBack }) {
   const [refetching, setRefetching] = useState(false);
   const [refetchError, setRefetchError] = useState('');
   const [refetchSuccess, setRefetchSuccess] = useState(false);
+  const [hasModeratedPrice, setHasModeratedPrice] = useState(false);
 
   const getNameFromUrl = (url) => {
     try {
@@ -58,6 +59,12 @@ export default function ProductPreview({ productData, onConfirm, onBack }) {
         const n = getNameFromUrl(sanitized.product_url);
         if (n) sanitized.product_name = n;
       }
+      
+      // Check if this item has a moderated price (indicator: has _moderated flag or came from moderated link)
+      if (sanitized._from_moderated_link === true) {
+        setHasModeratedPrice(true);
+      }
+      
       t = setTimeout(() => setItemDetails(sanitized), 60);
     } else {setItemDetails(null);}
     return () => clearTimeout(t);
@@ -137,15 +144,18 @@ Example output:
       console.log("🔄 Refetch result:", result);
 
       // Update item details with new data
+      // IMPORTANT: If this product has a moderated price, DO NOT override the price
       const updatedItem = {
         ...itemDetails,
         product_name: result?.product_name || itemDetails.product_name,
         product_sku: result?.product_sku || itemDetails.product_sku,
         product_description: result?.product_description || itemDetails.product_description,
-        original_price: result?.price || itemDetails.original_price,
+        // Only update price if it's NOT a moderated price
+        original_price: hasModeratedPrice ? itemDetails.original_price : (result?.price || itemDetails.original_price),
         available_colors: Array.isArray(result?.available_colors) ? result.available_colors : itemDetails.available_colors,
         available_sizes: Array.isArray(result?.available_sizes) ? result.available_sizes : itemDetails.available_sizes,
-        original_currency: result?.currency_found || itemDetails.original_currency
+        // Only update currency if it's NOT a moderated price
+        original_currency: hasModeratedPrice ? itemDetails.original_currency : (result?.currency_found || itemDetails.original_currency)
       };
 
       setItemDetails(updatedItem);

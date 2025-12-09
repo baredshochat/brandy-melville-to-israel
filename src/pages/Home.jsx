@@ -577,7 +577,8 @@ export default function Home() {
           item_image_url: finalImageUrl,
           available_colors: [],
           available_sizes: [],
-          site: selectedSite
+          site: selectedSite,
+          _from_moderated_link: true // Flag to indicate this came from a moderated link
         });
         setStep(3);
         setLoading(false);
