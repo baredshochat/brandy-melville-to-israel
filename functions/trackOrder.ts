@@ -6,6 +6,18 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
  * Returns limited, safe order information for tracking purposes
  */
 Deno.serve(async (req) => {
+  // Handle OPTIONS for CORS
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type'
+      }
+    });
+  }
+
   try {
     const base44 = createClientFromRequest(req);
     

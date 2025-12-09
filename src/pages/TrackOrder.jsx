@@ -74,6 +74,7 @@ export default function TrackOrder() {
       setStatusLoading(false);
       
       try {
+        // Try to load custom status steps, but don't fail if unauthorized
         const steps = await OrderStatusSteps.list();
         if (!steps || steps.length === 0) return;
 
@@ -100,7 +101,8 @@ export default function TrackOrder() {
         
         setStatusSteps({ ...defaultStatusSteps, ...stepsObj });
       } catch (error) {
-        console.error("Failed to load status steps:", error);
+        // Silently fail if unauthorized (guest user) - use default steps
+        console.log("Using default status steps (guest mode)");
       }
     };
     loadStatusSteps();
