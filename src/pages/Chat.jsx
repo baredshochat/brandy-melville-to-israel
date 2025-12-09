@@ -8,6 +8,7 @@ import { InvokeLLM, SendEmail } from '@/integrations/Core';
 import { User } from '@/entities/User';
 import { Feedback } from '@/entities/Feedback';
 import { ChatConversation } from '@/entities/ChatConversation';
+import { Order } from '@/entities/Order';
 import MessageContent from '../components/chat/MessageContent';
 
 // The context for the AI assistant
@@ -23,9 +24,13 @@ const CONTEXT_PROMPT = `
 ========================
 📦 נושאי מענה קבועים:
 
-1. סטטוס הזמנה
+1. סטטוס הזמנה / חיפוש מספר הזמנה
 - ברירת מחדל: "אפשר לעקוב אחרי ההזמנה באתר שלנו במדור 'מעקב משלוח' 📦."
-- אם הלקוחה לא מוצאת, בקש את שמה המלא, המייל ומספר ההזמנה, וחפש את הסטטוס.
+- אם הלקוחה לא מוצאת את מספר ההזמנה או לא זוכרת אותו, אמרי לה: "בטח! אני יכולה לעזור לך למצוא את ההזמנה שלך 🔍 כדי לאתר אותה, אני צריכה שלוש פרטים: שם מלא, כתובת אימייל ומספר טלפון."
+- לאחר שהלקוחה מספקת את הפרטים, השתמשי בפורמט המיוחד הבא בדיוק (ללא שינויים):
+  [SEARCH_ORDER:שם_מלא|כתובת_אימייל|מספר_טלפון]
+  לדוגמה: [SEARCH_ORDER:שרה כהן|sara@example.com|0501234567]
+- המערכת תחפש את ההזמנה אוטומטית ותציג את התוצאות.
 
 2. זמני אספקה
 2.1 הזמנות מחו"ל (אירופה/בריטניה):
@@ -180,12 +185,66 @@ export default function ChatPage() {
           response = response.replace('[END_OF_CONVERSATION]', '').trim();
       }
 
-      const botMessage = { role: 'bot', content: response };
-      setMessages((prev) => {
-        const updated = [...prev, botMessage];
-        saveConversation(updated);
-        return updated;
-      });
+      // Check if bot wants to search for an order
+      const searchMatch = response.match(/\[SEARCH_ORDER:([^\]]+)\]/);
+      if (searchMatch) {
+        const [fullName, email, phone] = searchMatch[1].split('|').map(s => s.trim());
+        
+        // Remove the search command from response
+        response = response.replace(searchMatch[0], '').trim();
+        
+        // Show bot response first
+        const botMessage = { role: 'bot', content: response || 'מחפשת את ההזמנה שלך... רגע אחד 🔍' };
+        setMessages((prev) => {
+          const updated = [...prev, botMessage];
+          saveConversation(updated);
+          return updated;
+        });
+
+        // Search for orders
+        try {
+          let orders = await Order.list();
+          
+          // Filter by provided details
+          orders = orders.filter(order => {
+            const nameMatch = fullName && order.customer_name?.toLowerCase().includes(fullName.toLowerCase());
+            const emailMatch = email && order.customer_email?.toLowerCase() === email.toLowerCase();
+            const phoneMatch = phone && order.customer_phone?.replace(/\D/g, '').includes(phone.replace(/\D/g, ''));
+            return nameMatch || emailMatch || phoneMatch;
+          });
+
+          let searchResultMessage = '';
+          if (orders.length === 0) {
+            searchResultMessage = 'לא מצאתי הזמנות תואמות לפרטים שסיפקת 😔 אולי יש טעות קטנה באיזה שהוא פרט? נסי שוב או פני אלינו בווטסאפ 055-7045322';
+          } else if (orders.length === 1) {
+            const order = orders[0];
+            searchResultMessage = `מצאתי את ההזמנה שלך! 🎉\n\nמספר הזמנה: ${order.order_number}\nסטטוס: ${order.status}\nתאריך ביצוע: ${new Date(order.created_date).toLocaleDateString('he-IL')}\n\nכדי לעקוב אחרי ההזמנה, היכנסי למעקב משלוח והזיני את מספר ההזמנה 📦`;
+          } else {
+            searchResultMessage = `מצאתי ${orders.length} הזמנות שלך:\n\n` + 
+              orders.map(o => `• ${o.order_number} (${o.status}) - ${new Date(o.created_date).toLocaleDateString('he-IL')}`).join('\n') +
+              '\n\nכדי לעקוב אחרי הזמנה ספציפית, היכנסי למעקב משלוח והזיני את מספר ההזמנה 📦';
+          }
+
+          const searchResultMsg = { role: 'bot', content: searchResultMessage };
+          setMessages((prev) => {
+            const updated = [...prev, searchResultMsg];
+            saveConversation(updated);
+            return updated;
+          });
+        } catch (error) {
+          console.error('Error searching orders:', error);
+          const errorMsg = { role: 'bot', content: 'אופס, הייתה בעיה בחיפוש ההזמנה 😔 נסי שוב בעוד רגע או פני אלינו בווטסאפ 055-7045322' };
+          setMessages((prev) => [...prev, errorMsg]);
+        }
+      } else {
+        // Normal response without search
+        const botMessage = { role: 'bot', content: response };
+        setMessages((prev) => {
+          const updated = [...prev, botMessage];
+          saveConversation(updated);
+          return updated;
+        });
+      }
       
       // Check for frustration keywords
       const frustrationKeywords = ['לא עזר', 'לא הבנתי', 'לא מבינה', 'לא עונה', 'נציג', 'אנושי', 'בן אדם', 'מתסכל', 'לא רלוונטי', 'שטויות', 'לא נכון', 'טעות', 'בעיה', 'לא פתר', 'עדיין לא', 'כבר שאלתי', 'שוב', 'לא מספיק'];
