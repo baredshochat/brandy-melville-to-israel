@@ -2,11 +2,14 @@ import React, { useState, useEffect } from "react";
 import { LocalStockItem } from "@/entities/LocalStockItem";
 import { CartItem } from "@/entities/CartItem";
 import { User } from "@/entities/User";
+import { BackInStockNotification } from "@/entities/BackInStockNotification";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ShoppingCart, Search, ArrowRight, Loader2, CheckCircle, Plus, Settings } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { ShoppingCart, Search, ArrowRight, Loader2, CheckCircle, Plus, Settings, Bell } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPageUrl } from "@/utils";
 import DiscountBanner from '../components/home/DiscountBanner';
@@ -28,9 +31,21 @@ export default function LocalStock() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [addingToCart, setAddingToCart] = useState({});
   const [addedItems, setAddedItems] = useState(new Set());
+  const [notifyDialogOpen, setNotifyDialogOpen] = useState(false);
+  const [selectedItemForNotify, setSelectedItemForNotify] = useState(null);
+  const [notifyEmail, setNotifyEmail] = useState('');
+  const [notifyName, setNotifyName] = useState('');
+  const [submittingNotification, setSubmittingNotification] = useState(false);
+  const [allItems, setAllItems] = useState([]);
 
   useEffect(() => {
-    User.me().then(setUser).catch(() => setUser(null));
+    User.me().then(u => {
+      setUser(u);
+      if (u) {
+        setNotifyEmail(u.email || '');
+        setNotifyName(u.full_name || '');
+      }
+    }).catch(() => setUser(null));
     loadItems();
   }, []);
 
@@ -38,6 +53,7 @@ export default function LocalStock() {
     setLoading(true);
     try {
       const data = await LocalStockItem.filter({ is_available: true });
+      setAllItems(data);
       const inStockItems = data.filter(item => item.quantity_available > 0);
       setItems(inStockItems);
     } catch (error) {
@@ -100,8 +116,37 @@ export default function LocalStock() {
 
     const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
 
-    return matchesSearch && matchesCategory && item.quantity_available > 0;
+    return matchesSearch && matchesCategory;
   });
+
+  const handleNotifyRequest = (item) => {
+    setSelectedItemForNotify(item);
+    setNotifyDialogOpen(true);
+  };
+
+  const handleSubmitNotification = async () => {
+    if (!notifyEmail || !selectedItemForNotify) return;
+    
+    setSubmittingNotification(true);
+    try {
+      await BackInStockNotification.create({
+        local_stock_item_id: selectedItemForNotify.id,
+        product_name: selectedItemForNotify.product_name,
+        customer_email: notifyEmail,
+        customer_name: notifyName,
+        notified: false
+      });
+      
+      alert('נרשמת בהצלחה! נעדכן אותך כשהפריט יחזור למלאי 💖');
+      setNotifyDialogOpen(false);
+      setSelectedItemForNotify(null);
+    } catch (error) {
+      console.error('Error submitting notification:', error);
+      alert('שגיאה בשמירת הבקשה');
+    } finally {
+      setSubmittingNotification(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-50 via-rose-50/30 to-stone-100 pb-12">
@@ -170,47 +215,68 @@ export default function LocalStock() {
               exit={{ opacity: 0, y: -20 }}
               transition={{ delay: index * 0.05 }}>
                   <Card
-                                    className="h-full overflow-hidden hover:shadow-lg transition-all duration-300 bg-white cursor-pointer group border-0 shadow-none"
-                                    onClick={() => window.location.href = createPageUrl('LocalStockItemDetail') + '?id=' + item.id}>
-                                      <CardContent className="p-0 relative">
-                                        {item.image_url &&
-                                    <div className="w-full bg-stone-50 overflow-hidden relative flex items-center justify-center" style={{ minHeight: '280px' }}>
-                                            <img
-                                        src={item.image_url}
-                                        alt={item.product_name}
-                                        className="w-full h-auto object-contain group-hover:scale-105 transition-transform duration-300"
-                                        style={{ maxHeight: '320px' }} />
-                                            <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleAddToCart(item);
-                                        }}
-                                        disabled={addingToCart[item.id] || addedItems.has(item.id)}
-                                        className="absolute bottom-1 left-1 w-6 h-6 bg-white/80 hover:bg-white flex items-center justify-center rounded-full shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
-                                              {addingToCart[item.id] ?
-                                        <Loader2 className="w-3 h-3 animate-spin text-stone-800" /> :
-                                        addedItems.has(item.id) ?
-                                        <CheckCircle className="w-3 h-3 text-green-600" /> :
-                                        <Plus className="w-3 h-3 text-stone-800" />
-                                        }
-                                            </button>
-                                          </div>
-                                    }
-                                        <div className="px-1 py-1">
-                                          <h3 className="font-medium text-xs text-stone-800 truncate">
-                                            {item.product_name}
-                                          </h3>
-                                          <div className="flex items-center gap-1">
-                                            <p className="text-stone-400 text-xs line-through">
-                                              ₪{item.price_ils}
-                                            </p>
-                                            <p className="text-rose-600 text-sm font-semibold">
-                                              ₪{Math.round(item.price_ils * 0.85)}
-                                            </p>
-                                          </div>
-                                        </div>
-                                      </CardContent>
-                                    </Card>
+                    className="h-full overflow-hidden hover:shadow-lg transition-all duration-300 bg-white cursor-pointer group border-0 shadow-none"
+                    onClick={() => item.quantity_available > 0 && (window.location.href = createPageUrl('LocalStockItemDetail') + '?id=' + item.id)}>
+                      <CardContent className="p-0 relative">
+                        {item.image_url &&
+                    <div className="w-full bg-stone-50 overflow-hidden relative flex items-center justify-center" style={{ minHeight: '280px' }}>
+                            <img
+                        src={item.image_url}
+                        alt={item.product_name}
+                        className={`w-full h-auto object-contain transition-transform duration-300 ${item.quantity_available === 0 ? 'opacity-40 grayscale' : 'group-hover:scale-105'}`}
+                        style={{ maxHeight: '320px' }} />
+                            {item.quantity_available === 0 ? (
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                <span className="bg-white px-3 py-1 text-sm font-medium text-stone-800">אזל מהמלאי</span>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleAddToCart(item);
+                                }}
+                                disabled={addingToCart[item.id] || addedItems.has(item.id)}
+                                className="absolute bottom-1 left-1 w-6 h-6 bg-white/80 hover:bg-white flex items-center justify-center rounded-full shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                                {addingToCart[item.id] ?
+                                  <Loader2 className="w-3 h-3 animate-spin text-stone-800" /> :
+                                  addedItems.has(item.id) ?
+                                  <CheckCircle className="w-3 h-3 text-green-600" /> :
+                                  <Plus className="w-3 h-3 text-stone-800" />
+                                }
+                              </button>
+                            )}
+                          </div>
+                    }
+                        <div className="px-1 py-1">
+                          <h3 className="font-medium text-xs text-stone-800 truncate">
+                            {item.product_name}
+                          </h3>
+                          <div className="flex items-center gap-1">
+                            {item.quantity_available === 0 ? (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleNotifyRequest(item);
+                                }}
+                                className="flex items-center gap-1 text-[10px] text-rose-600 hover:text-rose-700 underline"
+                              >
+                                <Bell className="w-3 h-3" />
+                                עדכן כשחוזר
+                              </button>
+                            ) : (
+                              <>
+                                <p className="text-stone-400 text-xs line-through">
+                                  ₪{item.price_ils}
+                                </p>
+                                <p className="text-rose-600 text-sm font-semibold">
+                                  ₪{Math.round(item.price_ils * 0.85)}
+                                </p>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
                 </motion.div>
             )}
             </AnimatePresence>
@@ -227,5 +293,49 @@ export default function LocalStock() {
           </Button>
         </div>
       </div>
+
+      {/* Notify Dialog */}
+      <Dialog open={notifyDialogOpen} onOpenChange={setNotifyDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>עדכון כשחוזר למלאי</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-stone-600">
+              נעדכן אותך במייל ברגע ש{selectedItemForNotify?.product_name} יחזור למלאי! 💖
+            </p>
+            <div className="space-y-2">
+              <Label>שם (אופציונלי)</Label>
+              <Input
+                value={notifyName}
+                onChange={(e) => setNotifyName(e.target.value)}
+                placeholder="השם שלך"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>אימייל *</Label>
+              <Input
+                type="email"
+                value={notifyEmail}
+                onChange={(e) => setNotifyEmail(e.target.value)}
+                placeholder="example@email.com"
+                required
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNotifyDialogOpen(false)}>
+              ביטול
+            </Button>
+            <Button
+              onClick={handleSubmitNotification}
+              disabled={!notifyEmail || submittingNotification}
+              className="bg-rose-500 hover:bg-rose-600"
+            >
+              {submittingNotification ? 'שומר...' : 'עדכן אותי'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>);
 }
