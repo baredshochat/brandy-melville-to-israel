@@ -14,6 +14,14 @@ import { base44 } from "@/api/base44Client";
 
 export default function TrackOrder() {
   const location = useLocation();
+  
+  // Safely handle the page load without requiring authentication
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  
   // Default status steps as constant
   const defaultStatusSteps = {
     awaiting_payment: { label: "ממתין לתשלום", step: 0, estimatedDays: 0, timeRange: "השלימי תשלום" },
@@ -145,8 +153,8 @@ export default function TrackOrder() {
   }, []);
 
   const currentStatusSource = isLocalOrder ? localStatusSteps : (statusSteps || defaultStatusSteps);
-  const currentStep = order && currentStatusSource[order.status] ? currentStatusSource[order.status].step : 0;
-  const currentStatusInfo = order && currentStatusSource[order.status] ? currentStatusSource[order.status] : null;
+  const currentStep = order?.status && currentStatusSource?.[order.status] ? currentStatusSource[order.status].step : 0;
+  const currentStatusInfo = order?.status && currentStatusSource?.[order.status] ? currentStatusSource[order.status] : null;
 
   // MEMO: סדר הסטטוסים למניעת sort בכל רינדור
   const sortedStatusEntries = useMemo(() => {
@@ -157,6 +165,15 @@ export default function TrackOrder() {
   const localSortedEntries = useMemo(() => {
     return Object.entries(localStatusSteps).sort(([, a], [, b]) => a.step - b.step);
   }, [localStatusSteps]);
+
+  // Ensure the component is mounted before rendering
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-stone-50 via-rose-50/30 to-stone-100 flex items-center justify-center">
+        <LottieLoader size={60} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-50 via-rose-50/30 to-stone-100">
@@ -337,11 +354,11 @@ export default function TrackOrder() {
                 </div>
 
                 {/* Order Items Preview */}
-                {order.items && order.items.length > 0 &&
+                {order?.items && Array.isArray(order.items) && order.items.length > 0 &&
               <div className="mt-6 sm:mt-8 p-4 sm:p-6 bg-white/50 border border-stone-200/50">
                     <h4 className="text-base sm:text-lg font-light text-stone-800 mb-3 sm:mb-4">הפריטים שלך</h4>
                     <div className="space-y-2 sm:space-y-3">
-                      {order.items.slice(0, 3).map((item, index) =>
+                      {order?.items?.slice(0, 3).map((item, index) =>
                   <div key={index} className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
                           <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-rose-300 flex-shrink-0"></div>
                           <span className="font-light text-stone-700 line-clamp-1">{item.product_name}</span>
@@ -349,7 +366,7 @@ export default function TrackOrder() {
                           <span className="text-stone-500 font-light whitespace-nowrap">כמות: {item.quantity}</span>
                         </div>
                   )}
-                      {order.items.length > 3 &&
+                      {order?.items && order.items.length > 3 &&
                   <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
                           <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-stone-300 flex-shrink-0"></div>
                           <span className="text-stone-500 font-light">

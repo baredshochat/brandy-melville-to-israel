@@ -80,13 +80,25 @@ Deno.serve(async (req) => {
     return Response.json({
       success: true,
       order: safeOrderData
-    }, { status: 200 });
+    }, { 
+      status: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'application/json'
+      }
+    });
 
   } catch (error) {
     console.error('Error tracking order:', error);
     return Response.json({
       success: false,
       error: 'שגיאה בחיפוש ההזמנה. נסי שוב בעוד כמה רגעים'
-    }, { status: 500 });
+    }, { 
+      status: 500,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'application/json'
+      }
+    });
   }
 });
