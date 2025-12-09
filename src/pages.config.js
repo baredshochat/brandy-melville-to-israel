@@ -21,6 +21,7 @@ import ReturnsPolicy from './pages/ReturnsPolicy';
 import ChatLogs from './pages/ChatLogs';
 import ProfitReports from './pages/ProfitReports';
 import CompletePayment from './pages/CompletePayment';
+import ModeratedProductLinks from './pages/ModeratedProductLinks';
 import __Layout from './Layout.jsx';
 
 
@@ -48,6 +49,7 @@ export const PAGES = {
     "ChatLogs": ChatLogs,
     "ProfitReports": ProfitReports,
     "CompletePayment": CompletePayment,
+    "ModeratedProductLinks": ModeratedProductLinks,
 }
 
 export const pagesConfig = {
