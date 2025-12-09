@@ -160,48 +160,48 @@ export default function TrackOrder() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-50 via-rose-50/30 to-stone-100">
       {/* Hero Section with Background */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-stone-100 to-rose-100/40 py-12 sm:py-20">
+      <div className="relative overflow-hidden bg-gradient-to-r from-stone-100 to-rose-100/40 py-8 sm:py-12 md:py-20">
         <div className="relative max-w-lg mx-auto text-center px-4">
-          <div className="flex justify-center mb-4 sm:mb-6">
-            <Heart className="w-10 h-10 sm:w-12 sm:h-12 text-rose-400 fill-rose-400/20" />
+          <div className="flex justify-center mb-3 sm:mb-4 md:mb-6">
+            <Heart className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-rose-400 fill-rose-400/20" />
           </div>
-          <h1 className="text-3xl sm:text-5xl font-light text-stone-800 mb-3 sm:mb-4 tracking-wide">
+          <h1 className="text-2xl sm:text-3xl md:text-5xl font-light text-stone-800 mb-2 sm:mb-3 md:mb-4 tracking-wide">
             איפה ההזמנה שלי?
           </h1>
-          <p className="text-base sm:text-lg text-stone-600 font-light">הזיני את מספר ההזמנה שלך</p>
+          <p className="text-sm sm:text-base md:text-lg text-stone-600 font-light">הזיני את מספר ההזמנה שלך</p>
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 -mt-6 sm:-mt-10 relative z-10">
+      <div className="max-w-lg mx-auto px-3 sm:px-4 -mt-4 sm:-mt-6 md:-mt-10 relative z-10">
         {/* Search Card */}
-        <div className="bg-white/95 backdrop-blur-sm border border-white/50 shadow-2xl shadow-stone-200/50 p-6 sm:p-8">
+        <div className="bg-white/95 backdrop-blur-sm border border-white/50 shadow-xl sm:shadow-2xl shadow-stone-200/50 p-4 sm:p-6 md:p-8">
 
-          <form onSubmit={searchOrder} className="space-y-4">
+          <form onSubmit={searchOrder} className="space-y-3 sm:space-y-4">
             <div className="relative">
               <Input
                 value={orderNumber}
                 onChange={(e) => setOrderNumber(e.target.value)}
                 placeholder="לדוגמה: BM12345"
-                className="h-14 text-lg text-center bg-stone-50/50 border-stone-200 focus:border-rose-300 focus:ring-rose-200 placeholder:text-stone-400 font-light tracking-wide"
+                className="h-12 sm:h-14 text-base sm:text-lg text-center bg-stone-50/50 border-stone-200 focus:border-rose-300 focus:ring-rose-200 placeholder:text-stone-400 font-light tracking-wide"
                 style={{ fontFamily: 'system-ui' }} />
 
             </div>
             <Button
               type="submit"
               disabled={loading}
-              className="w-full h-14 bg-stone-800 hover:bg-stone-900 text-white text-lg font-light tracking-wide transition-all duration-300">
+              className="w-full h-12 sm:h-14 bg-stone-800 hover:bg-stone-900 text-white text-base sm:text-lg font-light tracking-wide transition-all duration-300">
 
               {loading ?
-              <div className="flex items-center gap-3">
-                  <LottieLoader size={24} />
-                  מחפשים...
+            <div className="flex items-center gap-2 sm:gap-3">
+                  <LottieLoader size={20} className="sm:w-6 sm:h-6" />
+                  <span className="text-sm sm:text-base">מחפשים...</span>
                 </div> :
 
-              <div className="flex items-center gap-3">
-                  <Search className="w-5 h-5" />
-                  איפה ההזמנה שלי?
+            <div className="flex items-center gap-2 sm:gap-3">
+                  <Search className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span className="text-sm sm:text-base">איפה ההזמנה שלי?</span>
                 </div>
-              }
+            }
             </Button>
           </form>
 
@@ -212,57 +212,57 @@ export default function TrackOrder() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="mt-6 p-4 bg-rose-50 border border-rose-200 text-center">
+              className="mt-4 sm:mt-6 p-3 sm:p-4 bg-rose-50 border border-rose-200 text-center">
 
-                <p className="text-rose-800 font-light">{error}</p>
+                <p className="text-sm sm:text-base text-rose-800 font-light">{error}</p>
               </motion.div>
             }
 
             {order && statusSteps && Object.keys(statusSteps).length > 0 &&
-            <div className="mt-8">
+            <div className="mt-6 sm:mt-8">
 
                 {/* Order Header */}
-                <div className="text-center mb-8 p-6 bg-gradient-to-r from-stone-50 to-rose-50/30 border border-stone-200/50">
+                <div className="text-center mb-6 sm:mb-8 p-4 sm:p-6 bg-gradient-to-r from-stone-50 to-rose-50/30 border border-stone-200/50">
                   <div className="mb-2">
                     {isLocalOrder && (
-                      <span className="inline-block px-3 py-1 bg-rose-100 text-rose-800 text-xs font-medium">
+                      <span className="inline-block px-2 sm:px-3 py-1 bg-rose-100 text-rose-800 text-xs font-medium">
                         ⚡ מלאי מקומי - אספקה מהירה
                       </span>
                     )}
                   </div>
-                  <h3 className="text-2xl font-light text-stone-800 mb-2">
+                  <h3 className="text-xl sm:text-2xl font-light text-stone-800 mb-1 sm:mb-2">
                     הזמנה #{order.order_number}
                   </h3>
-                  <p className="text-stone-600 font-light">
+                  <p className="text-sm sm:text-base text-stone-600 font-light">
                     בוצעה ב-{order.created_date ? format(new Date(order.created_date), "d בMMMM, yyyy", { locale: he }) : 'זמן האחרון'}
                   </p>
                   
                   {/* Updated Time Estimate */}
                   {currentStatusInfo && currentStatusInfo.estimatedDays > 0 &&
-                <div className="mt-4 p-4 bg-white/70 border border-rose-200/50">
+                  <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-white/70 border border-rose-200/50">
                       <div className="flex items-center justify-center gap-2">
-                        <Clock className="w-4 h-4 text-rose-400" />
-                        <span className="text-stone-700 font-light">
+                        <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-rose-400" />
+                        <span className="text-sm sm:text-base text-stone-700 font-light">
                           זמן הגעה משוער: {currentStatusInfo.timeRange}
                         </span>
                       </div>
-                      <p className="text-xs text-stone-500 mt-1 font-light">
+                      <p className="text-[10px] sm:text-xs text-stone-500 mt-1 font-light">
                         {isLocalOrder ? 'ימי עסקים (לא כולל שישי-שבת וחגים)' : 'לפי הסטטוס הנוכחי'}
                       </p>
                     </div>
-                }
-                  
+                  }
+
                   {currentStatusInfo && currentStatusInfo.estimatedDays === 0 &&
-                  <div className="mt-4 p-4 bg-rose-50/50 border border-rose-200/50">
+                  <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-rose-50/50 border border-rose-200/50">
                       <div className="flex flex-col items-center justify-center gap-2">
-                        <LottieSuccess size={60} />
-                        <span className="text-rose-800 font-medium">
+                        <LottieSuccess size={50} className="sm:w-[60px] sm:h-[60px]" />
+                        <span className="text-sm sm:text-base text-rose-800 font-medium">
                           ההזמנה נמסרה! ✨
                         </span>
                       </div>
                     </div>
                   }
-                </div>
+                  </div>
 
                 {/* Status Timeline */}
                 <div className="space-y-0">
@@ -337,20 +337,20 @@ export default function TrackOrder() {
 
                 {/* Order Items Preview */}
                 {order.items && order.items.length > 0 &&
-              <div className="mt-8 p-6 bg-white/50 border border-stone-200/50">
-                    <h4 className="text-lg font-light text-stone-800 mb-4">הפריטים שלך</h4>
-                    <div className="space-y-3">
+              <div className="mt-6 sm:mt-8 p-4 sm:p-6 bg-white/50 border border-stone-200/50">
+                    <h4 className="text-base sm:text-lg font-light text-stone-800 mb-3 sm:mb-4">הפריטים שלך</h4>
+                    <div className="space-y-2 sm:space-y-3">
                       {order.items.slice(0, 3).map((item, index) =>
-                  <div key={index} className="flex items-center gap-3 text-sm">
-                          <div className="w-2 h-2 bg-rose-300"></div>
-                          <span className="font-light text-stone-700">{item.product_name}</span>
+                  <div key={index} className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
+                          <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-rose-300 flex-shrink-0"></div>
+                          <span className="font-light text-stone-700 line-clamp-1">{item.product_name}</span>
                           <span className="text-stone-500">·</span>
-                          <span className="text-stone-500 font-light">כמות: {item.quantity}</span>
+                          <span className="text-stone-500 font-light whitespace-nowrap">כמות: {item.quantity}</span>
                         </div>
                   )}
                       {order.items.length > 3 &&
-                  <div className="flex items-center gap-3 text-sm">
-                          <div className="w-2 h-2 bg-stone-300"></div>
+                  <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
+                          <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-stone-300 flex-shrink-0"></div>
                           <span className="text-stone-500 font-light">
                             +{order.items.length - 3} פריטים נוספים
                           </span>
@@ -365,16 +365,16 @@ export default function TrackOrder() {
                   </div>
 
         {/* Footer Message */}
-        <div className="text-center mt-12 px-4">
-          <p className="text-stone-500 font-light text-sm mb-4">
+        <div className="text-center mt-8 sm:mt-12 px-3 sm:px-4 pb-6">
+          <p className="text-stone-500 font-light text-xs sm:text-sm mb-3 sm:mb-4">
             יש לך שאלות? אנחנו כאן לעזור.
           </p>
           <Button
             asChild
-            className="w-auto px-6 py-3 bg-stone-800 hover:bg-stone-900 text-white text-base font-light tracking-wide transition-all duration-300"
+            className="w-auto px-4 sm:px-6 py-2 sm:py-3 bg-stone-800 hover:bg-stone-900 text-white text-sm sm:text-base font-light tracking-wide transition-all duration-300"
           >
             <Link to={createPageUrl('Chat')} className="flex items-center">
-              <MessageSquare className="w-4 h-4 ml-2" />
+              <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4 ml-2" />
               צ'אט עם נציגה
             </Link>
           </Button>
