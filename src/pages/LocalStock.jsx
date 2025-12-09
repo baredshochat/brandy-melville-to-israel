@@ -109,7 +109,7 @@ export default function LocalStock() {
     }
   };
 
-  const filteredItems = items.filter((item) => {
+  const filteredItems = allItems.filter((item) => {
     const matchesSearch = !searchQuery ||
     item.product_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.product_description && item.product_description.toLowerCase().includes(searchQuery.toLowerCase());
@@ -216,16 +216,16 @@ export default function LocalStock() {
               transition={{ delay: index * 0.05 }}>
                   <Card
                     className="h-full overflow-hidden hover:shadow-lg transition-all duration-300 bg-white cursor-pointer group border-0 shadow-none"
-                    onClick={() => item.quantity_available > 0 && (window.location.href = createPageUrl('LocalStockItemDetail') + '?id=' + item.id)}>
+                    onClick={() => (item.quantity_available > 0 && item.is_available) && (window.location.href = createPageUrl('LocalStockItemDetail') + '?id=' + item.id)}>
                       <CardContent className="p-0 relative">
                         {item.image_url &&
                     <div className="w-full bg-stone-50 overflow-hidden relative flex items-center justify-center" style={{ minHeight: '280px' }}>
                             <img
                         src={item.image_url}
                         alt={item.product_name}
-                        className={`w-full h-auto object-contain transition-transform duration-300 ${item.quantity_available === 0 ? 'opacity-40 grayscale' : 'group-hover:scale-105'}`}
+                        className={`w-full h-auto object-contain transition-transform duration-300 ${(item.quantity_available === 0 || !item.is_available) ? 'opacity-40 grayscale' : 'group-hover:scale-105'}`}
                         style={{ maxHeight: '320px' }} />
-                            {item.quantity_available === 0 ? (
+                            {(item.quantity_available === 0 || !item.is_available) ? (
                               <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                                 <span className="bg-white px-3 py-1 text-sm font-medium text-stone-800">אזל מהמלאי</span>
                               </div>
@@ -252,7 +252,7 @@ export default function LocalStock() {
                             {item.product_name}
                           </h3>
                           <div className="flex items-center gap-1">
-                            {item.quantity_available === 0 ? (
+                            {(item.quantity_available === 0 || !item.is_available) ? (
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
