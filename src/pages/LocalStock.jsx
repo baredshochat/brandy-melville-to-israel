@@ -223,13 +223,9 @@ export default function LocalStock() {
                             <img
                         src={item.image_url}
                         alt={item.product_name}
-                        className={`w-full h-auto object-contain transition-transform duration-300 ${(item.quantity_available === 0 || !item.is_available) ? 'opacity-40 grayscale' : 'group-hover:scale-105'}`}
+                        className={`w-full h-auto object-contain transition-transform duration-300 ${(item.quantity_available > 0 && item.is_available) ? 'group-hover:scale-105' : ''}`}
                         style={{ maxHeight: '320px' }} />
-                            {(item.quantity_available === 0 || !item.is_available) ? (
-                              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                                <span className="bg-white px-3 py-1 text-sm font-medium text-stone-800">אזל מהמלאי</span>
-                              </div>
-                            ) : (
+                            {(item.quantity_available === 0 || !item.is_available) ? null : (
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -251,18 +247,21 @@ export default function LocalStock() {
                           <h3 className="font-medium text-xs text-stone-800 truncate">
                             {item.product_name}
                           </h3>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 flex-wrap">
                             {(item.quantity_available === 0 || !item.is_available) ? (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleNotifyRequest(item);
-                                }}
-                                className="flex items-center gap-1 text-[10px] text-rose-600 hover:text-rose-700 underline"
-                              >
-                                <Bell className="w-3 h-3" />
-                                עדכן כשחוזר
-                              </button>
+                              <>
+                                <span className="text-[10px] text-stone-600 font-medium">Sold Out</span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleNotifyRequest(item);
+                                  }}
+                                  className="flex items-center gap-1 text-[10px] text-rose-600 hover:text-rose-700 underline"
+                                >
+                                  <Bell className="w-3 h-3" />
+                                  עדכן כשחזר
+                                </button>
+                              </>
                             ) : (
                               <>
                                 <p className="text-stone-400 text-xs line-through">
