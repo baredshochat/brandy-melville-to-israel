@@ -230,7 +230,7 @@ const calculateOrderPricing = (order) => {
 
 
 // Helper: Build nice HTML email for status updates
-function buildStatusUpdateEmailHTML({ customerName, orderNumber, statusLabel, trackUrl, chatUrl }) {
+function buildStatusUpdateEmailHTML({ customerName, orderNumber, statusLabel, statusDescription, trackUrl, chatUrl }) {
   const brand = "Brandy Melville to Israel";
   const primary = "#443E41";
   const accent = "#FFCAD4";
