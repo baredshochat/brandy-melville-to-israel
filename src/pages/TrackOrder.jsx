@@ -10,7 +10,7 @@ import { he } from 'date-fns/locale';
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { base44 } from "@/api/base44Client";
+import { trackOrder } from "@/functions/trackOrder";
 
 export default function TrackOrder() {
   const location = useLocation();
@@ -55,14 +55,14 @@ export default function TrackOrder() {
         setLoading(true);
         setError('');
         try {
-          const result = await base44.functions.invoke('trackOrder', {
+          const response = await trackOrder({
             order_number: orderNumberParam
           });
           
-          if (result.success) {
-            setOrder(result.order);
+          if (response.data.success) {
+            setOrder(response.data.order);
           } else {
-            setError(result.error || 'מספר ההזמנה לא נמצא במערכת שלנו');
+            setError(response.data.error || 'מספר ההזמנה לא נמצא במערכת שלנו');
           }
         } catch (err) {
           console.error('Track order error:', err);
@@ -126,14 +126,14 @@ export default function TrackOrder() {
     setOrder(null);
 
     try {
-      const result = await base44.functions.invoke('trackOrder', {
+      const response = await trackOrder({
         order_number: orderNumber
       });
       
-      if (result.success) {
-        setOrder(result.order);
+      if (response.data.success) {
+        setOrder(response.data.order);
       } else {
-        setError(result.error || 'מספר ההזמנה לא נמצא במערכת שלנו');
+        setError(response.data.error || 'מספר ההזמנה לא נמצא במערכת שלנו');
       }
     } catch (err) {
       console.error('Track order error:', err);
