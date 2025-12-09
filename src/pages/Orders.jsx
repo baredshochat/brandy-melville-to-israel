@@ -263,8 +263,12 @@ function buildStatusUpdateEmailHTML({ customerName, orderNumber, statusLabel, st
         <h1 style="margin:0 0 8px 0;color:${primary};font-size:20px}>היי ${customerName || 'יקרה'} 🌸</h1>
         <p style="margin:0 0 10px 0;color:${primary};line-height:1.7">
           עדכנו את סטטוס ההזמנה שלך ל<strong> "${statusLabel}"</strong>.
-          רצינו להגיד תודה על הסבלנות והאמון — אנחנו על זה ומטפלות בכל אהבה! ✨
         </p>
+
+        ${statusDescription ? `
+        <p style="margin:0 0 16px 0;color:${primary};line-height:1.7;font-size:15px">
+          ${statusDescription}
+        </p>` : ''}
 
         <div style="margin:16px 0;padding:14px;border:1px dashed ${border};background:${accent}11;color:${primary}">
           סטטוס נוכחי: <strong>${statusLabel}</strong>
