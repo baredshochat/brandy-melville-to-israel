@@ -204,7 +204,7 @@ export default function ChatPage() {
         // Search for orders
         try {
           let orders = await Order.list();
-          
+
           // Filter by provided details
           orders = orders.filter(order => {
             const nameMatch = fullName && order.customer_name?.toLowerCase().includes(fullName.toLowerCase());
@@ -213,15 +213,33 @@ export default function ChatPage() {
             return nameMatch || emailMatch || phoneMatch;
           });
 
+          // Status descriptions from Orders.js
+          const statusDescriptions = {
+            awaiting_payment: { label: "ממתין לתשלום", desc: "ההזמנה ממתינה לתשלום. לאחר השלמת התשלום, נתחיל לטפל בה באהבה! 💖", eta: "" },
+            pending: { label: "התקבלה", desc: "איזה כיף! ההזמנה התקבלה אצלנו במערכת ואנחנו מתחילים לטפל בה עבורך! ✨", eta: "3-4 שבועות" },
+            ordered: { label: "הוזמן", desc: "הפריטים המהממים שלך הוזמנו מספק Brandy Melville בחו״ל.", eta: "2.5-3 שבועות" },
+            warehouse: { label: "במחסן", desc: "ההזמנה הגיעה למחסן שלנו בחו״ל ועוברת בדיקת איכות קפדנית.", eta: "2-3 שבועות" },
+            shipping_to_israel: { label: "בדרך לישראל", desc: "ההזמנה שלך בדרכה לישראל! עוד קצת סבלנות והיא אצלך. ✈️", eta: "1.5-2 שבועות" },
+            in_israel: { label: "בארץ", desc: "ההזמנה הגיעה לישראל, ואנחנו דואגים לשחרור מהיר מהמכס.", eta: "3-7 ימים" },
+            shipping_to_customer: { label: "בדרך ללקוחה", desc: "ההזמנה נמסרה לשליח המקסים שלנו והיא בדרכה אלייך! 📦 תיהי זמינה בימים הקרובים לתיאום המסירה", eta: "1-3 ימים" },
+            delivered: { label: "נמסר", desc: "יש! ההזמנה נמסרה בהצלחה! תתחדשי ותיהני מהפריטים! 😊", eta: "הושלם" }
+          };
+
           let searchResultMessage = '';
           if (orders.length === 0) {
             searchResultMessage = 'לא מצאתי הזמנות תואמות לפרטים שסיפקת 😔 אולי יש טעות קטנה באיזה שהוא פרט? נסי שוב או פני אלינו בווטסאפ 055-7045322';
           } else if (orders.length === 1) {
             const order = orders[0];
-            searchResultMessage = `מצאתי את ההזמנה שלך! 🎉\n\nמספר הזמנה: ${order.order_number}\nסטטוס: ${order.status}\nתאריך ביצוע: ${new Date(order.created_date).toLocaleDateString('he-IL')}\n\nכדי לעקוב אחרי ההזמנה, היכנסי למעקב משלוח והזיני את מספר ההזמנה 📦`;
+            const statusInfo = statusDescriptions[order.status] || { label: order.status, desc: '', eta: '' };
+            const isLocal = order.site === 'local';
+
+            searchResultMessage = `מצאתי את ההזמנה שלך! 🎉\n\n📦 מספר הזמנה: ${order.order_number}\n📅 תאריך ביצוע: ${new Date(order.created_date).toLocaleDateString('he-IL')}\n\n✨ סטטוס נוכחי: ${statusInfo.label}\n${statusInfo.desc}\n\n⏰ זמן משוער להגעה: ${isLocal ? '3-7 ימי עסקים' : statusInfo.eta}\n\nכדי לעקוב אחרי ההזמנה בזמן אמת, היכנסי למעקב משלוח והזיני את מספר ההזמנה 📱`;
           } else {
             searchResultMessage = `מצאתי ${orders.length} הזמנות שלך:\n\n` + 
-              orders.map(o => `• ${o.order_number} (${o.status}) - ${new Date(o.created_date).toLocaleDateString('he-IL')}`).join('\n') +
+              orders.map(o => {
+                const statusInfo = statusDescriptions[o.status] || { label: o.status };
+                return `• ${o.order_number}\n  סטטוס: ${statusInfo.label}\n  תאריך: ${new Date(o.created_date).toLocaleDateString('he-IL')}`;
+              }).join('\n\n') +
               '\n\nכדי לעקוב אחרי הזמנה ספציפית, היכנסי למעקב משלוח והזיני את מספר ההזמנה 📦';
           }
 
