@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Order } from "@/entities/Order";
-import { Truck, PackageSearch, ArrowRightLeft, CheckCircle2 } from "lucide-react";
+import { Truck, PackageSearch, ArrowRightLeft, CheckCircle2, Trash2, Edit } from "lucide-react";
 
 const statusOptions = [
   { value: "ordered", label: "הוזמן" },
@@ -19,6 +19,7 @@ export default function SupplierTrackingTab({ orders, onUpdated }) {
   const [siteFilter, setSiteFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("ordered");
   const [search, setSearch] = useState("");
+  const [editingRow, setEditingRow] = useState(null);
 
   const rows = useMemo(() => {
     const out = [];
@@ -74,6 +75,40 @@ export default function SupplierTrackingTab({ orders, onUpdated }) {
     await Order.update(order.id, { items: newItems });
     if (onUpdated) onUpdated();
   };
+
+  const deleteItem = async (row) => {
+    if (!confirm(`האם למחוק את הפריט ${row.product_name} מההזמנה #${row.order_number}?`)) return;
+    const order = orders.find(o => o.id === row.order_id);
+    if (!order) return;
+    const newItems = (order.items || []).filter((it, i) => i !== row.index);
+    await Order.update(order.id, { items: newItems });
+    if (onUpdated) onUpdated();
+  };
+
+  const startEditing = (row) => {
+    setEditingRow({
+      key: `${row.order_id}-${row.index}`,
+      ...row
+    });
+  };
+
+  const saveEdit = async () => {
+    if (!editingRow) return;
+    const { key, order_id, index, ...changes } = editingRow;
+    const order = orders.find(o => o.id === order_id);
+    if (!order) return;
+    const newItems = (order.items || []).map((it, i) => {
+      if (i === index) {
+        return { ...it, ...changes };
+      }
+      return it;
+    });
+    await Order.update(order_id, { items: newItems });
+    setEditingRow(null);
+    if (onUpdated) onUpdated();
+  };
+
+  const cancelEdit = () => setEditingRow(null);
 
   return (
     <div className="space-y-4">
@@ -137,73 +172,163 @@ export default function SupplierTrackingTab({ orders, onUpdated }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((r, idx) => (
-                    <tr key={`${r.order_id}-${r.index}`} className="border-b hover:bg-stone-50">
-                      <td className="p-3">#{r.order_number}</td>
-                      <td className="p-3">{r.product_name}</td>
-                      <td className="p-3">{r.product_sku || "-"}</td>
-                      <td className="p-3">{r.color || "-"}</td>
-                      <td className="p-3">{r.size || "-"}</td>
-                      <td className="p-3">{r.quantity}</td>
-                      <td className="p-3">{r.site?.toUpperCase()}</td>
-                      <td className="p-3">
-                        <Select
-                          value={r.purchase_status}
-                          onValueChange={(val) => updateRow(r, { purchase_status: val })}
-                        >
-                          <SelectTrigger className="w-44">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {statusOptions.map(opt => (
-                              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </td>
-                      <td className="p-3">
-                        <Input
-                          value={r.supplier_order_ref}
-                          onChange={(e) => updateRow(r, { supplier_order_ref: e.target.value })}
-                          placeholder="לדוג׳ BM-12345"
-                          className="w-40"
-                        />
-                      </td>
-                      <td className="p-3">
-                        <Input
-                          value={r.carrier}
-                          onChange={(e) => updateRow(r, { carrier: e.target.value })}
-                          placeholder="DHL / UPS"
-                          className="w-36"
-                        />
-                      </td>
-                      <td className="p-3">
-                        <Input
-                          value={r.tracking_number}
-                          onChange={(e) => updateRow(r, { tracking_number: e.target.value })}
-                          placeholder="מס׳ מעקב"
-                          className="w-40"
-                        />
-                      </td>
-                      <td className="p-3">
-                        <Input
-                          type="date"
-                          value={r.eta_date || ""}
-                          onChange={(e) => updateRow(r, { eta_date: e.target.value })}
-                          className="w-40"
-                        />
-                      </td>
-                      <td className="p-3">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => updateRow(r, { purchase_status: "in_transit" })}
-                        >
-                          העבר ל"בדרך" <ArrowRightLeft className="w-4 h-4 mr-2" />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
+                  {rows.map((r, idx) => {
+                    const rowKey = `${r.order_id}-${r.index}`;
+                    const isEditing = editingRow?.key === rowKey;
+                    
+                    return (
+                      <tr key={rowKey} className="border-b hover:bg-stone-50">
+                        <td className="p-3">#{r.order_number}</td>
+                        <td className="p-3">
+                          {isEditing ? (
+                            <Input
+                              value={editingRow.product_name}
+                              onChange={(e) => setEditingRow({...editingRow, product_name: e.target.value})}
+                              className="w-full"
+                            />
+                          ) : r.product_name}
+                        </td>
+                        <td className="p-3">
+                          {isEditing ? (
+                            <Input
+                              value={editingRow.product_sku}
+                              onChange={(e) => setEditingRow({...editingRow, product_sku: e.target.value})}
+                              className="w-full"
+                            />
+                          ) : (r.product_sku || "-")}
+                        </td>
+                        <td className="p-3">
+                          {isEditing ? (
+                            <Input
+                              value={editingRow.color}
+                              onChange={(e) => setEditingRow({...editingRow, color: e.target.value})}
+                              className="w-full"
+                            />
+                          ) : (r.color || "-")}
+                        </td>
+                        <td className="p-3">
+                          {isEditing ? (
+                            <Input
+                              value={editingRow.size}
+                              onChange={(e) => setEditingRow({...editingRow, size: e.target.value})}
+                              className="w-full"
+                            />
+                          ) : (r.size || "-")}
+                        </td>
+                        <td className="p-3">
+                          {isEditing ? (
+                            <Input
+                              type="number"
+                              value={editingRow.quantity}
+                              onChange={(e) => setEditingRow({...editingRow, quantity: parseInt(e.target.value) || 1})}
+                              className="w-20"
+                            />
+                          ) : r.quantity}
+                        </td>
+                        <td className="p-3">{r.site?.toUpperCase()}</td>
+                        <td className="p-3">
+                          <Select
+                            value={isEditing ? editingRow.purchase_status : r.purchase_status}
+                            onValueChange={(val) => {
+                              if (isEditing) {
+                                setEditingRow({...editingRow, purchase_status: val});
+                              } else {
+                                updateRow(r, { purchase_status: val });
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="w-44">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {statusOptions.map(opt => (
+                                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </td>
+                        <td className="p-3">
+                          <Input
+                            value={isEditing ? editingRow.supplier_order_ref : r.supplier_order_ref}
+                            onChange={(e) => {
+                              if (isEditing) {
+                                setEditingRow({...editingRow, supplier_order_ref: e.target.value});
+                              } else {
+                                updateRow(r, { supplier_order_ref: e.target.value });
+                              }
+                            }}
+                            placeholder="לדוג׳ BM-12345"
+                            className="w-40"
+                          />
+                        </td>
+                        <td className="p-3">
+                          <Input
+                            value={isEditing ? editingRow.carrier : r.carrier}
+                            onChange={(e) => {
+                              if (isEditing) {
+                                setEditingRow({...editingRow, carrier: e.target.value});
+                              } else {
+                                updateRow(r, { carrier: e.target.value });
+                              }
+                            }}
+                            placeholder="DHL / UPS"
+                            className="w-36"
+                          />
+                        </td>
+                        <td className="p-3">
+                          <Input
+                            value={isEditing ? editingRow.tracking_number : r.tracking_number}
+                            onChange={(e) => {
+                              if (isEditing) {
+                                setEditingRow({...editingRow, tracking_number: e.target.value});
+                              } else {
+                                updateRow(r, { tracking_number: e.target.value });
+                              }
+                            }}
+                            placeholder="מס׳ מעקב"
+                            className="w-40"
+                          />
+                        </td>
+                        <td className="p-3">
+                          <Input
+                            type="date"
+                            value={isEditing ? editingRow.eta_date : (r.eta_date || "")}
+                            onChange={(e) => {
+                              if (isEditing) {
+                                setEditingRow({...editingRow, eta_date: e.target.value});
+                              } else {
+                                updateRow(r, { eta_date: e.target.value });
+                              }
+                            }}
+                            className="w-40"
+                          />
+                        </td>
+                        <td className="p-3">
+                          <div className="flex gap-2">
+                            {isEditing ? (
+                              <>
+                                <Button variant="default" size="sm" onClick={saveEdit}>
+                                  שמור
+                                </Button>
+                                <Button variant="outline" size="sm" onClick={cancelEdit}>
+                                  ביטול
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                <Button variant="outline" size="sm" onClick={() => startEditing(r)}>
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button variant="destructive" size="sm" onClick={() => deleteItem(r)}>
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
