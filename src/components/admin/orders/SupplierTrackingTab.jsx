@@ -62,28 +62,6 @@ export default function SupplierTrackingTab({ orders, onUpdated }) {
     return arr.sort((a,b) => (a.site||"").localeCompare(b.site||"") || (a.order_number||"").localeCompare(b.order_number||""));
   }, [orders, siteFilter, statusFilter, search]);
 
-  // State for inline editing
-  const [editingField, setEditingField] = useState(null);
-  const [editValue, setEditValue] = useState("");
-
-  const startEdit = (rowKey, field, currentValue) => {
-    setEditingField({ rowKey, field });
-    setEditValue(currentValue || "");
-  };
-
-  const cancelEdit = () => {
-    setEditingField(null);
-    setEditValue("");
-  };
-
-  const saveEdit = async (row) => {
-    if (!editingField) return;
-    const { field } = editingField;
-    await updateRow(row, { [field]: editValue });
-    setEditingField(null);
-    setEditValue("");
-  };
-
   const updateRow = async (row, changes) => {
     const order = orders.find(o => o.id === row.order_id);
     if (!order) return;
@@ -184,108 +162,36 @@ export default function SupplierTrackingTab({ orders, onUpdated }) {
                         </Select>
                       </td>
                       <td className="p-3">
-                        {editingField?.rowKey === `${r.order_id}-${r.index}` && editingField?.field === "supplier_order_ref" ? (
-                          <div className="flex gap-1">
-                            <Input
-                              value={editValue}
-                              onChange={(e) => setEditValue(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") saveEdit(r);
-                                if (e.key === "Escape") cancelEdit();
-                              }}
-                              placeholder="לדוג׳ BM-12345"
-                              className="w-32"
-                              autoFocus
-                            />
-                            <Button size="sm" onClick={() => saveEdit(r)}>✓</Button>
-                            <Button size="sm" variant="outline" onClick={cancelEdit}>✕</Button>
-                          </div>
-                        ) : (
-                          <div 
-                            onClick={() => startEdit(`${r.order_id}-${r.index}`, "supplier_order_ref", r.supplier_order_ref)}
-                            className="cursor-pointer hover:bg-stone-100 p-1 rounded min-h-[24px]"
-                          >
-                            {r.supplier_order_ref || <span className="text-stone-400">לחץ לעריכה</span>}
-                          </div>
-                        )}
+                        <Input
+                          value={r.supplier_order_ref}
+                          onChange={(e) => updateRow(r, { supplier_order_ref: e.target.value })}
+                          placeholder="לדוג׳ BM-12345"
+                          className="w-40"
+                        />
                       </td>
                       <td className="p-3">
-                        {editingField?.rowKey === `${r.order_id}-${r.index}` && editingField?.field === "carrier" ? (
-                          <div className="flex gap-1">
-                            <Input
-                              value={editValue}
-                              onChange={(e) => setEditValue(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") saveEdit(r);
-                                if (e.key === "Escape") cancelEdit();
-                              }}
-                              placeholder="DHL / UPS"
-                              className="w-28"
-                              autoFocus
-                            />
-                            <Button size="sm" onClick={() => saveEdit(r)}>✓</Button>
-                            <Button size="sm" variant="outline" onClick={cancelEdit}>✕</Button>
-                          </div>
-                        ) : (
-                          <div 
-                            onClick={() => startEdit(`${r.order_id}-${r.index}`, "carrier", r.carrier)}
-                            className="cursor-pointer hover:bg-stone-100 p-1 rounded min-h-[24px]"
-                          >
-                            {r.carrier || <span className="text-stone-400">לחץ לעריכה</span>}
-                          </div>
-                        )}
+                        <Input
+                          value={r.carrier}
+                          onChange={(e) => updateRow(r, { carrier: e.target.value })}
+                          placeholder="DHL / UPS"
+                          className="w-36"
+                        />
                       </td>
                       <td className="p-3">
-                        {editingField?.rowKey === `${r.order_id}-${r.index}` && editingField?.field === "tracking_number" ? (
-                          <div className="flex gap-1">
-                            <Input
-                              value={editValue}
-                              onChange={(e) => setEditValue(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") saveEdit(r);
-                                if (e.key === "Escape") cancelEdit();
-                              }}
-                              placeholder="מס׳ מעקב"
-                              className="w-32"
-                              autoFocus
-                            />
-                            <Button size="sm" onClick={() => saveEdit(r)}>✓</Button>
-                            <Button size="sm" variant="outline" onClick={cancelEdit}>✕</Button>
-                          </div>
-                        ) : (
-                          <div 
-                            onClick={() => startEdit(`${r.order_id}-${r.index}`, "tracking_number", r.tracking_number)}
-                            className="cursor-pointer hover:bg-stone-100 p-1 rounded min-h-[24px]"
-                          >
-                            {r.tracking_number || <span className="text-stone-400">לחץ לעריכה</span>}
-                          </div>
-                        )}
+                        <Input
+                          value={r.tracking_number}
+                          onChange={(e) => updateRow(r, { tracking_number: e.target.value })}
+                          placeholder="מס׳ מעקב"
+                          className="w-40"
+                        />
                       </td>
                       <td className="p-3">
-                        {editingField?.rowKey === `${r.order_id}-${r.index}` && editingField?.field === "eta_date" ? (
-                          <div className="flex gap-1">
-                            <Input
-                              type="date"
-                              value={editValue}
-                              onChange={(e) => setEditValue(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") saveEdit(r);
-                                if (e.key === "Escape") cancelEdit();
-                              }}
-                              className="w-36"
-                              autoFocus
-                            />
-                            <Button size="sm" onClick={() => saveEdit(r)}>✓</Button>
-                            <Button size="sm" variant="outline" onClick={cancelEdit}>✕</Button>
-                          </div>
-                        ) : (
-                          <div 
-                            onClick={() => startEdit(`${r.order_id}-${r.index}`, "eta_date", r.eta_date)}
-                            className="cursor-pointer hover:bg-stone-100 p-1 rounded min-h-[24px]"
-                          >
-                            {r.eta_date || <span className="text-stone-400">לחץ לעריכה</span>}
-                          </div>
-                        )}
+                        <Input
+                          type="date"
+                          value={r.eta_date || ""}
+                          onChange={(e) => updateRow(r, { eta_date: e.target.value })}
+                          className="w-40"
+                        />
                       </td>
                       <td className="p-3">
                         <Button
