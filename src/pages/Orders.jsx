@@ -1118,7 +1118,12 @@ export default function Orders() {
                                       }}
                                     />
                                   </td>
-                                  <td className="p-3 font-mono text-sm">{order.order_number}</td>
+                                  <td className="p-3">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-lg">{order.site === 'us' ? '🇺🇸' : order.site === 'eu' ? '🇪🇺' : order.site === 'uk' ? '🇬🇧' : order.site === 'local' ? '🇮🇱' : ''}</span>
+                                      <span className="font-mono text-sm">{order.order_number}</span>
+                                    </div>
+                                  </td>
 
                                   {/* Customer cell: name + email only */}
                                   <td className="p-3">
