@@ -512,16 +512,38 @@ export default function Home() {
       console.log('🔍 Checking for moderated price for URL:', originalUrl);
       let moderatedLink = null;
       try {
-        const moderatedLinks = await ModeratedProductLink.filter({ 
-          original_url: originalUrl,
-          is_active: true 
-        });
-        if (moderatedLinks && moderatedLinks.length > 0) {
-          moderatedLink = moderatedLinks[0];
-          console.log('✅ Found moderated price:', moderatedLink);
+        // Normalize URL for comparison (remove trailing slashes, query params, anchors)
+        const normalizeUrl = (url) => {
+          try {
+            const u = new URL(url);
+            // Keep only protocol, host, and pathname (no query, no hash)
+            return `${u.protocol}//${u.host}${u.pathname}`.replace(/\/$/, '').toLowerCase();
+          } catch {
+            return url.trim().replace(/\/$/, '').toLowerCase();
+          }
+        };
+        
+        const normalizedOriginal = normalizeUrl(originalUrl);
+        console.log('Normalized URL:', normalizedOriginal);
+        
+        // Get all active moderated links and find a match
+        const allModeratedLinks = await ModeratedProductLink.filter({ is_active: true });
+        if (allModeratedLinks && allModeratedLinks.length > 0) {
+          for (const link of allModeratedLinks) {
+            const normalizedStored = normalizeUrl(link.original_url);
+            if (normalizedStored === normalizedOriginal) {
+              moderatedLink = link;
+              console.log('✅ Found moderated price:', moderatedLink);
+              break;
+            }
+          }
+        }
+        
+        if (!moderatedLink) {
+          console.log('No moderated price found, proceeding with AI extraction');
         }
       } catch (e) {
-        console.log('No moderated price found, proceeding with AI extraction');
+        console.log('Error checking moderated links:', e);
       }
 
       // If we have a moderated price, use it directly and skip AI extraction
