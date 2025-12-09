@@ -678,8 +678,10 @@ export default function Orders() {
   const confirmDelete = async () => {
     setDeleteLoading(true);
     try {
-      // Delete all selected orders
-      const deletePromises = ordersToDelete.map(order => Order.delete(order.id));
+      // Soft delete - mark as deleted instead of actually deleting
+      const deletePromises = ordersToDelete.map(order => 
+        Order.update(order.id, { is_deleted: true, deleted_date: new Date().toISOString() })
+      );
       await Promise.all(deletePromises);
 
       // Clear selections and close dialog
@@ -691,12 +693,36 @@ export default function Orders() {
       loadOrders();
 
       // Show success message
-      alert(`${ordersToDelete.length} הזמנות נמחקו בהצלחה`);
+      alert(`${ordersToDelete.length} הזמנות הועברו לאשפה`);
     } catch (error) {
       console.error('Error deleting orders:', error);
       alert('שגיאה במחיקת ההזמנות');
     } finally {
       setDeleteLoading(false);
+    }
+  };
+
+  const handleRestoreOrder = async (orderId) => {
+    try {
+      await Order.update(orderId, { is_deleted: false, deleted_date: null });
+      loadOrders();
+      alert('ההזמנה שוחזרה בהצלחה');
+    } catch (error) {
+      console.error('Error restoring order:', error);
+      alert('שגיאה בשחזור ההזמנה');
+    }
+  };
+
+  const handlePermanentDelete = async (orderId) => {
+    if (!confirm('האם את בטוחה שברצונך למחוק לצמיתות? פעולה זו בלתי הפיכה!')) return;
+    
+    try {
+      await Order.delete(orderId);
+      loadOrders();
+      alert('ההזמנה נמחקה לצמיתות');
+    } catch (error) {
+      console.error('Error permanently deleting order:', error);
+      alert('שגיאה במחיקה סופית');
     }
   };
 
@@ -713,6 +739,9 @@ export default function Orders() {
   // UPDATE: filteredOrders → based on activeView mode
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
+      // Hide deleted orders (soft delete)
+      if (order.is_deleted) return false;
+      
       // Show only orders with full details (incl. valid email)
       if (!isCompleteOrder(order)) return false;
       
@@ -757,20 +786,26 @@ export default function Orders() {
 
   // Count awaiting payment orders separately
   const awaitingPaymentOrders = useMemo(() => {
-    return orders.filter(order => isCompleteOrder(order) && order.status === 'awaiting_payment');
+    return orders.filter(order => !order.is_deleted && isCompleteOrder(order) && order.status === 'awaiting_payment');
+  }, [orders]);
+
+  // Deleted orders (trash)
+  const deletedOrders = useMemo(() => {
+    return orders.filter(order => order.is_deleted && isCompleteOrder(order));
   }, [orders]);
 
   // KPI calculations
   const kpis = useMemo(() => {
     const totalOrders = filteredOrders.length;
     const totalRevenue = filteredOrders.reduce((sum, order) => sum + (order.total_price_ils || 0), 0);
-    // Count received orders = all complete orders that are NOT awaiting_payment
-    const receivedOrders = orders.filter(order => isCompleteOrder(order) && order.status !== 'awaiting_payment').length;
+    // Count received orders = all complete orders that are NOT awaiting_payment and not deleted
+    const receivedOrders = orders.filter(order => !order.is_deleted && isCompleteOrder(order) && order.status !== 'awaiting_payment').length;
     const completedOrders = filteredOrders.filter(order => order.status === 'delivered').length;
     const awaitingPayment = awaitingPaymentOrders.length;
+    const inTrash = deletedOrders.length;
 
-    return { totalOrders, totalRevenue, receivedOrders, completedOrders, awaitingPayment };
-  }, [orders, filteredOrders, awaitingPaymentOrders]);
+    return { totalOrders, totalRevenue, receivedOrders, completedOrders, awaitingPayment, inTrash };
+  }, [orders, filteredOrders, awaitingPaymentOrders, deletedOrders]);
 
   const handleRowClick = (order) => {
     setSelectedOrder(order);
@@ -948,10 +983,13 @@ export default function Orders() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-3 w-full md:w-auto">
+          <TabsList className="grid grid-cols-4 w-full md:w-auto">
             <TabsTrigger value="orders">הזמנות לקוחות</TabsTrigger>
             <TabsTrigger value="shopping">רשימת קניות</TabsTrigger>
             <TabsTrigger value="supplier">מעקב ספקים</TabsTrigger>
+            <TabsTrigger value="trash" className="text-red-600">
+              אשפה ({kpis.inTrash})
+            </TabsTrigger>
           </TabsList>
 
           {/* Orders Tab */}
@@ -1448,6 +1486,80 @@ export default function Orders() {
           <TabsContent value="supplier">
             <SupplierTrackingTab orders={orders} onUpdated={loadOrders} />
           </TabsContent>
+
+          {/* Trash Tab */}
+          <TabsContent value="trash">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-red-600">אשפה - הזמנות שנמחקו ({deletedOrders.length})</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {deletedOrders.length === 0 ? (
+                  <div className="text-center py-12 text-stone-500">
+                    <p>אין הזמנות באשפה</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-stone-50 border-b border-stone-200">
+                        <tr>
+                          <th className="text-right p-3 font-medium">מספר הזמנה</th>
+                          <th className="text-right p-3 font-medium">לקוח</th>
+                          <th className="text-right p-3 font-medium">תאריך מחיקה</th>
+                          <th className="text-right p-3 font-medium">סה״כ</th>
+                          <th className="text-right p-3 font-medium">פעולות</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {deletedOrders.map((order) => (
+                          <tr key={order.id} className="border-b border-stone-100 hover:bg-stone-50">
+                            <td className="p-3">
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg">{order.site === 'us' ? '🇺🇸' : order.site === 'eu' ? '🇪🇺' : order.site === 'uk' ? '🇬🇧' : order.site === 'local' ? '🇮🇱' : ''}</span>
+                                <span className="font-mono text-sm">{order.order_number}</span>
+                              </div>
+                            </td>
+                            <td className="p-3">
+                              <div className="font-medium">{order.customer_name}</div>
+                              <div className="text-sm text-stone-500">{order.customer_email}</div>
+                            </td>
+                            <td className="p-3 text-sm">
+                              {order.deleted_date ? format(new Date(order.deleted_date), "dd/MM/yyyy HH:mm") : "—"}
+                            </td>
+                            <td className="p-3 font-semibold">
+                              ₪{(order.total_price_ils || 0).toLocaleString()}
+                            </td>
+                            <td className="p-3">
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleRestoreOrder(order.id)}
+                                  className="text-green-600 border-green-300 hover:bg-green-50"
+                                >
+                                  <CheckCircle className="w-4 h-4 ml-1" />
+                                  שחזר
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => handlePermanentDelete(order.id)}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  <AlertTriangle className="w-4 h-4 ml-1" />
+                                  מחק לצמיתות
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
 
@@ -1464,9 +1576,12 @@ export default function Orders() {
             <CardContent className="space-y-4">
               <p className="text-stone-700">
                 {ordersToDelete.length === 1
-                  ? `האם אתה בטוח שברצונך למחוק את הזמנה #${ordersToDelete[0]?.order_number}?`
-                  : `האם אתה בטוח שברצונך למחוק ${ordersToDelete.length} הזמנות?`
+                  ? `האם אתה בטוח שברצונך להעביר לאשפה את הזמנה #${ordersToDelete[0]?.order_number}?`
+                  : `האם אתה בטוח שברצונך להעביר לאשפה ${ordersToDelete.length} הזמנות?`
                 }
+              </p>
+              <p className="text-sm text-stone-600 mt-2">
+                ניתן יהיה לשחזר את ההזמנות מטאב "אשפה"
               </p>
 
               {ordersToDelete.length > 0 && ordersToDelete.length <= 3 && (
@@ -1480,9 +1595,9 @@ export default function Orders() {
                 </div>
               )}
 
-              <div className="bg-amber-50 p-3 rounded border border-amber-200">
-                <p className="text-sm text-amber-800">
-                  <strong>אזהרה:</strong> פעולה זו בלתי הפיכה. כל המידע על ההזמנות יימחק לצמיתות.
+              <div className="bg-blue-50 p-3 rounded border border-blue-200">
+                <p className="text-sm text-blue-800">
+                  ההזמנות יועברו לאשפה וניתן יהיה לשחזר אותן בכל עת.
                 </p>
               </div>
 
@@ -1511,7 +1626,7 @@ export default function Orders() {
                   ) : (
                     <>
                       <AlertTriangle className="w-4 h-4 ml-2" />
-                      מחק סופית
+                      העבר לאשפה
                     </>
                   )}
                 </Button>
