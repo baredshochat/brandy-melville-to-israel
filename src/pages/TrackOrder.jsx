@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Order } from "@/entities/Order";
 import { OrderStatusSteps } from "@/entities/OrderStatusSteps";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,7 @@ import { he } from 'date-fns/locale';
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { base44 } from "@/api/base44Client";
 
 export default function TrackOrder() {
   const location = useLocation();
@@ -47,14 +47,17 @@ export default function TrackOrder() {
         setLoading(true);
         setError('');
         try {
-          const normalized = orderNumberParam.trim().toUpperCase();
-          const results = await Order.filter({ order_number: normalized });
-          if (results.length > 0) {
-            setOrder(results[0]);
+          const result = await base44.functions.invoke('trackOrder', {
+            order_number: orderNumberParam
+          });
+          
+          if (result.success) {
+            setOrder(result.order);
           } else {
-            setError('מספר ההזמנה לא נמצא במערכת שלנו');
+            setError(result.error || 'מספר ההזמנה לא נמצא במערכת שלנו');
           }
         } catch (err) {
+          console.error('Track order error:', err);
           setError('אירעה שגיאה בחיפוש ההזמנה');
         } finally {
           setLoading(false);
@@ -112,21 +115,17 @@ export default function TrackOrder() {
     setOrder(null);
 
     try {
-      const normalized = orderNumber.trim().toUpperCase();
-      const results = await Order.filter({ order_number: normalized });
-      if (results.length > 0) {
-        const foundOrder = results[0];
-        // Check if order has required data for display
-        if (!foundOrder.items || foundOrder.items.length === 0) {
-          setError('ההזמנה נמצאה אך היא ריקה - אנא פנה לתמיכה');
-          return;
-        }
-        setOrder(foundOrder);
+      const result = await base44.functions.invoke('trackOrder', {
+        order_number: orderNumber
+      });
+      
+      if (result.success) {
+        setOrder(result.order);
       } else {
-        setError('מספר ההזמנה לא נמצא במערכת שלנו');
+        setError(result.error || 'מספר ההזמנה לא נמצא במערכת שלנו');
       }
     } catch (err) {
-      console.error('Search error:', err);
+      console.error('Track order error:', err);
       setError('אירעה שגיאה בחיפוש ההזמנה');
     } finally {
       setLoading(false);
