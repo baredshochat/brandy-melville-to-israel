@@ -59,6 +59,7 @@ export default function Layout({ children }) {
   { name: "Terms", label: "תקנון", icon: FileText, roles: ['admin', 'user'] },
   { name: "Orders", label: "ניהול הזמנות", icon: Package, roles: ['admin'] },
   { name: "ManageLocalStock", label: "ניהול מלאי מקומי", icon: Package, roles: ['admin'] },
+  { name: "BackInStockNotifications", label: "התראות חזרה למלאי", icon: MessageSquare, roles: ['admin'] },
   { name: "Reports", label: "דוחות ואנליטיקה", icon: BarChart3, roles: ['admin'] },
   { name: "ProfitReports", label: "דוחות רווח נקי", icon: TrendingUp, roles: ['admin'] },
   { name: "DisplaySettings", label: "הגדרות תצוגה", icon: Settings, roles: ['admin'] },
