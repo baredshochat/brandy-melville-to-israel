@@ -524,11 +524,16 @@ export default function Home() {
       - Keep the original English name
       - Examples: "Duffel Bag", "Priscilla Pants", "Rosa Top"
 
-      PRICE:
-      - Find the CURRENT price (not crossed-out old prices)
-      - Look for: £XX.XX, $XX.XX, €XX.XX format
-      - Return ONLY the numeric value (e.g., 20 for £20.00)
-      - Check multiple places: main price display, add-to-cart section, product info
+      PRICE - CRITICAL - READ VERY CAREFULLY:
+      - Find the CURRENT ACTIVE price that the customer would pay NOW
+      - IGNORE any crossed-out prices (old/sale prices with strikethrough)
+      - IGNORE any "was" or "original" prices
+      - Look for the main price near the "Add to Cart" button
+      - Look in the product JSON-LD data for "price" or "offers.price"
+      - The price should be in format: £XX.XX, $XX.XX, €XX.XX
+      - Return ONLY the numeric value (e.g., 15 for £15.00)
+      - If you see multiple prices, take the LOWEST non-crossed-out price (the current sale price)
+      - VALIDATE: Make sure the price makes sense for clothing (typically £10-50)
 
       DESCRIPTION:
       - Find the product description text
@@ -540,7 +545,7 @@ export default function Home() {
       - Look for labels like "Color:", "Size:", "Options:"
       - Return complete lists
 
-      IMPORTANT: Return valid data for at least product_name and price. SKU must be exact or null.`,
+      IMPORTANT: Return valid data for at least product_name and price. SKU must be exact or null. Price must be the CURRENT active price only.`,
         add_context_from_internet: true,
         response_json_schema: {
           type: "object",
