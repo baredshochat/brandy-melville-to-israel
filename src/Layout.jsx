@@ -64,6 +64,7 @@ export default function Layout({ children }) {
   { name: "DisplaySettings", label: "הגדרות תצוגה", icon: Settings, roles: ['admin'] },
   { name: "CalculationSettings", label: "הגדרות חישוב מחיר", icon: Calculator, roles: ['admin'] },
   { name: "ExchangeRates", label: "שערי חליפין", icon: DollarSign, roles: ['admin'] },
+  { name: "ModeratedProductLinks", label: "קישורים מתוקנים", icon: Heart, roles: ['admin'] },
     { name: "ChatLogs", label: "לוג שיחות צ'אט", icon: MessageSquare, roles: ['admin'] }];
 
 
