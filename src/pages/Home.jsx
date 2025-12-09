@@ -897,6 +897,27 @@ export default function Home() {
           payment_status: 'completed',
           status: 'pending' // Move from awaiting_payment to pending
         });
+        
+        // Update local stock quantities for local items
+        const localItems = cart.filter(item => item.site === 'local' || item.product_type === 'local');
+        if (localItems.length > 0) {
+          const { LocalStockItem } = await import('@/entities/LocalStockItem');
+          
+          for (const item of localItems) {
+            // Find the stock item by matching SKU or name
+            const stockItems = await LocalStockItem.filter({
+              internal_sku: item.product_sku || item.internal_sku
+            });
+            
+            if (stockItems && stockItems.length > 0) {
+              const stockItem = stockItems[0];
+              const newQuantity = Math.max(0, stockItem.quantity_available - item.quantity);
+              await LocalStockItem.update(stockItem.id, {
+                quantity_available: newQuantity
+              });
+            }
+          }
+        }
       }
 
       // Do NOT delete cart items - they are saved in the order anyway

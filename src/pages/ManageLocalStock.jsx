@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { LocalStockItem } from "@/entities/LocalStockItem";
+import { BackInStockNotification } from "@/entities/BackInStockNotification";
 import { User } from "@/entities/User";
 import { UploadFile, InvokeLLM } from "@/integrations/Core";
 import { createPageUrl } from "@/utils";
@@ -11,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Package, Plus, Edit, Trash2, Loader2, Link as LinkIcon, Image as ImageIcon, AlertTriangle, Eye, Copy } from "lucide-react";
+import { Package, Plus, Edit, Trash2, Loader2, Link as LinkIcon, Image as ImageIcon, AlertTriangle, Eye, Copy, Bell } from "lucide-react";
 import { motion } from "framer-motion";
 
 const categoryNames = {
@@ -51,6 +52,8 @@ export default function ManageLocalStock() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [extractingFromUrl, setExtractingFromUrl] = useState(false);
   const [suggestedPriceInfo, setSuggestedPriceInfo] = useState(null);
+  const [waitingCounts, setWaitingCounts] = useState({});
+  const [editingQuantity, setEditingQuantity] = useState(null);
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -74,6 +77,14 @@ export default function ManageLocalStock() {
     try {
       const data = await LocalStockItem.list('-created_date');
       setItems(data);
+      
+      // Load waiting counts for each item
+      const notifications = await BackInStockNotification.filter({ notified: false });
+      const counts = {};
+      notifications.forEach(notif => {
+        counts[notif.local_stock_item_id] = (counts[notif.local_stock_item_id] || 0) + 1;
+      });
+      setWaitingCounts(counts);
     } catch (error) {
       console.error("Error loading items:", error);
     } finally {
@@ -274,6 +285,18 @@ export default function ManageLocalStock() {
     });
     setSuggestedPriceInfo(null);
     setDialogOpen(true);
+  };
+
+  const handleQuickQuantityUpdate = async (itemId, newQuantity) => {
+    if (newQuantity < 0) return;
+    
+    try {
+      await LocalStockItem.update(itemId, { quantity_available: newQuantity });
+      loadItems();
+    } catch (error) {
+      console.error("Error updating quantity:", error);
+      alert("שגיאה בעדכון הכמות");
+    }
   };
 
   if (userRole !== 'admin') {
@@ -545,6 +568,7 @@ export default function ManageLocalStock() {
                     <th className="text-right p-2">שם</th>
                     <th className="text-right p-2">מחיר</th>
                     <th className="text-right p-2">כמות</th>
+                    <th className="text-right p-2">ממתינים</th>
                     <th className="text-right p-2">צבע/מידה</th>
                     <th className="text-right p-2">זמין</th>
                     <th className="text-right p-2">פעולות</th>
@@ -570,9 +594,42 @@ export default function ManageLocalStock() {
                       <td className="p-2 font-medium">{item.product_name}</td>
                       <td className="p-2">₪{item.price_ils}</td>
                       <td className="p-2">
-                        <span className={item.quantity_available === 0 ? 'text-red-600' : ''}>
-                          {item.quantity_available}
-                        </span>
+                        {editingQuantity === item.id ? (
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              min="0"
+                              defaultValue={item.quantity_available}
+                              onBlur={(e) => {
+                                handleQuickQuantityUpdate(item.id, parseInt(e.target.value) || 0);
+                                setEditingQuantity(null);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  handleQuickQuantityUpdate(item.id, parseInt(e.target.value) || 0);
+                                  setEditingQuantity(null);
+                                }
+                              }}
+                              className="w-16 h-8 text-sm"
+                              autoFocus
+                            />
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setEditingQuantity(item.id)}
+                            className={`hover:underline ${item.quantity_available === 0 ? 'text-red-600 font-bold' : ''}`}
+                          >
+                            {item.quantity_available}
+                          </button>
+                        )}
+                      </td>
+                      <td className="p-2">
+                        {waitingCounts[item.id] > 0 && (
+                          <span className="flex items-center gap-1 text-amber-600">
+                            <Bell className="w-3 h-3" />
+                            {waitingCounts[item.id]}
+                          </span>
+                        )}
                       </td>
                       <td className="p-2 text-stone-500">
                         {[item.color, item.size].filter(Boolean).join(' / ') || '—'}
