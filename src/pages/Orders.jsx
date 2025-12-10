@@ -1296,22 +1296,46 @@ export default function Orders() {
                                           <div className="font-semibold text-sm">פריטים בהזמנה ({order.items?.length || 0})</div>
                                         </div>
                                         <div className="max-h-[300px] overflow-y-auto">
-                                          {(order.items || []).map((item, idx) => (
-                                            <div key={idx} className="p-3 border-b border-stone-100 hover:bg-stone-50 text-sm">
-                                              <div className="font-medium text-stone-800 mb-1">{item.product_name}</div>
-                                              <div className="text-xs text-stone-600 space-y-0.5">
-                                                {item.color && <div>צבע: {item.color}</div>}
-                                                {item.size && <div>מידה: {item.size}</div>}
-                                                <div className="flex justify-between items-center mt-1">
-                                                  <span>כמות: {item.quantity}</span>
-                                                  <span className="font-semibold text-blue-600">
-                                                    ₪{((item.customer_price_ils || 0)).toLocaleString()}
-                                                  </span>
-                                                </div>
-                                              </div>
-                                            </div>
-                                          ))}
+                                         {(order.items || []).map((item, idx) => (
+                                           <div key={idx} className="p-3 border-b border-stone-100 hover:bg-stone-50 text-sm">
+                                             <div className="font-medium text-stone-800 mb-1">{item.product_name}</div>
+                                             <div className="text-xs text-stone-600 space-y-0.5">
+                                               {item.color && <div>צבע: {item.color}</div>}
+                                               {item.size && <div>מידה: {item.size}</div>}
+                                               <div className="flex justify-between items-center mt-1">
+                                                 <span>כמות: {item.quantity}</span>
+                                                 <span className="font-semibold text-blue-600">
+                                                   ₪{((item.customer_price_ils || 0)).toLocaleString()}
+                                                 </span>
+                                               </div>
+                                             </div>
+                                           </div>
+                                         ))}
                                         </div>
+                                        {/* Price Breakdown Summary */}
+                                        {order.calculatedPricing?.breakdown && (
+                                         <div className="p-3 border-t border-stone-200 bg-stone-50 text-xs space-y-1">
+                                           <div className="font-semibold text-stone-700 mb-2">פירוט עלויות:</div>
+                                           {[
+                                             { label: 'סה"כ פריטים', value: order.calculatedPricing.breakdown.products_total_ils },
+                                             { label: 'דמי שירות', value: order.calculatedPricing.breakdown.service_fee_ils },
+                                             { label: 'עלות המרה', value: order.calculatedPricing.breakdown.currency_fee_ils },
+                                             { label: 'משלוח מחו"ל', value: order.calculatedPricing.breakdown.intl_shipping_ils },
+                                             { label: 'משלוח בארץ', value: order.calculatedPricing.breakdown.domestic_ship_ils },
+                                             { label: 'מכס ואגרות', value: order.calculatedPricing.breakdown.customsILS || 0 },
+                                             { label: 'מע"מ', value: order.calculatedPricing.breakdown.vat_ils }
+                                           ].filter(line => line.value !== undefined && line.value !== null && line.value !== 0).map((line, idx) => (
+                                             <div key={idx} className="flex justify-between">
+                                               <span className="text-stone-600">{line.label}:</span>
+                                               <span className="text-stone-800 font-medium">₪{Number(line.value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                             </div>
+                                           ))}
+                                           <div className="flex justify-between pt-2 border-t border-stone-300 mt-2 font-bold text-stone-900">
+                                             <span>סה"כ ששולם:</span>
+                                             <span className="text-blue-700">₪{(order.total_price_ils || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                           </div>
+                                         </div>
+                                        )}
                                       </div>
                                     </div>
                                   </td>
