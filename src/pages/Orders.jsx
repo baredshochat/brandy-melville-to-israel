@@ -1314,6 +1314,37 @@ export default function Orders() {
                                               </span>
                                             </div>
                                           ))}
+                                          
+                                          {/* Launch Discount */}
+                                          {order.price_breakdown?.launchDiscount > 0 && (
+                                            <div className="flex justify-between gap-3 py-1 text-green-600">
+                                              <span>🎉 הנחת השקה (15%)</span>
+                                              <span className="font-medium whitespace-nowrap">
+                                                -₪{order.price_breakdown.launchDiscount.toLocaleString()}
+                                              </span>
+                                            </div>
+                                          )}
+                                          
+                                          {/* Coupon Discount */}
+                                          {order.price_breakdown?.coupon && (
+                                            <div className="flex justify-between gap-3 py-1 text-green-600">
+                                              <span>🏷️ קופון {order.price_breakdown.coupon.code}</span>
+                                              <span className="font-medium whitespace-nowrap">
+                                                -₪{order.price_breakdown.coupon.discount.toLocaleString()}
+                                              </span>
+                                            </div>
+                                          )}
+                                          
+                                          {/* Shipping */}
+                                          {order.price_breakdown?.domesticShipping > 0 && (
+                                            <div className="flex justify-between gap-3 py-1 text-stone-600">
+                                              <span>משלוח</span>
+                                              <span className="font-medium whitespace-nowrap">
+                                                ₪{order.price_breakdown.domesticShipping.toLocaleString()}
+                                              </span>
+                                            </div>
+                                          )}
+                                          
                                           <div className="pt-2 mt-2 border-t border-stone-300 flex justify-between font-semibold">
                                             <span className="text-stone-700">סה״כ:</span>
                                             <span className="text-stone-900">₪{(order.total_price_ils || 0).toLocaleString()}</span>
