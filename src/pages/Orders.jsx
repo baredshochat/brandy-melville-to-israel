@@ -455,6 +455,8 @@ export default function Orders() {
   const [expandedRows, setExpandedRows] = useState(new Set());
   // NEW: map שלבי סטטוס -> מספר שלב
   const [statusStepsMap, setStatusStepsMap] = useState({});
+  // NEW: expanded items dropdown per order
+  const [expandedItemsDropdown, setExpandedItemsDropdown] = useState(new Set());
 
   // NEW: state for email preview dialog
   const [emailPreview, setEmailPreview] = useState({ open: false, to: "", subject: "", html: "" });
@@ -1212,6 +1214,7 @@ export default function Orders() {
                             <th className="text-right p-3 font-medium">מספר הזמנה</th>
                             <th className="text-right p-3 font-medium">לקוח</th>
                             <th className="text-right p-3 font-medium">תאריך</th>
+                            <th className="text-right p-3 font-medium">סכום</th>
                             <th className="text-right p-3 font-medium">מייל אחרון</th>
                             <th className="text-right p-3 font-medium w-56">פעולות</th>
                           </tr>
@@ -1268,6 +1271,58 @@ export default function Orders() {
                                     )}
                                   </td>
 
+                                  {/* Total Amount with Items Dropdown */}
+                                  <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                                    <div className="flex flex-col gap-1">
+                                      <button
+                                        onClick={() => {
+                                          setExpandedItemsDropdown(prev => {
+                                            const next = new Set(prev);
+                                            if (next.has(order.id)) {
+                                              next.delete(order.id);
+                                            } else {
+                                              next.add(order.id);
+                                            }
+                                            return next;
+                                          });
+                                        }}
+                                        className="flex items-center gap-1 text-right hover:bg-stone-100 px-2 py-1 rounded transition-colors"
+                                      >
+                                        <span className="font-semibold text-stone-900 text-base">
+                                          ₪{(order.total_price_ils || 0).toLocaleString()}
+                                        </span>
+                                        {expandedItemsDropdown.has(order.id) ? (
+                                          <ChevronUp className="w-4 h-4 text-stone-500" />
+                                        ) : (
+                                          <ChevronDown className="w-4 h-4 text-stone-500" />
+                                        )}
+                                      </button>
+                                      
+                                      {expandedItemsDropdown.has(order.id) && order.items && order.items.length > 0 && (
+                                        <div className="mt-1 p-2 bg-stone-50 border border-stone-200 rounded text-xs space-y-1 max-w-xs">
+                                          <div className="font-semibold text-stone-700 mb-2 pb-1 border-b border-stone-300">פירוט פריטים:</div>
+                                          {order.items.map((item, idx) => (
+                                            <div key={idx} className="flex justify-between gap-3 py-1">
+                                              <span className="text-stone-600 truncate flex-1">
+                                                {item.product_name || 'פריט ללא שם'}
+                                                {item.color && ` • ${item.color}`}
+                                                {item.size && ` • ${item.size}`}
+                                                {` (×${item.quantity || 1})`}
+                                              </span>
+                                              <span className="text-stone-900 font-medium whitespace-nowrap">
+                                                ₪{((item.customer_price_ils || item.original_price || 0)).toLocaleString()}
+                                              </span>
+                                            </div>
+                                          ))}
+                                          <div className="pt-2 mt-2 border-t border-stone-300 flex justify-between font-semibold">
+                                            <span className="text-stone-700">סה״כ:</span>
+                                            <span className="text-stone-900">₪{(order.total_price_ils || 0).toLocaleString()}</span>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </td>
+
                                   <td className="p-3 text-sm">
                                     {lastEmailDate ? (
                                       <div className="text-xs">
@@ -1318,7 +1373,7 @@ export default function Orders() {
 
                                 {/* NEW: full-width horizontal status stepper row */}
                                 <tr className="bg-transparent">
-                                  <td colSpan={6} className="px-3 pb-3">
+                                 <td colSpan={7} className="px-3 pb-3">
                                     <div className="p-2 rounded-md border border-stone-200 bg-white/70">
                                       <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto py-1">
                                         <span className="text-[11px] font-semibold tracking-wide text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded">
@@ -1387,10 +1442,10 @@ export default function Orders() {
                                   </td>
                                 </tr>
 
-                                {/* Expanded details row spans all 6 columns */}
+                                {/* Expanded details row spans all 7 columns */}
                                 {isExpanded && (
-                                  <tr className="bg-stone-50 border-b border-stone-100">
-                                    <td colSpan={6} className="p-4">
+                                 <tr className="bg-stone-50 border-b border-stone-100">
+                                   <td colSpan={7} className="p-4">
                                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                                         <div className="space-y-1">
                                           <div className="text-stone-500">סה״כ בש״ח</div>
