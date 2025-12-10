@@ -1301,19 +1301,22 @@ export default function Orders() {
                                       {expandedItemsDropdown.has(order.id) && order.items && order.items.length > 0 && (
                                         <div className="mt-1 p-2 bg-stone-50 border border-stone-200 rounded text-xs space-y-1 max-w-xs">
                                           <div className="font-semibold text-stone-700 mb-2 pb-1 border-b border-stone-300">פירוט פריטים:</div>
-                                          {order.items.map((item, idx) => (
-                                            <div key={idx} className="flex justify-between gap-3 py-1">
-                                              <span className="text-stone-600 truncate flex-1">
-                                                {item.product_name || 'פריט ללא שם'}
-                                                {item.color && ` • ${item.color}`}
-                                                {item.size && ` • ${item.size}`}
-                                                {` (×${item.quantity || 1})`}
-                                              </span>
-                                              <span className="text-stone-900 font-medium whitespace-nowrap">
-                                                ₪{((item.customer_price_ils || item.original_price || 0)).toLocaleString()}
-                                              </span>
-                                            </div>
-                                          ))}
+                                          {(order.price_breakdown?.items || order.items).map((item, idx) => {
+                                            const itemPrice = item.fullPrice || (item.original_price * item.quantity) || 0;
+                                            return (
+                                              <div key={idx} className="flex justify-between gap-3 py-1">
+                                                <span className="text-stone-600 truncate flex-1">
+                                                  {item.product_name || 'פריט ללא שם'}
+                                                  {item.color && ` • ${item.color}`}
+                                                  {item.size && ` • ${item.size}`}
+                                                  {` (×${item.quantity || 1})`}
+                                                </span>
+                                                <span className="text-stone-900 font-medium whitespace-nowrap">
+                                                  ₪{Math.round(itemPrice).toLocaleString()}
+                                                </span>
+                                              </div>
+                                            );
+                                          })}
                                           
                                           {/* Launch Discount */}
                                           {order.price_breakdown?.launchDiscount > 0 && (
