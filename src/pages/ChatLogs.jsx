@@ -76,31 +76,27 @@ export default function ChatLogs() {
     );
   });
 
-  // ✨ פונקציה חדשה - סימון כנקרא/לא נקרא
- const toggleReadStatus = async (conversationId) => {
-  try {
-    const conversation = conversations.find(c => c.id === conversationId);
+  // ✔️ פונקציה מתוקנת — לא הפוכה יותר
+  const toggleReadStatus = async (conversationId) => {
+    try {
+      const conversation = conversations.find(c => c.id === conversationId);
 
-    // הפיכת undefined ל־false
-    const currentStatus = conversation.is_read === true;
+      // undefined -> false
+      const currentStatus = conversation.is_read === true;
+      const newStatus = !currentStatus;
 
-    // היפוך מצב הקריאה
-    const newStatus = !currentStatus;
+      await ChatConversation.update(conversationId, { is_read: newStatus });
 
-    // עדכון בשרת
-    await ChatConversation.update(conversationId, { is_read: newStatus });
-
-    // עדכון ב־state
-    setConversations(prev =>
-      prev.map(c =>
-        c.id === conversationId ? { ...c, is_read: newStatus } : c
-      )
-    );
-  } catch (error) {
-    console.error("Error updating read status:", error);
-    alert("שגיאה בעדכון סטטוס");
-  }
-};
+      setConversations(prev =>
+        prev.map(c =>
+          c.id === conversationId ? { ...c, is_read: newStatus } : c
+        )
+      );
+    } catch (error) {
+      console.error("Error updating read status:", error);
+      alert("שגיאה בעדכון סטטוס");
+    }
+  };
 
   const handleDeleteConversation = async (conversationId) => {
     if (!confirm("למחוק את השיחה הזו?")) return;
@@ -125,9 +121,7 @@ export default function ChatLogs() {
   const extractComment = (comment) => {
     if (!comment) return null;
     const commentMatch = comment.match(/Comment:\s*(.+)/);
-    if (commentMatch) {
-      return commentMatch[1];
-    }
+    if (commentMatch) return commentMatch[1];
     return null;
   };
 
@@ -153,11 +147,12 @@ export default function ChatLogs() {
     );
   }
 
-  // ✨ ספירת שיחות לא נקראות
-  const unreadCount = conversations.filter(c => !c.is_read).length;
+  // ✔️ חישוב שיחות לא נקראו
+  const unreadCount = conversations.filter(c => c.is_read !== true).length;
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="pb-12">
+      {/* HEADER */}
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-stone-900 mb-2">לוג שיחות צ'אט</h1>
@@ -173,7 +168,7 @@ export default function ChatLogs() {
         </Button>
       </div>
 
-      {/* View Toggle */}
+      {/* VIEW TOGGLE */}
       <div className="flex gap-2 mb-6">
         <Button
           variant={viewMode === 'conversations' ? 'default' : 'outline'}
@@ -188,6 +183,7 @@ export default function ChatLogs() {
             </span>
           )}
         </Button>
+
         <Button
           variant={viewMode === 'feedbacks' ? 'default' : 'outline'}
           onClick={() => setViewMode('feedbacks')}
@@ -198,7 +194,7 @@ export default function ChatLogs() {
         </Button>
       </div>
 
-      {/* Search */}
+      {/* SEARCH */}
       <div className="mb-6">
         <div className="relative max-w-md">
           <Search className="absolute right-3 top-3 w-5 h-5 text-stone-400" />
@@ -211,39 +207,7 @@ export default function ChatLogs() {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-8">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-3xl font-bold text-stone-900">{conversations.length}</div>
-            <p className="text-sm text-stone-500">סה"כ שיחות</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-3xl font-bold text-rose-600">{unreadCount}</div>
-            <p className="text-sm text-stone-500">לא נקראו</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-3xl font-bold text-green-600">
-              {feedbacks.filter(f => f.rating === 5).length}
-            </div>
-            <p className="text-sm text-stone-500">משובים חיוביים</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-3xl font-bold text-red-600">
-              {feedbacks.filter(f => f.rating === 1).length}
-            </div>
-            <p className="text-sm text-stone-500">משובים שליליים</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Conversations List */}
+      {/* CONVERSATIONS LIST */}
       {viewMode === 'conversations' && (
         <Card>
           <CardHeader>
@@ -261,89 +225,115 @@ export default function ChatLogs() {
               </div>
             ) : (
               <div className="space-y-4">
-                {filteredConversations.map((conversation) => (
-                  <div 
-                    key={conversation.id} 
-                    className={`p-4 border transition-colors ${
-                      conversation.is_read 
-                        ? 'border-stone-200 bg-white hover:bg-stone-50' 
-                        : 'border-rose-300 bg-rose-50 hover:bg-rose-100'
-                    }`}
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex items-center gap-4">
-                        {/* ✨ אינדיקטור נקרא/לא נקרא */}
-                        {!conversation.is_read && (
-                          <span className="flex items-center gap-1 text-xs font-bold text-rose-600 bg-rose-100 px-2 py-1 rounded">
-                            <Circle className="w-3 h-3 fill-rose-600" />
-                            חדש
+
+                {filteredConversations.map((conversation) => {
+                  const isRead = conversation.is_read === true;
+
+                  return (
+                    <div
+                      key={conversation.id}
+                      className={`p-4 border transition-colors ${
+                        isRead
+                          ? "border-stone-200 bg-white hover:bg-stone-50"
+                          : "border-rose-300 bg-rose-50 hover:bg-rose-100"
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex items-center gap-4">
+
+                          {/* TAG חדש */}
+                          {!isRead && (
+                            <span className="flex items-center gap-1 text-xs font-bold text-rose-600 bg-rose-100 px-2 py-1 rounded">
+                              <Circle className="w-3 h-3 fill-rose-600" />
+                              חדש
+                            </span>
+                          )}
+
+                          <span className="flex items-center gap-1 text-sm text-stone-700 font-medium">
+                            <MessageSquare className="w-4 h-4" />
+                            {conversation.messages?.length || 0} הודעות
                           </span>
-                        )}
-                        <span className="flex items-center gap-1 text-sm text-stone-700 font-medium">
-                          <MessageSquare className="w-4 h-4" />
-                          {conversation.messages?.length || 0} הודעות
-                        </span>
-                        <span className="flex items-center gap-1 text-sm text-stone-500">
-                          <Mail className="w-3 h-3" />
-                          {conversation.customer_email || 'אנונימי'}
-                        </span>
+
+                          <span className="flex items-center gap-1 text-sm text-stone-500">
+                            <Mail className="w-3 h-3" />
+                            {conversation.customer_email || "אנונימי"}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <span className="flex items-center gap-1 text-xs text-stone-400">
+                            <Calendar className="w-3 h-3" />
+                            {conversation.created_date
+                              ? format(new Date(conversation.created_date), "dd/MM/yyyy HH:mm", { locale: he })
+                              : "—"}
+                          </span>
+
+                          {/* ✔️ כפתור סימון כנקרא */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleReadStatus(conversation.id)}
+                            className={`h-7 w-7 p-0 ${
+                              isRead
+                                ? "text-stone-400 hover:text-stone-600 hover:bg-stone-100"
+                                : "text-rose-500 hover:text-rose-700 hover:bg-rose-100"
+                            }`}
+                          >
+                            {isRead ? (
+                              <Check className="w-4 h-4" />
+                            ) : (
+                              <Circle className="w-4 h-4 fill-rose-600" />
+                            )}
+                          </Button>
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedConversation(conversation)}
+                            className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 h-7 w-7 p-0"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteConversation(conversation.id)}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 h-7 w-7 p-0"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="flex items-center gap-1 text-xs text-stone-400">
-                          <Calendar className="w-3 h-3" />
-                          {conversation.created_date ? format(new Date(conversation.created_date), 'dd/MM/yyyy HH:mm', { locale: he }) : '—'}
-                        </span>
-                        {/* ✨ כפתור סימון כנקרא */}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleReadStatus(conversation.id)}
-                          className={`h-7 w-7 p-0 ${
-                            conversation.is_read 
-                              ? 'text-stone-400 hover:text-stone-600 hover:bg-stone-100' 
-                              : 'text-rose-500 hover:text-rose-700 hover:bg-rose-100'
+
+                      {/* Preview last message */}
+                      {conversation.messages?.length > 0 && (
+                        <div
+                          className={`mt-2 p-3 text-sm truncate ${
+                            isRead
+                              ? "bg-stone-50 text-stone-600"
+                              : "bg-white text-stone-700"
                           }`}
-                          title={conversation.is_read ? 'סמן כלא נקרא' : 'סמן כנקרא'}
                         >
-                          {conversation.is_read ? <Circle className="w-4 h-4" /> : <Check className="w-4 h-4" />}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setSelectedConversation(conversation)}
-                          className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 h-7 w-7 p-0"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteConversation(conversation.id)}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50 h-7 w-7 p-0"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+                          {
+                            conversation.messages[
+                              conversation.messages.length - 1
+                            ]?.content?.substring(0, 100)
+                          }
+                          ...
+                        </div>
+                      )}
                     </div>
-                    
-                    {/* Preview last message */}
-                    {conversation.messages?.length > 0 && (
-                      <div className={`mt-2 p-3 text-sm truncate ${
-                        conversation.is_read ? 'bg-stone-50 text-stone-600' : 'bg-white text-stone-700'
-                      }`}>
-                        {conversation.messages[conversation.messages.length - 1]?.content?.substring(0, 100)}...
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
         </Card>
       )}
 
-      {/* Feedbacks List */}
-      {viewMode === 'feedbacks' && (
+      {/* FEEDBACKS */}
+      {viewMode === "feedbacks" && (
         <Card>
           <CardHeader>
             <CardTitle>משובים ({filteredFeedbacks.length})</CardTitle>
@@ -361,8 +351,8 @@ export default function ChatLogs() {
             ) : (
               <div className="space-y-4">
                 {filteredFeedbacks.map((feedback) => (
-                  <div 
-                    key={feedback.id} 
+                  <div
+                    key={feedback.id}
                     className="p-4 border border-stone-200 hover:bg-stone-50 transition-colors"
                   >
                     <div className="flex justify-between items-start mb-2">
@@ -370,13 +360,15 @@ export default function ChatLogs() {
                         {getRatingDisplay(feedback.rating)}
                         <span className="flex items-center gap-1 text-sm text-stone-500">
                           <Mail className="w-3 h-3" />
-                          {feedback.customer_email || 'אנונימי'}
+                          {feedback.customer_email || "אנונימי"}
                         </span>
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="flex items-center gap-1 text-xs text-stone-400">
                           <Calendar className="w-3 h-3" />
-                          {feedback.created_date ? format(new Date(feedback.created_date), 'dd/MM/yyyy HH:mm', { locale: he }) : '—'}
+                          {feedback.created_date
+                            ? format(new Date(feedback.created_date), "dd/MM/yyyy HH:mm", { locale: he })
+                            : "—"}
                         </span>
                         <Button
                           variant="ghost"
@@ -388,15 +380,16 @@ export default function ChatLogs() {
                         </Button>
                       </div>
                     </div>
-                    
+
                     {extractComment(feedback.comment) && (
                       <div className="mt-2 p-3 bg-stone-50 text-sm text-stone-700">
-                        <strong>תגובת הלקוח:</strong> {extractComment(feedback.comment)}
+                        <strong>תגובת הלקוח:</strong>{" "}
+                        {extractComment(feedback.comment)}
                       </div>
                     )}
-                    
+
                     <div className="mt-2 text-xs text-stone-400">
-                      מזהה שיחה: {feedback.order_id || '—'}
+                      מזהה שיחה: {feedback.order_id || "—"}
                     </div>
                   </div>
                 ))}
@@ -406,8 +399,11 @@ export default function ChatLogs() {
         </Card>
       )}
 
-      {/* Conversation Detail Dialog */}
-      <Dialog open={!!selectedConversation} onOpenChange={() => setSelectedConversation(null)}>
+      {/* SINGLE CONVERSATION MODAL */}
+      <Dialog
+        open={!!selectedConversation}
+        onOpenChange={() => setSelectedConversation(null)}
+      >
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -415,39 +411,51 @@ export default function ChatLogs() {
               צפייה בשיחה
             </DialogTitle>
           </DialogHeader>
-          
+
           {selectedConversation && (
             <div className="space-y-4">
               <div className="flex items-center gap-4 text-sm text-stone-500 border-b pb-3">
                 <span className="flex items-center gap-1">
                   <Mail className="w-3 h-3" />
-                  {selectedConversation.customer_email || 'אנונימי'}
+                  {selectedConversation.customer_email || "אנונימי"}
                 </span>
                 <span className="flex items-center gap-1">
                   <Calendar className="w-3 h-3" />
-                  {selectedConversation.created_date ? format(new Date(selectedConversation.created_date), 'dd/MM/yyyy HH:mm', { locale: he }) : '—'}
+                  {selectedConversation.created_date
+                    ? format(new Date(selectedConversation.created_date), "dd/MM/yyyy HH:mm", {
+                        locale: he,
+                      })
+                    : "—"}
                 </span>
               </div>
-              
+
               <div className="space-y-3">
                 {selectedConversation.messages?.map((msg, index) => (
-                  <div 
-                    key={index} 
-                    className={`flex items-start gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  <div
+                    key={index}
+                    className={`flex items-start gap-2 ${
+                      msg.role === "user"
+                        ? "justify-end"
+                        : "justify-start"
+                    }`}
                   >
-                    {msg.role === 'bot' && (
+                    {msg.role === "bot" && (
                       <div className="w-7 h-7 bg-rose-400 flex items-center justify-center text-white flex-shrink-0">
                         <Bot className="w-4 h-4" />
                       </div>
                     )}
-                    <div className={`max-w-[80%] p-3 text-sm ${
-                      msg.role === 'user' 
-                        ? 'bg-stone-800 text-white' 
-                        : 'bg-stone-100 text-stone-800'
-                    }`}>
+
+                    <div
+                      className={`max-w-[80%] p-3 text-sm ${
+                        msg.role === "user"
+                          ? "bg-stone-800 text-white"
+                          : "bg-stone-100 text-stone-800"
+                      }`}
+                    >
                       {msg.content}
                     </div>
-                    {msg.role === 'user' && (
+
+                    {msg.role === "user" && (
                       <div className="w-7 h-7 bg-stone-700 flex items-center justify-center text-white flex-shrink-0">
                         <UserIcon className="w-4 h-4" />
                       </div>
