@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { MessageSquare, Search, Loader2, ThumbsUp, ThumbsDown, Calendar, Mail, Trash2, Eye, Bot, User as UserIcon } from "lucide-react";
+import { MessageSquare, Search, Loader2, ThumbsUp, ThumbsDown, Calendar, Mail, Trash2, Eye, Bot, User as UserIcon, Check, Circle } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
@@ -19,7 +19,7 @@ export default function ChatLogs() {
   const [userRole, setUserRole] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedConversation, setSelectedConversation] = useState(null);
-  const [viewMode, setViewMode] = useState('conversations'); // 'conversations' | 'feedbacks'
+  const [viewMode, setViewMode] = useState('conversations');
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -45,7 +45,6 @@ export default function ChatLogs() {
         Feedback.list('-created_date', 100),
         ChatConversation.list('-created_date', 100)
       ]);
-      // Filter only chat session feedbacks
       const chatFeedbacks = feedbackData.filter(f => f.order_id?.startsWith('session_') || f.comment?.includes('Chat session'));
       setFeedbacks(chatFeedbacks);
       setConversations(conversationData);
@@ -77,6 +76,25 @@ export default function ChatLogs() {
     );
   });
 
+  // ✨ פונקציה חדשה - סימון כנקרא/לא נקרא
+  const toggleReadStatus = async (conversationId) => {
+    try {
+      const conversation = conversations.find(c => c.id === conversationId);
+      const newReadStatus = !conversation.is_read;
+      
+      // עדכון בשרת
+      await ChatConversation.update(conversationId, { is_read: newReadStatus });
+      
+      // עדכון ב-state
+      setConversations(prev => prev.map(c => 
+        c.id === conversationId ? { ...c, is_read: newReadStatus } : c
+      ));
+    } catch (error) {
+      console.error("Error updating read status:", error);
+      alert("שגיאה בעדכון סטטוס");
+    }
+  };
+
   const handleDeleteConversation = async (conversationId) => {
     if (!confirm("למחוק את השיחה הזו?")) return;
     try {
@@ -99,7 +117,6 @@ export default function ChatLogs() {
 
   const extractComment = (comment) => {
     if (!comment) return null;
-    // Extract actual comment if exists
     const commentMatch = comment.match(/Comment:\s*(.+)/);
     if (commentMatch) {
       return commentMatch[1];
@@ -108,7 +125,7 @@ export default function ChatLogs() {
   };
 
   const handleDelete = async (feedbackId) => {
-    if (!confirm("למחוק את המשוב הזה?")) return;
+    if (!confirm("למחוק את המשוב הזו?")) return;
     try {
       await Feedback.delete(feedbackId);
       setFeedbacks(prev => prev.filter(f => f.id !== feedbackId));
@@ -128,6 +145,9 @@ export default function ChatLogs() {
       </div>
     );
   }
+
+  // ✨ ספירת שיחות לא נקראות
+  const unreadCount = conversations.filter(c => !c.is_read).length;
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="pb-12">
@@ -155,6 +175,11 @@ export default function ChatLogs() {
         >
           <MessageSquare className="w-4 h-4" />
           שיחות ({conversations.length})
+          {unreadCount > 0 && (
+            <span className="bg-rose-500 text-white text-xs px-2 py-0.5 rounded-full">
+              {unreadCount}
+            </span>
+          )}
         </Button>
         <Button
           variant={viewMode === 'feedbacks' ? 'default' : 'outline'}
@@ -189,8 +214,8 @@ export default function ChatLogs() {
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-3xl font-bold text-stone-900">{feedbacks.length}</div>
-            <p className="text-sm text-stone-500">סה"כ משובים</p>
+            <div className="text-3xl font-bold text-rose-600">{unreadCount}</div>
+            <p className="text-sm text-stone-500">לא נקראו</p>
           </CardContent>
         </Card>
         <Card>
@@ -232,10 +257,21 @@ export default function ChatLogs() {
                 {filteredConversations.map((conversation) => (
                   <div 
                     key={conversation.id} 
-                    className="p-4 border border-stone-200 hover:bg-stone-50 transition-colors"
+                    className={`p-4 border transition-colors ${
+                      conversation.is_read 
+                        ? 'border-stone-200 bg-white hover:bg-stone-50' 
+                        : 'border-rose-300 bg-rose-50 hover:bg-rose-100'
+                    }`}
                   >
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex items-center gap-4">
+                        {/* ✨ אינדיקטור נקרא/לא נקרא */}
+                        {!conversation.is_read && (
+                          <span className="flex items-center gap-1 text-xs font-bold text-rose-600 bg-rose-100 px-2 py-1 rounded">
+                            <Circle className="w-3 h-3 fill-rose-600" />
+                            חדש
+                          </span>
+                        )}
                         <span className="flex items-center gap-1 text-sm text-stone-700 font-medium">
                           <MessageSquare className="w-4 h-4" />
                           {conversation.messages?.length || 0} הודעות
@@ -250,6 +286,20 @@ export default function ChatLogs() {
                           <Calendar className="w-3 h-3" />
                           {conversation.created_date ? format(new Date(conversation.created_date), 'dd/MM/yyyy HH:mm', { locale: he }) : '—'}
                         </span>
+                        {/* ✨ כפתור סימון כנקרא */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toggleReadStatus(conversation.id)}
+                          className={`h-7 w-7 p-0 ${
+                            conversation.is_read 
+                              ? 'text-stone-400 hover:text-stone-600 hover:bg-stone-100' 
+                              : 'text-rose-500 hover:text-rose-700 hover:bg-rose-100'
+                          }`}
+                          title={conversation.is_read ? 'סמן כלא נקרא' : 'סמן כנקרא'}
+                        >
+                          {conversation.is_read ? <Circle className="w-4 h-4" /> : <Check className="w-4 h-4" />}
+                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -271,7 +321,9 @@ export default function ChatLogs() {
                     
                     {/* Preview last message */}
                     {conversation.messages?.length > 0 && (
-                      <div className="mt-2 p-3 bg-stone-50 text-sm text-stone-600 truncate">
+                      <div className={`mt-2 p-3 text-sm truncate ${
+                        conversation.is_read ? 'bg-stone-50 text-stone-600' : 'bg-white text-stone-700'
+                      }`}>
                         {conversation.messages[conversation.messages.length - 1]?.content?.substring(0, 100)}...
                       </div>
                     )}
