@@ -77,23 +77,30 @@ export default function ChatLogs() {
   });
 
   // ✨ פונקציה חדשה - סימון כנקרא/לא נקרא
-  const toggleReadStatus = async (conversationId) => {
-    try {
-      const conversation = conversations.find(c => c.id === conversationId);
-      const newReadStatus = !conversation.is_read;
-      
-      // עדכון בשרת
-      await ChatConversation.update(conversationId, { is_read: newReadStatus });
-      
-      // עדכון ב-state
-      setConversations(prev => prev.map(c => 
-        c.id === conversationId ? { ...c, is_read: newReadStatus } : c
-      ));
-    } catch (error) {
-      console.error("Error updating read status:", error);
-      alert("שגיאה בעדכון סטטוס");
-    }
-  };
+ const toggleReadStatus = async (conversationId) => {
+  try {
+    const conversation = conversations.find(c => c.id === conversationId);
+
+    // הפיכת undefined ל־false
+    const currentStatus = conversation.is_read === true;
+
+    // היפוך מצב הקריאה
+    const newStatus = !currentStatus;
+
+    // עדכון בשרת
+    await ChatConversation.update(conversationId, { is_read: newStatus });
+
+    // עדכון ב־state
+    setConversations(prev =>
+      prev.map(c =>
+        c.id === conversationId ? { ...c, is_read: newStatus } : c
+      )
+    );
+  } catch (error) {
+    console.error("Error updating read status:", error);
+    alert("שגיאה בעדכון סטטוס");
+  }
+};
 
   const handleDeleteConversation = async (conversationId) => {
     if (!confirm("למחוק את השיחה הזו?")) return;
