@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, Clock } from 'lucide-react';
 
-const DISCOUNT_END_DATE = new Date('2025-12-13T00:00:00');
+const DISCOUNT_END_DATE = new Date('2025-12-13T23:59:59');
 
 export default function DiscountBanner() {
   const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
