@@ -63,11 +63,10 @@ export default function ProfitReports() {
   
   // מצב ליצירת חבילה חדשה
   const [showBatchDialog, setShowBatchDialog] = useState(false);
-  const [selectedOrderIds, setSelectedOrderIds] = useState(new Set());
   const [selectedItems, setSelectedItems] = useState([]); // [{orderId, itemIndex, item}]
-  const [batchMode, setBatchMode] = useState('orders'); // 'orders' or 'items'
   const [newBatch, setNewBatch] = useState({ batch_name: '', total_shipping_cost: '', shipping_currency: 'USD', notes: '' });
   const [editingBatch, setEditingBatch] = useState(null);
+  const [addingItemsToBatch, setAddingItemsToBatch] = useState(null); // batch id when adding items to existing batch
   
   // עריכת פריט בודד בתוך פירוט הזמנה
   const [inlineEditingItem, setInlineEditingItem] = useState(null); // {orderId, itemIndex, data}
@@ -108,19 +107,38 @@ export default function ProfitReports() {
     }
   };
 
-  // מציאת חבילה שהזמנה שייכת אליה
-  const getOrderBatch = (orderId) => {
-    return batches.find(b => (b.order_ids || []).includes(orderId));
+  // מציאת חבילה שפריט שייך אליה
+  const getItemBatch = (orderId, itemIndex) => {
+    return batches.find(b => 
+      (b.item_links || []).some(link => link.order_id === orderId && link.item_index === itemIndex)
+    );
   };
 
-  // חישוב עלות משלוח יחסית מחבילה
-  const getBatchShippingShare = (orderId) => {
-    const batch = getOrderBatch(orderId);
+  // בדיקה אם פריט כבר משויך לחבילה כלשהי
+  const isItemLinkedToBatch = (orderId, itemIndex) => {
+    return batches.some(b => 
+      (b.item_links || []).some(link => link.order_id === orderId && link.item_index === itemIndex)
+    );
+  };
+
+  // חישוב עלות משלוח יחסית לכל פריט בחבילה
+  const getItemBatchShippingShare = (orderId, itemIndex) => {
+    const batch = getItemBatch(orderId, itemIndex);
     if (!batch || !batch.total_shipping_cost) return 0;
-    const orderCount = (batch.order_ids || []).length;
-    if (orderCount === 0) return 0;
-    const sharePerOrder = convertToILS(batch.total_shipping_cost, batch.shipping_currency || 'USD') / orderCount;
-    return sharePerOrder;
+    const itemCount = (batch.item_links || []).length;
+    if (itemCount === 0) return 0;
+    const sharePerItem = convertToILS(batch.total_shipping_cost, batch.shipping_currency || 'USD') / itemCount;
+    return sharePerItem;
+  };
+
+  // חישוב סה״כ עלות משלוח להזמנה (מכל החבילות של הפריטים שלה)
+  const getOrderTotalBatchShipping = (order) => {
+    if (!order || !order.items) return 0;
+    let totalShipping = 0;
+    order.items.forEach((item, idx) => {
+      totalShipping += getItemBatchShippingShare(order.id, idx);
+    });
+    return totalShipping;
   };
 
   // סינון הזמנות לפי תאריך וסטטוס
@@ -180,10 +198,10 @@ export default function ProfitReports() {
       }
     });
     
-    // הוספת עלות משלוח (ישיר או מחבילה)
+    // הוספת עלות משלוח (ישיר או מחבילות)
     let shippingCost = convertToILS(order.actual_shipping_cost, order.actual_shipping_currency || 'ILS');
     if (shippingCost === 0) {
-      shippingCost = getBatchShippingShare(order.id);
+      shippingCost = getOrderTotalBatchShipping(order);
     }
     totalCost += shippingCost;
     
@@ -317,15 +335,6 @@ export default function ProfitReports() {
   };
 
   // פונקציות לניהול חבילות
-  const toggleOrderSelection = (orderId) => {
-    setSelectedOrderIds(prev => {
-      const next = new Set(prev);
-      if (next.has(orderId)) next.delete(orderId);
-      else next.add(orderId);
-      return next;
-    });
-  };
-
   const toggleItemSelection = (orderId, itemIndex, item) => {
     setSelectedItems(prev => {
       const exists = prev.find(i => i.orderId === orderId && i.itemIndex === itemIndex);
@@ -342,45 +351,49 @@ export default function ProfitReports() {
   };
 
   const handleCreateBatch = async () => {
-    const hasOrders = batchMode === 'orders' && selectedOrderIds.size > 0;
-    const hasItems = batchMode === 'items' && selectedItems.length > 0;
+    const hasItems = selectedItems.length > 0;
     
-    if (!newBatch.batch_name || !newBatch.total_shipping_cost || (!hasOrders && !hasItems)) {
-      alert('יש למלא שם חבילה, עלות משלוח ולבחור לפחות הזמנה אחת או פריט אחד');
+    if (!newBatch.batch_name || !newBatch.total_shipping_cost || !hasItems) {
+      alert('יש למלא שם חבילה, עלות משלוח ולבחור לפחות פריט אחד');
       return;
     }
     setSaving(true);
     try {
-      // Build batch data based on mode
       const batchData = {
         batch_name: newBatch.batch_name,
         total_shipping_cost: Number(newBatch.total_shipping_cost),
         shipping_currency: newBatch.shipping_currency,
         notes: newBatch.notes,
-        status: 'pending'
-      };
-
-      if (batchMode === 'orders') {
-        batchData.order_ids = Array.from(selectedOrderIds);
-      } else {
-        // For items mode, store the item references
-        batchData.order_ids = [...new Set(selectedItems.map(i => i.orderId))];
-        batchData.item_refs = selectedItems.map(i => ({
+        status: 'pending',
+        item_links: selectedItems.map(i => ({
           order_id: i.orderId,
           item_index: i.itemIndex,
           product_name: i.item.product_name
-        }));
-        batchData.notes = (newBatch.notes ? newBatch.notes + ' | ' : '') + 
-          'פריטים: ' + selectedItems.map(i => `${i.item.product_name} (הזמנה #${i.orderNumber})`).join(', ');
-      }
+        }))
+      };
 
-      await ShipmentBatch.create(batchData);
+      const createdBatch = await ShipmentBatch.create(batchData);
+      
+      // עדכון הפריטים בהזמנות עם מזהה החבילה
+      const updatePromises = selectedItems.map(async (selectedItem) => {
+        const order = orders.find(o => o.id === selectedItem.orderId);
+        if (!order) return;
+        
+        const updatedItems = [...order.items];
+        updatedItems[selectedItem.itemIndex] = {
+          ...updatedItems[selectedItem.itemIndex],
+          shipment_batch_id: createdBatch.id
+        };
+        
+        await Order.update(order.id, { items: updatedItems });
+      });
+      
+      await Promise.all(updatePromises);
       await loadOrders();
+      
       setShowBatchDialog(false);
       setNewBatch({ batch_name: '', total_shipping_cost: '', shipping_currency: 'USD', notes: '' });
-      setSelectedOrderIds(new Set());
       setSelectedItems([]);
-      setBatchMode('orders');
     } catch (e) {
       console.error('Error creating batch:', e);
       alert('שגיאה ביצירת חבילה');
@@ -419,11 +432,60 @@ export default function ProfitReports() {
     }
   };
 
-  const removeOrderFromBatch = async (batchId, orderId) => {
+  const removeItemFromBatch = async (batchId, orderId, itemIndex) => {
     const batch = batches.find(b => b.id === batchId);
     if (!batch) return;
-    const newOrderIds = (batch.order_ids || []).filter(id => id !== orderId);
-    await ShipmentBatch.update(batchId, { order_ids: newOrderIds });
+    
+    const newItemLinks = (batch.item_links || []).filter(link => 
+      !(link.order_id === orderId && link.item_index === itemIndex)
+    );
+    
+    await ShipmentBatch.update(batchId, { item_links: newItemLinks });
+    
+    // הסרת shipment_batch_id מהפריט
+    const order = orders.find(o => o.id === orderId);
+    if (order) {
+      const updatedItems = [...order.items];
+      updatedItems[itemIndex] = {
+        ...updatedItems[itemIndex],
+        shipment_batch_id: null
+      };
+      await Order.update(orderId, { items: updatedItems });
+    }
+    
+    await loadOrders();
+  };
+
+  const addItemsToBatch = async (batchId, newItems) => {
+    const batch = batches.find(b => b.id === batchId);
+    if (!batch) return;
+    
+    const currentLinks = batch.item_links || [];
+    const newLinks = newItems.map(i => ({
+      order_id: i.orderId,
+      item_index: i.itemIndex,
+      product_name: i.item.product_name
+    }));
+    
+    await ShipmentBatch.update(batchId, { 
+      item_links: [...currentLinks, ...newLinks] 
+    });
+    
+    // עדכון הפריטים בהזמנות
+    const updatePromises = newItems.map(async (selectedItem) => {
+      const order = orders.find(o => o.id === selectedItem.orderId);
+      if (!order) return;
+      
+      const updatedItems = [...order.items];
+      updatedItems[selectedItem.itemIndex] = {
+        ...updatedItems[selectedItem.itemIndex],
+        shipment_batch_id: batchId
+      };
+      
+      await Order.update(order.id, { items: updatedItems });
+    });
+    
+    await Promise.all(updatePromises);
     await loadOrders();
   };
 
@@ -563,25 +625,32 @@ export default function ProfitReports() {
               ) : (
                 <div className="space-y-4">
                   {batches.map(batch => {
-                    const batchOrders = orders.filter(o => (batch.order_ids || []).includes(o.id));
-                    const costPerOrder = batchOrders.length > 0 
-                      ? convertToILS(batch.total_shipping_cost, batch.shipping_currency || 'USD') / batchOrders.length 
+                    const itemLinks = batch.item_links || [];
+                    const costPerItem = itemLinks.length > 0 
+                      ? convertToILS(batch.total_shipping_cost, batch.shipping_currency || 'USD') / itemLinks.length 
                       : 0;
                     
                     return (
                       <Card key={batch.id} className="border-2 border-purple-200 bg-purple-50/50">
                         <CardContent className="p-4">
                           <div className="flex justify-between items-start mb-3">
-                            <div>
+                            <div className="flex-1">
                               <h3 className="font-semibold text-lg">{batch.batch_name}</h3>
                               <p className="text-sm text-stone-500">
-                                {batchOrders.length} הזמנות • 
+                                {itemLinks.length} פריטים • 
                                 עלות כוללת: {batch.shipping_currency === 'USD' ? '$' : batch.shipping_currency === 'EUR' ? '€' : batch.shipping_currency === 'GBP' ? '£' : '₪'}{batch.total_shipping_cost} • 
-                                עלות להזמנה: ₪{costPerOrder.toFixed(0)}
+                                עלות לפריט: ₪{costPerItem.toFixed(0)}
                               </p>
                               {batch.notes && <p className="text-xs text-stone-400 mt-1">{batch.notes}</p>}
                             </div>
                             <div className="flex gap-2">
+                              <Button size="sm" variant="outline" onClick={() => {
+                                setAddingItemsToBatch(batch.id);
+                                setShowBatchDialog(true);
+                              }}>
+                                <Plus className="w-4 h-4 ml-1" />
+                                הוסף פריטים
+                              </Button>
                               <Button size="sm" variant="outline" onClick={() => setEditingBatch(batch)}>
                                 <Edit2 className="w-4 h-4" />
                               </Button>
@@ -590,18 +659,39 @@ export default function ProfitReports() {
                               </Button>
                             </div>
                           </div>
-                          <div className="flex flex-wrap gap-2">
-                            {batchOrders.map(order => (
-                              <Badge key={order.id} variant="secondary" className="flex items-center gap-1">
-                                #{order.order_number} - {order.customer_name}
-                                <button 
-                                  onClick={() => removeOrderFromBatch(batch.id, order.id)}
-                                  className="mr-1 hover:text-red-500"
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </Badge>
-                            ))}
+                          
+                          {/* רשימת הפריטים בחבילה */}
+                          <div className="space-y-2 mt-3">
+                            {itemLinks.map((link, idx) => {
+                              const order = orders.find(o => o.id === link.order_id);
+                              const item = order?.items?.[link.item_index];
+                              
+                              return (
+                                <div key={idx} className="flex items-center justify-between p-2 bg-white border border-purple-100 hover:border-purple-300 transition-colors">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant="outline" className="text-xs">#{order?.order_number}</Badge>
+                                      <span className="text-sm font-medium">{link.product_name}</span>
+                                    </div>
+                                    {item && (
+                                      <div className="text-xs text-stone-500 mt-1">
+                                        {order?.customer_name}
+                                        {(item.color || item.size) && ` • ${[item.color, item.size].filter(Boolean).join(' / ')}`}
+                                        {item.quantity > 1 && ` • כמות: ${item.quantity}`}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <Button 
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-red-500 hover:text-red-700 h-7 w-7 p-0"
+                                    onClick={() => removeItemFromBatch(batch.id, link.order_id, link.item_index)}
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              );
+                            })}
                           </div>
                         </CardContent>
                       </Card>
@@ -654,13 +744,24 @@ export default function ProfitReports() {
                           </button>
                         </td>
                         <td className="p-3">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <Badge variant="outline">#{order.order_number}</Badge>
-                            {getOrderBatch(order.id) && (
-                              <Badge className="bg-purple-100 text-purple-700 text-xs">
-                                📦 {getOrderBatch(order.id).batch_name}
-                              </Badge>
-                            )}
+                            {/* Show unique batches for this order's items */}
+                            {(() => {
+                              const orderBatchIds = new Set();
+                              (order.items || []).forEach((item, idx) => {
+                                const batch = getItemBatch(order.id, idx);
+                                if (batch) orderBatchIds.add(batch.id);
+                              });
+                              return Array.from(orderBatchIds).map(batchId => {
+                                const batch = batches.find(b => b.id === batchId);
+                                return batch ? (
+                                  <Badge key={batchId} className="bg-purple-100 text-purple-700 text-xs">
+                                    📦 {batch.batch_name}
+                                  </Badge>
+                                ) : null;
+                              });
+                            })()}
                           </div>
                         </td>
                         <td className="p-3 text-sm">
@@ -797,47 +898,58 @@ export default function ProfitReports() {
                                       );
                                     }
                                     
+                                    const itemBatch = getItemBatch(order.id, idx);
+
                                     return (
-                                      <tr key={idx} className="border-t border-stone-200 hover:bg-stone-50">
-                                        <td className="py-2 text-left" style={{width: '20%'}}>{item.product_name}</td>
-                                        <td className="py-2 text-left" style={{width: '10%'}}>{[item.color, item.size].filter(Boolean).join(' / ') || '-'}</td>
-                                        <td className="py-2 text-left" style={{width: '6%'}}>{item.quantity || 1}</td>
-                                        <td className="py-2 text-left text-stone-600" style={{width: '10%'}}>{originalPriceDisplay}</td>
-                                        <td className="py-2 text-left text-blue-700 font-medium" style={{width: '12%'}}>
-                                          {hasCustomerPrice ? `₪${customerPrice.toFixed(0)}` : <span className="text-amber-500">לא נשמר</span>}
-                                        </td>
-                                        <td className="py-2 text-left text-orange-700" style={{width: '12%'}}>
-                                          {hasCost ? `₪${costPrice.toFixed(0)}` : <span className="text-amber-500">לא הוזן</span>}
-                                        </td>
-                                        <td className={`py-2 text-left font-medium ${itemProfit >= 0 ? 'text-green-700' : 'text-red-700'}`} style={{width: '10%'}}>
-                                          {hasCost && hasCustomerPrice ? `₪${itemProfit.toFixed(0)}` : '-'}
-                                        </td>
-                                        <td className="py-2 text-left" style={{width: '10%'}}>
-                                          {itemMargin !== null ? (
-                                            <Badge className={itemMargin >= 20 ? 'bg-green-100 text-green-800' : itemMargin >= 0 ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'}>
-                                              {itemMargin.toFixed(0)}%
-                                            </Badge>
-                                          ) : '-'}
-                                        </td>
-                                        <td className="py-2 text-left" style={{width: '10%'}}>
-                                          <Button 
-                                            size="sm" 
-                                            variant="ghost" 
-                                            className="h-7 w-7 p-0 text-stone-500 hover:text-stone-700"
-                                            onClick={() => startInlineEdit(order, idx)}
-                                          >
-                                            <Edit2 className="w-3 h-3" />
-                                          </Button>
-                                        </td>
-                                      </tr>
+                                     <tr key={idx} className="border-t border-stone-200 hover:bg-stone-50">
+                                       <td className="py-2 text-left" style={{width: '20%'}}>
+                                         <div className="flex items-center gap-2">
+                                           <span>{item.product_name}</span>
+                                           {itemBatch && (
+                                             <Badge className="bg-purple-100 text-purple-700 text-xs">
+                                               📦 {itemBatch.batch_name}
+                                             </Badge>
+                                           )}
+                                         </div>
+                                       </td>
+                                       <td className="py-2 text-left" style={{width: '10%'}}>{[item.color, item.size].filter(Boolean).join(' / ') || '-'}</td>
+                                       <td className="py-2 text-left" style={{width: '6%'}}>{item.quantity || 1}</td>
+                                       <td className="py-2 text-left text-stone-600" style={{width: '10%'}}>{originalPriceDisplay}</td>
+                                       <td className="py-2 text-left text-blue-700 font-medium" style={{width: '12%'}}>
+                                         {hasCustomerPrice ? `₪${customerPrice.toFixed(0)}` : <span className="text-amber-500">לא נשמר</span>}
+                                       </td>
+                                       <td className="py-2 text-left text-orange-700" style={{width: '12%'}}>
+                                         {hasCost ? `₪${costPrice.toFixed(0)}` : <span className="text-amber-500">לא הוזן</span>}
+                                       </td>
+                                       <td className={`py-2 text-left font-medium ${itemProfit >= 0 ? 'text-green-700' : 'text-red-700'}`} style={{width: '10%'}}>
+                                         {hasCost && hasCustomerPrice ? `₪${itemProfit.toFixed(0)}` : '-'}
+                                       </td>
+                                       <td className="py-2 text-left" style={{width: '10%'}}>
+                                         {itemMargin !== null ? (
+                                           <Badge className={itemMargin >= 20 ? 'bg-green-100 text-green-800' : itemMargin >= 0 ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'}>
+                                             {itemMargin.toFixed(0)}%
+                                           </Badge>
+                                         ) : '-'}
+                                       </td>
+                                       <td className="py-2 text-left" style={{width: '10%'}}>
+                                         <Button 
+                                           size="sm" 
+                                           variant="ghost" 
+                                           className="h-7 w-7 p-0 text-stone-500 hover:text-stone-700"
+                                           onClick={() => startInlineEdit(order, idx)}
+                                         >
+                                           <Edit2 className="w-3 h-3" />
+                                         </Button>
+                                       </td>
+                                     </tr>
                                     );
                                   })}
-                                  {(order.actual_shipping_cost > 0 || getBatchShippingShare(order.id) > 0) && (
+                                  {(order.actual_shipping_cost > 0 || getOrderTotalBatchShipping(order) > 0) && (
                                     <tr className="border-t border-stone-300 bg-stone-200/50">
                                       <td style={{width: '20%'}} className="py-2 font-medium">
                                         עלות משלוח
-                                        {getBatchShippingShare(order.id) > 0 && !order.actual_shipping_cost && (
-                                          <span className="text-xs text-purple-600 mr-2">(מחבילה: {getOrderBatch(order.id)?.batch_name})</span>
+                                        {getOrderTotalBatchShipping(order) > 0 && !order.actual_shipping_cost && (
+                                          <span className="text-xs text-purple-600 mr-2">(מחבילות)</span>
                                         )}
                                       </td>
                                       <td style={{width: '10%'}} className="py-2"></td>
@@ -845,7 +957,7 @@ export default function ProfitReports() {
                                       <td style={{width: '10%'}} className="py-2"></td>
                                       <td style={{width: '12%'}} className="py-2"></td>
                                       <td style={{width: '12%'}} className="py-2 text-orange-700 font-medium">
-                                        ₪{(order.actual_shipping_cost ? convertToILS(order.actual_shipping_cost, order.actual_shipping_currency || 'ILS') : getBatchShippingShare(order.id)).toFixed(0)}
+                                        ₪{(order.actual_shipping_cost ? convertToILS(order.actual_shipping_cost, order.actual_shipping_currency || 'ILS') : getOrderTotalBatchShipping(order)).toFixed(0)}
                                       </td>
                                       <td style={{width: '10%'}} className="py-2"></td>
                                       <td style={{width: '10%'}} className="py-2"></td>
@@ -869,113 +981,90 @@ export default function ProfitReports() {
         </TabsContent>
       </Tabs>
 
-      {/* דיאלוג יצירת חבילה */}
+      {/* דיאלוג יצירת/עריכת חבילה */}
       <Dialog open={showBatchDialog} onOpenChange={(open) => {
         setShowBatchDialog(open);
         if (!open) {
-          setSelectedOrderIds(new Set());
           setSelectedItems([]);
-          setBatchMode('orders');
+          setAddingItemsToBatch(null);
+          setNewBatch({ batch_name: '', total_shipping_cost: '', shipping_currency: 'USD', notes: '' });
         }
       }}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>קישור הזמנות לחבילת משלוח משותפת</DialogTitle>
+            <DialogTitle>
+              {addingItemsToBatch ? `הוספת פריטים ל-${batches.find(b => b.id === addingItemsToBatch)?.batch_name}` : 'קישור פריטים לחבילת משלוח משותפת'}
+            </DialogTitle>
           </DialogHeader>
           
           <div className="space-y-4 mt-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>שם החבילה</Label>
-                <Input
-                  placeholder="לדוגמה: משלוח דצמבר 2024"
-                  value={newBatch.batch_name}
-                  onChange={(e) => setNewBatch(prev => ({ ...prev, batch_name: e.target.value }))}
-                />
-              </div>
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <Label>עלות משלוח כוללת</Label>
+            {!addingItemsToBatch && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>שם החבילה</Label>
+                    <Input
+                      placeholder="לדוגמה: משלוח דצמבר 2024"
+                      value={newBatch.batch_name}
+                      onChange={(e) => setNewBatch(prev => ({ ...prev, batch_name: e.target.value }))}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <Label>עלות משלוח כוללת</Label>
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        value={newBatch.total_shipping_cost}
+                        onChange={(e) => setNewBatch(prev => ({ ...prev, total_shipping_cost: e.target.value }))}
+                      />
+                    </div>
+                    <div className="w-24">
+                      <Label>מטבע</Label>
+                      <Select value={newBatch.shipping_currency} onValueChange={(v) => setNewBatch(prev => ({ ...prev, shipping_currency: v }))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="USD">$ USD</SelectItem>
+                          <SelectItem value="EUR">€ EUR</SelectItem>
+                          <SelectItem value="GBP">£ GBP</SelectItem>
+                          <SelectItem value="ILS">₪ ILS</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <Label>הערות (אופציונלי)</Label>
                   <Input
-                    type="number"
-                    placeholder="0"
-                    value={newBatch.total_shipping_cost}
-                    onChange={(e) => setNewBatch(prev => ({ ...prev, total_shipping_cost: e.target.value }))}
+                    placeholder="הערות נוספות..."
+                    value={newBatch.notes}
+                    onChange={(e) => setNewBatch(prev => ({ ...prev, notes: e.target.value }))}
                   />
                 </div>
-                <div className="w-24">
-                  <Label>מטבע</Label>
-                  <Select value={newBatch.shipping_currency} onValueChange={(v) => setNewBatch(prev => ({ ...prev, shipping_currency: v }))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="USD">$ USD</SelectItem>
-                      <SelectItem value="EUR">€ EUR</SelectItem>
-                      <SelectItem value="GBP">£ GBP</SelectItem>
-                      <SelectItem value="ILS">₪ ILS</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-            
+              </>
+            )}
+
             <div>
-              <Label>הערות (אופציונלי)</Label>
-              <Input
-                placeholder="הערות נוספות..."
-                value={newBatch.notes}
-                onChange={(e) => setNewBatch(prev => ({ ...prev, notes: e.target.value }))}
-              />
-            </div>
-
-            {/* Tab selection for orders vs items */}
-            <div className="flex gap-2 border-b pb-2">
-              <Button 
-                variant={batchMode === 'orders' ? 'default' : 'outline'} 
-                size="sm"
-                onClick={() => setBatchMode('orders')}
-              >
-                <Package className="w-4 h-4 ml-1" />
-                הזמנות שלמות
-              </Button>
-              <Button 
-                variant={batchMode === 'items' ? 'default' : 'outline'} 
-                size="sm"
-                onClick={() => setBatchMode('items')}
-              >
-                <Package className="w-4 h-4 ml-1" />
-                פריטים בודדים
-              </Button>
-            </div>
-
-            {batchMode === 'orders' ? (
-              <div>
-                <Label className="mb-2 block">בחרי הזמנות לקישור ({selectedOrderIds.size} נבחרו)</Label>
-                <div className="max-h-64 overflow-y-auto border p-2 space-y-2">
-                  {filteredOrders.filter(o => !getOrderBatch(o.id)).map(order => (
-                    <div 
-                      key={order.id} 
-                      className={`flex items-center gap-3 p-2 hover:bg-stone-50 cursor-pointer ${selectedOrderIds.has(order.id) ? 'bg-purple-50 border border-purple-200' : ''}`}
-                      onClick={() => toggleOrderSelection(order.id)}
-                    >
-                      <Checkbox checked={selectedOrderIds.has(order.id)} />
-                      <div className="flex-1">
-                        <span className="font-medium">#{order.order_number}</span>
-                        <span className="text-stone-500 mr-2">- {order.customer_name}</span>
-                        <span className="text-xs text-stone-400">{new Date(order.created_date).toLocaleDateString('he-IL')}</span>
-                      </div>
-                      <span className="text-sm text-stone-600">₪{order.total_price_ils?.toLocaleString()}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div>
-                <Label className="mb-2 block">בחרי פריטים בודדים לקישור ({selectedItems.length} נבחרו)</Label>
-                <p className="text-xs text-stone-500 mb-2">💡 שימושי כשרוצים להזמין פריטים מאתר אחר (למשל מאירופה במקום מאנגליה)</p>
-                <div className="max-h-80 overflow-y-auto border p-2 space-y-3">
-                  {filteredOrders.map(order => (
+              <Label className="mb-2 block">בחרי פריטים לקישור ({selectedItems.length} נבחרו)</Label>
+              <p className="text-xs text-stone-500 mb-2">💡 בחרי פריטים מהזמנות שונות שנשלחו יחד באותה חבילה</p>
+              <div className="max-h-80 overflow-y-auto border p-2 space-y-3">
+                {filteredOrders.map(order => {
+                  const availableItems = (order.items || []).filter((item, idx) => {
+                    // אם מוסיפים לחבילה קיימת, לא להציג פריטים שכבר שייכים לאותה חבילה
+                    if (addingItemsToBatch) {
+                      const itemBatch = getItemBatch(order.id, idx);
+                      return !itemBatch || itemBatch.id !== addingItemsToBatch;
+                    }
+                    // אחרת, לא להציג פריטים שכבר משויכים לחבילה כלשהי
+                    return !isItemLinkedToBatch(order.id, idx);
+                  });
+                  
+                  if (availableItems.length === 0) return null;
+                  
+                  return (
                     <div key={order.id} className="border-b pb-2 last:border-b-0">
                       <div className="font-medium text-sm text-stone-700 mb-2 flex items-center gap-2">
                         <Badge variant="outline">#{order.order_number}</Badge>
@@ -984,7 +1073,17 @@ export default function ProfitReports() {
                       </div>
                       <div className="space-y-1 mr-4">
                         {(order.items || []).map((item, idx) => {
+                          // בדיקה אם הפריט זמין לבחירה
+                          if (addingItemsToBatch) {
+                            const itemBatch = getItemBatch(order.id, idx);
+                            if (itemBatch && itemBatch.id === addingItemsToBatch) return null;
+                          } else {
+                            if (isItemLinkedToBatch(order.id, idx)) return null;
+                          }
+                          
                           const isSelected = isItemSelected(order.id, idx);
+                          const itemBatch = getItemBatch(order.id, idx);
+                          
                           return (
                             <div 
                               key={idx}
@@ -1000,6 +1099,11 @@ export default function ProfitReports() {
                                   </span>
                                 )}
                                 <span className="text-stone-400 mr-2">×{item.quantity || 1}</span>
+                                {itemBatch && itemBatch.id !== addingItemsToBatch && (
+                                  <Badge className="bg-amber-100 text-amber-700 text-xs mr-2">
+                                    📦 {itemBatch.batch_name}
+                                  </Badge>
+                                )}
                               </div>
                               <span className="text-xs text-stone-500">
                                 {item.original_currency === 'USD' ? '$' : item.original_currency === 'EUR' ? '€' : item.original_currency === 'GBP' ? '£' : '₪'}
@@ -1010,47 +1114,80 @@ export default function ProfitReports() {
                         })}
                       </div>
                     </div>
-                  ))}
-                </div>
-                
-                {selectedItems.length > 0 && (
-                  <div className="mt-2 p-2 bg-purple-50 border border-purple-200">
-                    <p className="text-xs font-medium text-purple-800 mb-1">פריטים נבחרים:</p>
-                    <div className="flex flex-wrap gap-1">
-                      {selectedItems.map((si, idx) => (
-                        <Badge key={idx} variant="secondary" className="text-xs">
-                          #{si.orderNumber} - {si.item.product_name}
-                          <button onClick={(e) => { e.stopPropagation(); toggleItemSelection(si.orderId, si.itemIndex, si.item); }} className="mr-1 hover:text-red-500">
-                            <X className="w-3 h-3" />
-                          </button>
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                  );
+                })}
               </div>
-            )}
+              
+              {selectedItems.length > 0 && (
+                <div className="mt-2 p-2 bg-purple-50 border border-purple-200">
+                  <p className="text-xs font-medium text-purple-800 mb-1">פריטים נבחרים:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {selectedItems.map((si, idx) => (
+                      <Badge key={idx} variant="secondary" className="text-xs">
+                        #{si.orderNumber} - {si.item.product_name}
+                        <button onClick={(e) => { e.stopPropagation(); toggleItemSelection(si.orderId, si.itemIndex, si.item); }} className="mr-1 hover:text-red-500">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
 
-            {((batchMode === 'orders' && selectedOrderIds.size > 0) || (batchMode === 'items' && selectedItems.length > 0)) && newBatch.total_shipping_cost && (
+            {selectedItems.length > 0 && (addingItemsToBatch || newBatch.total_shipping_cost) && (
               <div className="bg-purple-50 p-3 border border-purple-200">
                 <p className="text-sm text-purple-800">
-                  💡 עלות משלוח ל{batchMode === 'orders' ? 'הזמנה' : 'פריט'}: ₪{(convertToILS(Number(newBatch.total_shipping_cost), newBatch.shipping_currency) / (batchMode === 'orders' ? selectedOrderIds.size : selectedItems.length)).toFixed(0)}
+                  💡 עלות משלוח לפריט: ₪{(
+                    convertToILS(
+                      Number(addingItemsToBatch ? batches.find(b => b.id === addingItemsToBatch)?.total_shipping_cost : newBatch.total_shipping_cost), 
+                      addingItemsToBatch ? batches.find(b => b.id === addingItemsToBatch)?.shipping_currency : newBatch.shipping_currency
+                    ) / ((addingItemsToBatch ? (batches.find(b => b.id === addingItemsToBatch)?.item_links?.length || 0) : 0) + selectedItems.length)
+                  ).toFixed(0)}
                 </p>
               </div>
             )}
           </div>
           
           <div className="flex justify-end gap-2 mt-6">
-            <Button variant="outline" onClick={() => { setShowBatchDialog(false); setSelectedOrderIds(new Set()); setSelectedItems([]); setBatchMode('orders'); }}>
+            <Button variant="outline" onClick={() => { 
+              setShowBatchDialog(false); 
+              setSelectedItems([]); 
+              setAddingItemsToBatch(null);
+              setNewBatch({ batch_name: '', total_shipping_cost: '', shipping_currency: 'USD', notes: '' });
+            }}>
               ביטול
             </Button>
             <Button 
-              onClick={handleCreateBatch} 
-              disabled={saving || (batchMode === 'orders' ? selectedOrderIds.size === 0 : selectedItems.length === 0)} 
+              onClick={async () => {
+                if (addingItemsToBatch) {
+                  // הוספת פריטים לחבילה קיימת
+                  if (selectedItems.length === 0) {
+                    alert('יש לבחור לפחות פריט אחד');
+                    return;
+                  }
+                  setSaving(true);
+                  try {
+                    await addItemsToBatch(addingItemsToBatch, selectedItems);
+                    setShowBatchDialog(false);
+                    setSelectedItems([]);
+                    setAddingItemsToBatch(null);
+                  } catch (e) {
+                    console.error('Error adding items to batch:', e);
+                    alert('שגיאה בהוספת פריטים');
+                  } finally {
+                    setSaving(false);
+                  }
+                } else {
+                  // יצירת חבילה חדשה
+                  await handleCreateBatch();
+                }
+              }} 
+              disabled={saving || selectedItems.length === 0} 
               className="bg-purple-600 hover:bg-purple-700"
             >
               {saving ? <Loader2 className="w-4 h-4 ml-1 animate-spin" /> : <Plus className="w-4 h-4 ml-1" />}
-              יצירת חבילה
+              {addingItemsToBatch ? 'הוסף לחבילה' : 'יצירת חבילה'}
             </Button>
           </div>
         </DialogContent>
