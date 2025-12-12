@@ -11,7 +11,6 @@ import Profile from './pages/Profile';
 import MyOrders from './pages/MyOrders';
 import DefectClaim from './pages/DefectClaim';
 import Referral from './pages/Referral';
-import DisplaySettings from './pages/DisplaySettings';
 import LocalStock from './pages/LocalStock';
 import ManageLocalStock from './pages/ManageLocalStock';
 import LocalStockItemDetail from './pages/LocalStockItemDetail';
@@ -21,7 +20,6 @@ import ReturnsPolicy from './pages/ReturnsPolicy';
 import ChatLogs from './pages/ChatLogs';
 import ProfitReports from './pages/ProfitReports';
 import CompletePayment from './pages/CompletePayment';
-import ModeratedProductLinks from './pages/ModeratedProductLinks';
 import BackInStockNotifications from './pages/BackInStockNotifications';
 import __Layout from './Layout.jsx';
 
@@ -40,7 +38,6 @@ export const PAGES = {
     "MyOrders": MyOrders,
     "DefectClaim": DefectClaim,
     "Referral": Referral,
-    "DisplaySettings": DisplaySettings,
     "LocalStock": LocalStock,
     "ManageLocalStock": ManageLocalStock,
     "LocalStockItemDetail": LocalStockItemDetail,
@@ -50,7 +47,6 @@ export const PAGES = {
     "ChatLogs": ChatLogs,
     "ProfitReports": ProfitReports,
     "CompletePayment": CompletePayment,
-    "ModeratedProductLinks": ModeratedProductLinks,
     "BackInStockNotifications": BackInStockNotifications,
 }
 
