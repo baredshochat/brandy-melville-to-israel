@@ -49,6 +49,7 @@ export default function ManageCodes() {
     notes: ''
   });
   const [emailInput, setEmailInput] = useState('');
+  const [noExpiry, setNoExpiry] = useState(true);
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -98,6 +99,7 @@ export default function ManageCodes() {
         apply_on: code.apply_on || 'cheapest',
         notes: code.notes || ''
       });
+      setNoExpiry(!code.expires_at);
     } else {
       setEditingCode(null);
       setFormData({
@@ -117,6 +119,7 @@ export default function ManageCodes() {
         apply_on: 'cheapest',
         notes: ''
       });
+      setNoExpiry(true);
     }
     setEmailInput('');
     setDialogOpen(true);
@@ -127,6 +130,7 @@ export default function ManageCodes() {
       const dataToSave = {
         ...formData,
         code: formData.code.toUpperCase(),
+        expires_at: noExpiry ? null : formData.expires_at,
         usage_limit_total: formData.usage_limit_total ? Number(formData.usage_limit_total) : null,
         usage_limit_per_user: formData.usage_limit_per_user ? Number(formData.usage_limit_per_user) : null,
         value: Number(formData.value),
@@ -437,12 +441,26 @@ export default function ManageCodes() {
 
             {/* Expiry */}
             <div>
-              <Label>תאריך תפוגה</Label>
-              <Input
-                type="date"
-                value={formData.expires_at}
-                onChange={(e) => setFormData({ ...formData, expires_at: e.target.value })}
-              />
+              <div className="flex items-center gap-2 mb-2">
+                <Switch
+                  checked={noExpiry}
+                  onCheckedChange={(checked) => {
+                    setNoExpiry(checked);
+                    if (checked) setFormData({ ...formData, expires_at: '' });
+                  }}
+                />
+                <Label>ללא הגבלת זמן</Label>
+              </div>
+              {!noExpiry && (
+                <div>
+                  <Label>תאריך תפוגה</Label>
+                  <Input
+                    type="date"
+                    value={formData.expires_at}
+                    onChange={(e) => setFormData({ ...formData, expires_at: e.target.value })}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Allowed Emails */}
