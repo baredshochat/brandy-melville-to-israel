@@ -20,7 +20,6 @@ import { Heart } from "lucide-react";
 import LottieSuccess from '../components/ui/LottieSuccess';
 import CartImport from '../components/order/CartImport';
 import TranzilaPayment from '../components/payment/TranzilaPayment';
-import DiscountBanner from '../components/home/DiscountBanner';
 import { extractProductMetadata, mergeMetadataWithLLM } from '../components/order/MetadataExtractor';
 
 // ---- Helpers ----
@@ -1012,8 +1011,7 @@ export default function Home() {
 
   return (
     <div className="container mx-auto" dir="rtl">
-      <DiscountBanner />
       <AnimatePresence mode="wait">{renderStep()}</AnimatePresence>
     </div>
   );
-}
+  }
