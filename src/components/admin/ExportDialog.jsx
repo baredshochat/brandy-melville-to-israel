@@ -61,7 +61,8 @@ export default function ExportDialog({ orders }) {
       
       const siteName = site === 'all' ? 'כל_האתרים' : 
                      site === 'us' ? 'ארהב' : 
-                     site === 'eu' ? 'אירופה' : 'בריטניה';
+                     site === 'eu' ? 'אירופה' : 
+                     site === 'uk' ? 'בריטניה' : 'מלאי_מקומי';
       const fileName = `הזמנות_${siteName}_${format(new Date(), 'dd-MM-yyyy')}.csv`;
       
       link.setAttribute('download', fileName);
