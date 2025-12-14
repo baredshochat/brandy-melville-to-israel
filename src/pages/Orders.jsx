@@ -1088,6 +1088,7 @@ export default function Orders() {
                           <SelectItem value="us">🇺🇸 ארה״ב</SelectItem>
                           <SelectItem value="eu">🇪🇺 אירופה</SelectItem>
                           <SelectItem value="uk">🇬🇧 בריטניה</SelectItem>
+                          <SelectItem value="local">🇮🇱 מלאי מקומי</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
