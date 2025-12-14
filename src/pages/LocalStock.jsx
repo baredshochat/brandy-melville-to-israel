@@ -264,11 +264,8 @@ export default function LocalStock() {
                               </>
                             ) : (
                               <>
-                                <p className="text-stone-400 text-xs line-through">
+                                <p className="text-stone-800 text-sm font-semibold">
                                   ₪{item.price_ils}
-                                </p>
-                                <p className="text-rose-600 text-sm font-semibold">
-                                  ₪{Math.round(item.price_ils * 0.85)}
                                 </p>
                               </>
                             )}
