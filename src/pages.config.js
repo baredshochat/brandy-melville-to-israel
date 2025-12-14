@@ -21,6 +21,7 @@ import ChatLogs from './pages/ChatLogs';
 import ProfitReports from './pages/ProfitReports';
 import CompletePayment from './pages/CompletePayment';
 import BackInStockNotifications from './pages/BackInStockNotifications';
+import ManageCodes from './pages/ManageCodes';
 import __Layout from './Layout.jsx';
 
 
@@ -48,6 +49,7 @@ export const PAGES = {
     "ProfitReports": ProfitReports,
     "CompletePayment": CompletePayment,
     "BackInStockNotifications": BackInStockNotifications,
+    "ManageCodes": ManageCodes,
 }
 
 export const pagesConfig = {
