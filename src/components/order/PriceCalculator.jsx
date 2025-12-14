@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { ArrowRight, ArrowLeft, Loader2, ShieldCheck, Tag } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { PricingLabels } from '@/entities/PricingLabels';
-import { Coupon } from '@/entities/Coupon';
+import { Code } from '@/entities/Code';
 
 const formatMoney = (amount) => {
   return `₪${Math.round(amount).toLocaleString('he-IL')}`;
@@ -25,10 +25,10 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
   const [labels, setLabels] = useState(null);
   const [priceData, setPriceData] = useState(null);
   const [error, setError] = useState('');
-  const [couponCode, setCouponCode] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState(null);
-  const [couponError, setCouponError] = useState('');
-  const [applyingCoupon, setApplyingCoupon] = useState(false);
+  const [codeInput, setCodeInput] = useState('');
+  const [appliedCode, setAppliedCode] = useState(null);
+  const [codeError, setCodeError] = useState('');
+  const [applyingCode, setApplyingCode] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -108,110 +108,154 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
     }
   }, [cart, site]);
 
-  const handleApplyCoupon = async () => {
-    if (!couponCode.trim()) {
-      setCouponError('אנא הכניסי קוד קופון');
+  const handleApplyCode = async () => {
+    if (!codeInput.trim()) {
+      setCodeError('אנא הכניסי קוד');
       return;
     }
 
-    setApplyingCoupon(true);
-    setCouponError('');
+    setApplyingCode(true);
+    setCodeError('');
 
     try {
-      const coupons = await Coupon.filter({ code: couponCode.trim().toUpperCase() });
+      const codes = await Code.filter({ code: codeInput.trim().toUpperCase() });
 
-      if (!coupons || coupons.length === 0) {
-        setCouponError('קוד קופון לא תקף');
-        setApplyingCoupon(false);
+      if (!codes || codes.length === 0) {
+        setCodeError('קוד לא תקף');
+        setApplyingCode(false);
         return;
       }
 
-      const coupon = coupons[0];
+      const code = codes[0];
 
-      // בדיקת תוקף
-      if (!coupon.is_active) {
-        setCouponError('קופון זה אינו פעיל');
-        setApplyingCoupon(false);
+      // Validations
+      if (!code.is_active) {
+        setCodeError('הקוד אינו פעיל');
+        setApplyingCode(false);
         return;
       }
 
-      // בדיקת תאריכים
-      const now = new Date();
-      const validFrom = new Date(coupon.valid_from);
-      const validUntil = new Date(coupon.valid_until);
-
-      if (now < validFrom || now > validUntil) {
-        setCouponError('קופון זה פג תוקף');
-        setApplyingCoupon(false);
+      if (code.expires_at && new Date(code.expires_at) < new Date()) {
+        setCodeError('תוקף הקוד פג');
+        setApplyingCode(false);
         return;
       }
 
-      // בדיקת מגבלת שימוש
-      if (coupon.usage_limit && coupon.times_used >= coupon.usage_limit) {
-        setCouponError('קופון זה נוצל במלואו');
-        setApplyingCoupon(false);
+      if (code.usage_limit_total && code.used_count >= code.usage_limit_total) {
+        setCodeError('הקוד הגיע למגבלת השימוש');
+        setApplyingCode(false);
         return;
       }
 
-      // בדיקת סכום מינימלי
-      if (coupon.minimum_order_amount && priceData.breakdown.finalTotal < coupon.minimum_order_amount) {
-        setCouponError(`הזמנה מינימלית: ₪${coupon.minimum_order_amount}`);
-        setApplyingCoupon(false);
-        return;
-      }
-
-      // בדיקת התאמה לאתר
-      if (coupon.applies_to_site && coupon.applies_to_site !== 'all' && coupon.applies_to_site !== site) {
-        setCouponError('קופון זה לא תקף לאתר זה');
-        setApplyingCoupon(false);
-        return;
-      }
-
-      setAppliedCoupon(coupon);
-      setCouponError('');
+      setAppliedCode(code);
+      setCodeError('');
     } catch (err) {
-      console.error('Error applying coupon:', err);
-      setCouponError('שגיאה בבדיקת הקופון');
+      console.error('Error applying code:', err);
+      setCodeError('שגיאה בבדיקת הקוד');
     } finally {
-      setApplyingCoupon(false);
+      setApplyingCode(false);
     }
   };
 
-  const handleRemoveCoupon = () => {
-    setAppliedCoupon(null);
-    setCouponCode('');
-    setCouponError('');
+  const handleRemoveCode = () => {
+    setAppliedCode(null);
+    setCodeInput('');
+    setCodeError('');
   };
 
   const calculateDiscount = () => {
-    if (!appliedCoupon || !priceData) return 0;
+    if (!appliedCode || !priceData) return { amount: 0, message: '' };
 
     const subtotal = priceData.breakdown.finalTotal;
+    const eligibleItems = cart;
 
-    if (appliedCoupon.discount_type === 'percentage') {
-      return Math.round(subtotal * (appliedCoupon.discount_value / 100));
-    } else {
-      return Math.min(appliedCoupon.discount_value, subtotal);
+    if (appliedCode.reward_type === 'percent') {
+      const amount = Math.round(subtotal * (appliedCode.value / 100));
+      return { amount, message: `הנחה של ${appliedCode.value}%` };
     }
+
+    if (appliedCode.reward_type === 'fixed') {
+      const amount = Math.min(appliedCode.value, subtotal);
+      return { amount, message: `הנחה של ₪${appliedCode.value}` };
+    }
+
+    if (appliedCode.reward_type === 'buy_x_get_y') {
+      const totalQty = eligibleItems.reduce((sum, item) => sum + item.quantity, 0);
+
+      if (totalQty >= appliedCode.buy_quantity) {
+        const sortedItems = [...eligibleItems].sort((a, b) => 
+          (a.original_price || 0) - (b.original_price || 0)
+        );
+
+        const freeQty = Math.min(
+          appliedCode.get_quantity,
+          Math.floor(totalQty / appliedCode.buy_quantity) * appliedCode.get_quantity
+        );
+
+        let remainingFree = freeQty;
+        let discount = 0;
+
+        for (const item of sortedItems) {
+          if (remainingFree <= 0) break;
+          const itemsToDiscount = Math.min(remainingFree, item.quantity);
+          discount += itemsToDiscount * (item.original_price || 0);
+          remainingFree -= itemsToDiscount;
+        }
+
+        return { 
+          amount: Math.round(discount), 
+          message: `קנה ${appliedCode.buy_quantity} קבל ${appliedCode.get_quantity} - ${freeQty} פריטים בחינם!`
+        };
+      } else {
+        return { 
+          amount: 0, 
+          message: `קנה עוד ${appliedCode.buy_quantity - totalQty} פריטים לקבלת ההנחה`
+        };
+      }
+    }
+
+    return { amount: 0, message: '' };
   };
 
   const getFinalPriceWithDiscount = () => {
     if (!priceData) return 0;
-    const discount = calculateDiscount();
-    return Math.max(0, priceData.breakdown.finalTotal - discount);
+    const { amount } = calculateDiscount();
+    return Math.max(0, priceData.breakdown.finalTotal - amount);
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (priceData) {
       const finalPrice = getFinalPriceWithDiscount();
+      const { amount: discountAmount, message: discountMessage } = calculateDiscount();
+      
       const breakdown = {
         ...priceData.breakdown,
-        coupon: appliedCoupon ? {
-          code: appliedCoupon.code,
-          discount: calculateDiscount()
+        code: appliedCode ? {
+          code: appliedCode.code,
+          type: appliedCode.type,
+          reward_type: appliedCode.reward_type,
+          discount: discountAmount,
+          message: discountMessage
         } : null,
         finalTotal: finalPrice
       };
+
+      // Increment code usage if applied
+      if (appliedCode) {
+        try {
+          await Code.update(appliedCode.id, { 
+            used_count: (appliedCode.used_count || 0) + 1 
+          });
+          
+          // Check if should disable due to limits
+          if (appliedCode.usage_limit_total && 
+              (appliedCode.used_count + 1) >= appliedCode.usage_limit_total) {
+            await Code.update(appliedCode.id, { is_active: false });
+          }
+        } catch (err) {
+          console.error('Error updating code usage:', err);
+        }
+      }
 
       onConfirm(
         finalPrice,
@@ -300,34 +344,34 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
               </span>
             </div>
 
-            {/* Coupon Section */}
+            {/* Code Section */}
             <div className="py-3 border-t-2 border-stone-200">
-              {!appliedCoupon ?
+              {!appliedCode ?
               <div className="space-y-2">
                   <label className="text-sm font-medium text-stone-700 flex items-center gap-2">
                     <Tag className="w-4 h-4" />
-                    יש לך קוד קופון?
+                    יש לך קוד הנחה?
                   </label>
                   <div className="flex gap-2">
                     <Input
                     type="text"
-                    placeholder="הכניסי קוד קופון"
-                    value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    placeholder="הכניסי קוד"
+                    value={codeInput}
+                    onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
                     className="flex-1"
-                    disabled={applyingCoupon} />
+                    disabled={applyingCode} />
 
                     <Button
-                    onClick={handleApplyCoupon}
-                    disabled={applyingCoupon || !couponCode.trim()}
+                    onClick={handleApplyCode}
+                    disabled={applyingCode || !codeInput.trim()}
                     variant="outline"
                     className="px-6">
 
-                      {applyingCoupon ? <Loader2 className="w-4 h-4 animate-spin" /> : 'החל'}
+                      {applyingCode ? <Loader2 className="w-4 h-4 animate-spin" /> : 'החל'}
                     </Button>
                   </div>
-                  {couponError &&
-                <p className="text-xs text-red-600">{couponError}</p>
+                  {codeError &&
+                <p className="text-xs text-red-600">{codeError}</p>
                 }
                 </div> :
 
@@ -336,16 +380,12 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
                     <div className="flex items-center gap-2">
                       <Tag className="w-4 h-4 text-green-600" />
                       <div>
-                        <p className="text-sm font-medium text-green-900">קופון הוחל: {appliedCoupon.code}</p>
-                        <p className="text-xs text-green-700">
-                          {appliedCoupon.discount_type === 'percentage' ?
-                        `הנחה של ${appliedCoupon.discount_value}%` :
-                        `הנחה של ₪${appliedCoupon.discount_value}`}
-                        </p>
+                        <p className="text-sm font-medium text-green-900">קוד הוחל: {appliedCode.code}</p>
+                        <p className="text-xs text-green-700">{calculateDiscount().message}</p>
                       </div>
                     </div>
                     <Button
-                    onClick={handleRemoveCoupon}
+                    onClick={handleRemoveCode}
                     variant="ghost"
                     size="sm"
                     className="text-red-600 hover:text-red-700 hover:bg-red-50">
@@ -357,11 +397,11 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
               }
             </div>
 
-            {appliedCoupon &&
+            {appliedCode && calculateDiscount().amount > 0 &&
             <div className="flex justify-between items-center py-2 border-t border-green-200 bg-green-50">
-                <span className="text-sm font-medium text-green-900">הנחת קופון</span>
+                <span className="text-sm font-medium text-green-900">הנחה</span>
                 <span className="text-sm font-bold text-green-600">
-                  -{formatMoney(calculateDiscount())}
+                  -{formatMoney(calculateDiscount().amount)}
                 </span>
               </div>
             }
