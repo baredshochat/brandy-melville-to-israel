@@ -27,7 +27,7 @@ export default function ExportDialog({ orders }) {
       const csvData = filteredOrders.flatMap(order => 
         order.items.map(item => ({
           'מספר הזמנה': order.order_number,
-          'אתר': order.site === 'us' ? 'ארה״ב' : order.site === 'eu' ? 'אירופה' : 'בריטניה',
+          'אתר': order.site === 'us' ? 'ארה״ב' : order.site === 'eu' ? 'אירופה' : order.site === 'uk' ? 'בריטניה' : 'מלאי מקומי',
           'שם מוצר': item.product_name,
           'מק״ט': item.product_sku,
           'צבע': item.color,
