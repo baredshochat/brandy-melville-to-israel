@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -105,6 +104,7 @@ export default function ExportDialog({ orders }) {
                 <SelectItem value="us">🇺🇸 USA</SelectItem>
                 <SelectItem value="eu">🇪🇺 Europe</SelectItem>
                 <SelectItem value="uk">🇬🇧 UK</SelectItem>
+                <SelectItem value="local">🇮🇱 מלאי מקומי</SelectItem>
               </SelectContent>
             </Select>
           </div>
