@@ -64,6 +64,7 @@ export default function Layout({ children }) {
   { name: "ProfitReports", label: "דוחות רווח נקי", icon: TrendingUp, roles: ['admin'] },
   { name: "CalculationSettings", label: "הגדרות חישוב מחיר", icon: Calculator, roles: ['admin'] },
   { name: "ExchangeRates", label: "שערי חליפין", icon: DollarSign, roles: ['admin'] },
+  { name: "ManageCodes", label: "ניהול קודים והטבות", icon: FileText, roles: ['admin'] },
     { name: "ChatLogs", label: "לוג שיחות צ'אט", icon: MessageSquare, roles: ['admin'] }];
 
 
