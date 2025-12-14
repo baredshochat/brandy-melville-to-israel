@@ -64,7 +64,7 @@ export default function CustomerForm({ onSubmit, onBack }) {
       { id: 'customer_email', label: 'כתובת אימייל', placeholder: 'your.email@example.com', type: 'email', width: 'full', icon: Mail, component: 'input', required: true },
       { id: 'customer_phone', label: 'טלפון', placeholder: '05X-XXXXXXX', type: 'tel', width: 'full', icon: Phone, component: 'input', required: true },
       { id: 'shipping_address', label: 'כתובת', placeholder: 'רחוב, מספר בית, דירה', width: 'full', icon: Home, component: 'input', required: true },
-      { id: 'city', label: 'עיר', placeholder: 'תל אביב', width: 'full', icon: MapPin, component: 'input', required: true },
+      { id: 'city', label: 'עיר', placeholder: , width: 'full', icon: MapPin, component: 'input', required: true },
       { id: 'notes', label: 'הערות (אופציונלי)', placeholder: 'בקשות מיוחדות, הנחיות לשליח...', width: 'full', icon: MessageSquare, component: 'textarea', required: false },
   ];
 
