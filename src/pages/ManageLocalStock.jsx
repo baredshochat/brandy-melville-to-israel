@@ -55,6 +55,8 @@ export default function ManageLocalStock() {
   const [suggestedPriceInfo, setSuggestedPriceInfo] = useState(null);
   const [waitingCounts, setWaitingCounts] = useState({});
   const [editingQuantity, setEditingQuantity] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('all'); // all, in_stock, low_stock, out_of_stock
+  const [sortBy, setSortBy] = useState('-updated_date');
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -73,10 +75,16 @@ export default function ManageLocalStock() {
     checkAccess();
   }, []);
 
+  useEffect(() => {
+    if (userRole === 'admin') {
+      loadItems();
+    }
+  }, [sortBy]);
+
   const loadItems = async () => {
     setLoading(true);
     try {
-      const data = await LocalStockItem.list('-created_date');
+      const data = await LocalStockItem.list(sortBy);
       setItems(data);
       
       // Load waiting counts for each item
@@ -547,7 +555,35 @@ export default function ManageLocalStock() {
       {/* Items Table */}
       <Card>
         <CardHeader>
-          <CardTitle>פריטים במלאי ({items.length})</CardTitle>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <CardTitle>פריטים במלאי ({items.length})</CardTitle>
+            <div className="flex gap-2 flex-wrap">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="סינון לפי מלאי" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">הכל ({items.length})</SelectItem>
+                  <SelectItem value="in_stock">במלאי ({items.filter(i => i.quantity_available > 5).length})</SelectItem>
+                  <SelectItem value="low_stock">מלאי נמוך ({items.filter(i => i.quantity_available > 0 && i.quantity_available <= 5).length})</SelectItem>
+                  <SelectItem value="out_of_stock">אזל ({items.filter(i => i.quantity_available === 0 || !i.is_available).length})</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="מיון" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="-updated_date">עדכון אחרון</SelectItem>
+                  <SelectItem value="-created_date">נוצר לאחרונה</SelectItem>
+                  <SelectItem value="product_name">שם (א-ת)</SelectItem>
+                  <SelectItem value="-product_name">שם (ת-א)</SelectItem>
+                  <SelectItem value="quantity_available">כמות (נמוך-גבוה)</SelectItem>
+                  <SelectItem value="-quantity_available">כמות (גבוה-נמוך)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -570,13 +606,22 @@ export default function ManageLocalStock() {
                     <th className="text-right p-2">כמות</th>
                     <th className="text-right p-2">ממתינים</th>
                     <th className="text-right p-2">צבע/מידה</th>
+                    <th className="text-right p-2">עדכון אחרון</th>
                     <th className="text-right p-2">זמין</th>
                     <th className="text-right p-2">פעולות</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map(item => (
-                    <tr key={item.id} className="border-b hover:bg-stone-50">
+                  {items.filter(item => {
+                    if (statusFilter === 'in_stock') return item.quantity_available > 5;
+                    if (statusFilter === 'low_stock') return item.quantity_available > 0 && item.quantity_available <= 5;
+                    if (statusFilter === 'out_of_stock') return item.quantity_available === 0 || !item.is_available;
+                    return true;
+                  }).map(item => (
+                    <tr key={item.id} className={`border-b hover:bg-stone-50 ${
+                      item.quantity_available === 0 || !item.is_available ? 'bg-red-50' : 
+                      item.quantity_available <= 5 ? 'bg-amber-50' : ''
+                    }`}>
                       <td className="p-2">
                         {item.image_url ? (
                           <img src={item.image_url} alt={item.product_name} className="w-12 h-12 object-cover rounded" />
@@ -628,6 +673,14 @@ export default function ManageLocalStock() {
                       </td>
                       <td className="p-2 text-stone-500">
                         {[item.color, item.size].filter(Boolean).join(' / ') || '—'}
+                      </td>
+                      <td className="p-2 text-xs text-stone-500">
+                        {item.updated_date ? new Date(item.updated_date).toLocaleDateString('he-IL', { 
+                          day: '2-digit', 
+                          month: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        }) : '—'}
                       </td>
                       <td className="p-2">
                         {item.is_available ? (
