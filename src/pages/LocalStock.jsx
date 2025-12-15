@@ -54,8 +54,7 @@ export default function LocalStock() {
     try {
       const data = await LocalStockItem.list();
       setAllItems(data);
-      const inStockItems = data.filter(item => item.quantity_available > 0 && item.is_available);
-      setItems(inStockItems);
+      setItems(data);
     } catch (error) {
       console.error("Error loading local stock items:", error);
     } finally {
@@ -238,22 +237,20 @@ export default function LocalStock() {
                         alt={item.product_name}
                         className={`w-full h-auto object-contain transition-transform duration-300 ${(item.quantity_available > 0 && item.is_available) ? 'group-hover:scale-105' : ''}`}
                         style={{ maxHeight: '320px' }} />
-                            {(item.quantity_available === 0 || !item.is_available) ? null : (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleAddToCart(item);
-                                }}
-                                disabled={addingToCart[item.id] || addedItems.has(item.id)}
-                                className="absolute bottom-1 left-1 w-6 h-6 bg-white/80 hover:bg-white flex items-center justify-center rounded-full shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
-                                {addingToCart[item.id] ?
-                                  <Loader2 className="w-3 h-3 animate-spin text-stone-800" /> :
-                                  addedItems.has(item.id) ?
-                                  <CheckCircle className="w-3 h-3 text-green-600" /> :
-                                  <Plus className="w-3 h-3 text-stone-800" />
-                                }
-                              </button>
-                            )}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAddToCart(item);
+                              }}
+                              disabled={addingToCart[item.id] || addedItems.has(item.id) || item.quantity_available === 0 || !item.is_available}
+                              className="absolute bottom-1 left-1 w-6 h-6 bg-white/80 hover:bg-white flex items-center justify-center rounded-full shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                              {addingToCart[item.id] ?
+                                <Loader2 className="w-3 h-3 animate-spin text-stone-800" /> :
+                                addedItems.has(item.id) ?
+                                <CheckCircle className="w-3 h-3 text-green-600" /> :
+                                <Plus className="w-3 h-3 text-stone-800" />
+                              }
+                            </button>
                           </div>
                     }
                         <div className="px-1 py-1">
@@ -263,7 +260,7 @@ export default function LocalStock() {
                           <div className="flex items-center gap-1 flex-wrap">
                             {(item.quantity_available === 0 || !item.is_available) ? (
                               <>
-                                <span className="text-[10px] text-stone-600 font-medium">Sold Out</span>
+                                <span className="text-[10px] text-stone-600 font-medium">אזל מהמלאי</span>
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -272,15 +269,13 @@ export default function LocalStock() {
                                   className="flex items-center gap-1 text-[10px] text-rose-600 hover:text-rose-700 underline"
                                 >
                                   <Bell className="w-3 h-3" />
-                                  NOTIFY ME WHEN AVAILABLE
+                                  עדכן אותי
                                 </button>
                               </>
                             ) : (
-                              <>
-                                <p className="text-stone-800 text-sm font-semibold">
-                                  ₪{item.price_ils}
-                                </p>
-                              </>
+                              <p className="text-stone-800 text-sm font-semibold">
+                                ₪{item.price_ils}
+                              </p>
                             )}
                           </div>
                         </div>
