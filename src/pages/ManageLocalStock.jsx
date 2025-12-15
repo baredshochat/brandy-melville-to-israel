@@ -109,19 +109,22 @@ export default function ManageLocalStock() {
   };
 
   const handleAdditionalImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
 
     setUploadingImage(true);
     try {
-      const result = await UploadFile({ file });
       const currentImages = formData.additional_images || [];
+      const uploadPromises = files.map(file => UploadFile({ file }));
+      const results = await Promise.all(uploadPromises);
+      const newImageUrls = results.map(result => result.file_url);
+      
       setFormData({
         ...formData,
-        additional_images: [...currentImages, result.file_url]
+        additional_images: [...currentImages, ...newImageUrls]
       });
     } catch (error) {
-      alert("שגיאה בהעלאת תמונה נוספת");
+      alert("שגיאה בהעלאת תמונות נוספות");
     } finally {
       setUploadingImage(false);
       e.target.value = ''; // Clear the input field
@@ -379,7 +382,7 @@ export default function ManageLocalStock() {
 
                 {/* Additional Images Upload */}
                 <div className="space-y-2">
-                  <Label>תמונות נוספות (עד 4)</Label>
+                  <Label>תמונות נוספות</Label>
                   {formData.additional_images && formData.additional_images.length > 0 && (
                     <div className="grid grid-cols-4 gap-2 mb-2">
                       {formData.additional_images.map((img, index) => (
@@ -396,17 +399,14 @@ export default function ManageLocalStock() {
                       ))}
                     </div>
                   )}
-                  {(!formData.additional_images || formData.additional_images.length < 4) && (
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleAdditionalImageUpload}
-                      disabled={uploadingImage}
-                    />
-                  )}
-                  {formData.additional_images && formData.additional_images.length >= 4 && (
-                    <p className="text-sm text-stone-500">הגעת למקסימום 4 תמונות נוספות</p>
-                  )}
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleAdditionalImageUpload}
+                    disabled={uploadingImage}
+                  />
+                  <p className="text-xs text-stone-500">ניתן לבחור מספר תמונות בו זמנית</p>
                 </div>
 
                 {/* Basic Info */}
@@ -588,7 +588,7 @@ export default function ManageLocalStock() {
                       </td>
                       <td className="p-2 text-center">
                         <span className="text-sm text-stone-600">
-                          {1 + (item.additional_images?.length || 0)}/5
+                          {1 + (item.additional_images?.length || 0)}
                         </span>
                       </td>
                       <td className="p-2 font-medium">{item.product_name}</td>
