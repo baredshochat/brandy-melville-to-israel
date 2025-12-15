@@ -565,7 +565,6 @@ export default function ManageLocalStock() {
                 <thead>
                   <tr className="border-b">
                     <th className="text-right p-2">תמונה</th>
-                    <th className="text-right p-2">תמונות</th>
                     <th className="text-right p-2">שם</th>
                     <th className="text-right p-2">מחיר</th>
                     <th className="text-right p-2">כמות</th>
@@ -586,11 +585,6 @@ export default function ManageLocalStock() {
                             <ImageIcon className="w-6 h-6 text-stone-400" />
                           </div>
                         )}
-                      </td>
-                      <td className="p-2 text-center">
-                        <span className="text-sm text-stone-600">
-                          {1 + (item.additional_images?.length || 0)}
-                        </span>
                       </td>
                       <td className="p-2 font-medium">{item.product_name}</td>
                       <td className="p-2">₪{item.price_ils}</td>
