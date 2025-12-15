@@ -900,8 +900,6 @@ export default function Home() {
         // Update local stock quantities for local items
         const localItems = cart.filter(item => item.site === 'local' || item.product_type === 'local');
         if (localItems.length > 0) {
-          const { LocalStockItem } = await import('@/entities/LocalStockItem');
-          
           for (const item of localItems) {
             // Find the stock item by matching SKU or name
             const stockItems = await LocalStockItem.filter({
