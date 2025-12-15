@@ -67,12 +67,20 @@ export default function LocalStock() {
     setAddingToCart((prev) => ({ ...prev, [item.id]: true }));
 
     try {
+      // Check if item is still available
+      if (item.quantity_available <= 0 || !item.is_available) {
+        alert('מצטערים, הפריט אזל מהמלאי');
+        setAddingToCart((prev) => ({ ...prev, [item.id]: false }));
+        await loadItems(); // Refresh the list
+        return;
+      }
+
       await CartItem.create({
         site: 'local',
         product_type: 'local',
-        product_url: item.source_url || item.id,
+        product_url: item.id, // Store LocalStockItem ID here
         product_name: item.product_name,
-        product_sku: item.internal_sku || item.id,
+        product_sku: item.id, // Store LocalStockItem ID here too
         product_description: item.product_description || '',
         color: item.color || '',
         size: item.size || '',
@@ -83,7 +91,8 @@ export default function LocalStock() {
         item_weight: item.weight_kg || 0.3,
         item_image_url: item.image_url || '',
         available_colors: [],
-        available_sizes: []
+        available_sizes: [],
+        free_shipping: item.free_shipping || false
       });
 
       window.dispatchEvent(new CustomEvent('refreshCart'));
