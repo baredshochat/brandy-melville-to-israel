@@ -889,6 +889,9 @@ export default function Home() {
 
   // Handle successful payment completion
   const handlePaymentSuccess = async () => {
+    console.log('🔥 handlePaymentSuccess called');
+    console.log('🔥 Current cart:', cart);
+    
     try {
       // Update order payment status AND move to pending (confirmed) status
       if (currentOrder?.id) {
@@ -899,21 +902,35 @@ export default function Home() {
         
         // Update local stock quantities for local items
         const localItems = cart.filter(item => item.site === 'local' || item.product_type === 'local');
+        console.log('🔥 Local items found:', localItems);
+        
         if (localItems.length > 0) {
           for (const item of localItems) {
+            console.log('🔥 Processing item:', item.product_name, 'SKU:', item.product_sku, 'internal_sku:', item.internal_sku);
+            
             // Find the stock item by matching SKU or name
             const stockItems = await LocalStockItem.filter({
               internal_sku: item.product_sku || item.internal_sku
             });
             
+            console.log('🔥 Stock items found:', stockItems);
+            
             if (stockItems && stockItems.length > 0) {
               const stockItem = stockItems[0];
               const newQuantity = Math.max(0, stockItem.quantity_available - item.quantity);
+              console.log('🔥 Updating stock:', stockItem.id, 'from', stockItem.quantity_available, 'to', newQuantity);
+              
               await LocalStockItem.update(stockItem.id, {
                 quantity_available: newQuantity
               });
+              
+              console.log('🔥 Stock updated successfully');
+            } else {
+              console.log('🔥 ERROR: No stock item found for SKU:', item.product_sku || item.internal_sku);
             }
           }
+        } else {
+          console.log('🔥 No local items in cart');
         }
       }
 
