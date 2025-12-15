@@ -67,8 +67,11 @@ export default function LocalStock() {
     setAddingToCart((prev) => ({ ...prev, [item.id]: true }));
 
     try {
+      // Fetch the latest stock info to ensure accuracy
+      const latestItem = await LocalStockItem.get(item.id);
+      
       // Check if item is still available
-      if (item.quantity_available <= 0 || !item.is_available) {
+      if (!latestItem || latestItem.quantity_available <= 0 || !latestItem.is_available) {
         alert('מצטערים, הפריט אזל מהמלאי');
         setAddingToCart((prev) => ({ ...prev, [item.id]: false }));
         await loadItems(); // Refresh the list
