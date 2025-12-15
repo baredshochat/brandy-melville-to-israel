@@ -69,9 +69,10 @@ export default function LocalStock() {
     try {
       await CartItem.create({
         site: 'local',
-        product_url: item.source_url || '',
+        product_type: 'local',
+        product_url: item.source_url || item.id,
         product_name: item.product_name,
-        product_sku: item.internal_sku || '',
+        product_sku: item.internal_sku || item.id,
         product_description: item.product_description || '',
         color: item.color || '',
         size: item.size || '',

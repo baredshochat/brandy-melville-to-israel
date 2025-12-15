@@ -900,21 +900,66 @@ export default function Home() {
         // Update local stock quantities for local items
         const localItems = cart.filter(item => item.site === 'local' || item.product_type === 'local');
         if (localItems.length > 0) {
-          const { LocalStockItem } = await import('@/entities/LocalStockItem');
+          console.log('🔄 Updating local stock for items:', localItems);
           
           for (const item of localItems) {
-            // Find the stock item by matching SKU or name
-            const stockItems = await LocalStockItem.filter({
-              internal_sku: item.product_sku || item.internal_sku
-            });
-            
-            if (stockItems && stockItems.length > 0) {
-              const stockItem = stockItems[0];
-              const newQuantity = Math.max(0, stockItem.quantity_available - item.quantity);
-              await LocalStockItem.update(stockItem.id, {
-                quantity_available: newQuantity,
-                is_available: newQuantity > 0
-              });
+            try {
+              // Try to find the stock item by ID first (stored in product_url or product_sku)
+              let stockItem = null;
+              
+              // Option 1: product_url might contain the LocalStockItem ID
+              if (item.product_url) {
+                try {
+                  stockItem = await LocalStockItem.get(item.product_url);
+                  console.log('✅ Found stock item by product_url:', stockItem);
+                } catch (e) {
+                  console.log('❌ Could not find by product_url');
+                }
+              }
+              
+              // Option 2: product_sku might contain the LocalStockItem ID
+              if (!stockItem && item.product_sku) {
+                try {
+                  stockItem = await LocalStockItem.get(item.product_sku);
+                  console.log('✅ Found stock item by product_sku:', stockItem);
+                } catch (e) {
+                  console.log('❌ Could not find by product_sku');
+                }
+              }
+              
+              // Option 3: Search by internal_sku
+              if (!stockItem && item.product_sku) {
+                const items = await LocalStockItem.filter({ internal_sku: item.product_sku });
+                if (items && items.length > 0) {
+                  stockItem = items[0];
+                  console.log('✅ Found stock item by internal_sku filter:', stockItem);
+                }
+              }
+              
+              // Option 4: Search by product name as last resort
+              if (!stockItem) {
+                const items = await LocalStockItem.filter({ product_name: item.product_name });
+                if (items && items.length > 0) {
+                  stockItem = items[0];
+                  console.log('✅ Found stock item by product_name:', stockItem);
+                }
+              }
+              
+              if (stockItem) {
+                const newQuantity = Math.max(0, stockItem.quantity_available - item.quantity);
+                console.log(`📦 Updating ${stockItem.product_name}: ${stockItem.quantity_available} → ${newQuantity}`);
+                
+                await LocalStockItem.update(stockItem.id, {
+                  quantity_available: newQuantity,
+                  is_available: newQuantity > 0
+                });
+                
+                console.log(`✅ Successfully updated stock for ${stockItem.product_name}`);
+              } else {
+                console.warn('⚠️ Could not find LocalStockItem for:', item.product_name);
+              }
+            } catch (error) {
+              console.error('❌ Error updating stock for item:', item.product_name, error);
             }
           }
         }
