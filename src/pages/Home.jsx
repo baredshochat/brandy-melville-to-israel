@@ -912,7 +912,8 @@ export default function Home() {
               const stockItem = stockItems[0];
               const newQuantity = Math.max(0, stockItem.quantity_available - item.quantity);
               await LocalStockItem.update(stockItem.id, {
-                quantity_available: newQuantity
+                quantity_available: newQuantity,
+                is_available: newQuantity > 0
               });
             }
           }
