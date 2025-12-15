@@ -824,34 +824,7 @@ export default function Home() {
 
   const handleEditItem = (item) => { setEditingItem(item); setCurrentItem(item); setStep(3); };
 
-  const handlePriceConfirm = async (price, weight, breakdown) => { 
-    // Validate local stock availability before proceeding to customer form
-    const localItems = cart.filter(item => item.site === 'local' || item.product_type === 'local');
-    if (localItems.length > 0) {
-      for (const item of localItems) {
-        try {
-          const stockItemId = item.product_url || item.product_sku;
-          if (stockItemId) {
-            const stockItem = await LocalStockItem.get(stockItemId);
-            if (!stockItem || stockItem.quantity_available < item.quantity || !stockItem.is_available) {
-              alert(`מצטערים, ${item.product_name} אזל מהמלאי או שאין מספיק יחידות זמינות. אנא עדכני את הסל.`);
-              await loadCart();
-              return;
-            }
-          }
-        } catch (e) {
-          console.error('Error validating stock:', e);
-          alert('שגיאה בבדיקת זמינות. אנא נסי שוב.');
-          return;
-        }
-      }
-    }
-    
-    setTotalPriceILS(price); 
-    setTotalWeight(weight); 
-    setPriceBreakdown(breakdown); 
-    setStep(6); 
-  };
+  const handlePriceConfirm = (price, weight, breakdown) => { setTotalPriceILS(price); setTotalWeight(weight); setPriceBreakdown(breakdown); setStep(6); };
 
   // CHANGED: on customer submit create order with awaiting_payment status
   // Cart items are NOT deleted until payment is confirmed
@@ -927,20 +900,20 @@ export default function Home() {
         // Update local stock quantities for local items
         const localItems = cart.filter(item => item.site === 'local' || item.product_type === 'local');
         if (localItems.length > 0) {
+          const { LocalStockItem } = await import('@/entities/LocalStockItem');
+          
           for (const item of localItems) {
-            try {
-              const stockItemId = item.product_url || item.product_sku;
-              if (stockItemId) {
-                const stockItem = await LocalStockItem.get(stockItemId);
-                const newQuantity = Math.max(0, stockItem.quantity_available - item.quantity);
-                
-                await LocalStockItem.update(stockItem.id, {
-                  quantity_available: newQuantity,
-                  is_available: newQuantity > 0
-                });
-              }
-            } catch (error) {
-              console.error('Error updating stock:', error);
+            // Find the stock item by matching SKU or name
+            const stockItems = await LocalStockItem.filter({
+              internal_sku: item.product_sku || item.internal_sku
+            });
+            
+            if (stockItems && stockItems.length > 0) {
+              const stockItem = stockItems[0];
+              const newQuantity = Math.max(0, stockItem.quantity_available - item.quantity);
+              await LocalStockItem.update(stockItem.id, {
+                quantity_available: newQuantity
+              });
             }
           }
         }

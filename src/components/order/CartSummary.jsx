@@ -88,27 +88,6 @@ export default function CartSummary({ cart, onRemove, onUpdateQuantity, onAddAno
   };
 
   const handleUpdateQuantity = async (itemId, newQuantity) => {
-    const item = cart.find(i => i.id === itemId);
-    if (!item) return;
-    
-    // Check stock availability for local items before increasing quantity
-    if ((item.site === 'local' || item.product_type === 'local') && newQuantity > item.quantity) {
-      try {
-        const stockItemId = item.product_url || item.product_sku;
-        if (stockItemId) {
-          const { LocalStockItem } = await import('@/entities/LocalStockItem');
-          const stockItem = await LocalStockItem.get(stockItemId);
-          
-          if (newQuantity > stockItem.quantity_available) {
-            alert(`מצטערים, יש רק ${stockItem.quantity_available} יחידות זמינות במלאי`);
-            return;
-          }
-        }
-      } catch (e) {
-        console.error('Error checking stock:', e);
-      }
-    }
-    
     try {
       await onUpdateQuantity(itemId, newQuantity);
     } catch (error) {
