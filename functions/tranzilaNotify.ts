@@ -315,9 +315,44 @@ Deno.serve(async (req) => {
         try {
           await base44.asServiceRole.entities.Order.update(order.id, {
             payment_status: 'completed',
+            status: 'pending',
             email_sent_to_customer: true
           });
-          console.log('Order updated to completed');
+          console.log('Order updated to completed and pending');
+          
+          // Update local stock quantities for local items
+          const items = order.items || [];
+          const localItems = items.filter(item => item.site === 'local' || item.product_type === 'local');
+          console.log('Local items found:', localItems.length);
+          
+          if (localItems.length > 0) {
+            for (const item of localItems) {
+              console.log('Processing item:', item.product_name, 'SKU:', item.product_sku);
+              
+              // Find the stock item by matching SKU
+              const stockItems = await base44.asServiceRole.entities.LocalStockItem.filter({
+                internal_sku: item.product_sku || item.internal_sku
+              });
+              
+              console.log('Stock items found:', stockItems.length);
+              
+              if (stockItems && stockItems.length > 0) {
+                const stockItem = stockItems[0];
+                const newQuantity = Math.max(0, stockItem.quantity_available - item.quantity);
+                console.log('Updating stock:', stockItem.id, 'from', stockItem.quantity_available, 'to', newQuantity);
+                
+                await base44.asServiceRole.entities.LocalStockItem.update(stockItem.id, {
+                  quantity_available: newQuantity
+                });
+                
+                console.log('Stock updated successfully for:', item.product_name);
+              } else {
+                console.log('ERROR: No stock item found for SKU:', item.product_sku || item.internal_sku);
+              }
+            }
+          } else {
+            console.log('No local items in order');
+          }
         } catch (e) {
           console.error('Error updating order:', e.message);
         }
