@@ -90,15 +90,13 @@ export default function Layout({ children }) {
             <div className="flex justify-between items-center h-14 sm:h-16">
               <div className="flex items-center gap-1 sm:gap-2">
                 <SheetNav navLinks={navLinks} location={location} />
-                
-                {isLoggedIn &&
+
                 <Link to={createPageUrl("Profile")} aria-label="איזור אישי">
-                    <button className="flex items-center justify-center p-0 relative rounded-none w-9 h-9 sm:w-10 sm:h-10 bg-transparent hover:bg-stone-100 transition-colors">
-                      <UserIcon className="h-4 w-4 sm:h-5 sm:w-5 text-stone-800" strokeWidth={1.5} />
-                      <span className="sr-only">איזור אישי</span>
-                    </button>
-                  </Link>
-                }
+                  <button className="flex items-center justify-center p-0 relative rounded-none w-9 h-9 sm:w-10 sm:h-10 bg-transparent hover:bg-stone-100 transition-colors">
+                    <UserIcon className="h-4 w-4 sm:h-5 sm:w-5 text-stone-800" strokeWidth={1.5} />
+                    <span className="sr-only">איזור אישי</span>
+                  </button>
+                </Link>
 
                 <CartPopover />
               </div>
