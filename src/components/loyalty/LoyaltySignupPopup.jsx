@@ -49,11 +49,6 @@ export default function LoyaltySignupPopup() {
       return;
     }
 
-    if (!formData.marketing_opt_in) {
-      alert('נדרשת הסכמה לקבלת עדכונים כדי להצטרף למועדון');
-      return;
-    }
-
     setJoining(true);
     try {
       const { data } = await joinClub(formData);
@@ -71,17 +66,6 @@ export default function LoyaltySignupPopup() {
     } finally {
       setJoining(false);
     }
-  };
-
-  // Check if button should be enabled
-  const canJoin = !user?.club_member && formData.birthday && formData.marketing_opt_in;
-  
-  // Get disabled reason
-  const getDisabledReason = () => {
-    if (user?.club_member) return 'כבר חברה במועדון';
-    if (!formData.birthday) return 'נדרש תאריך יום הולדת';
-    if (!formData.marketing_opt_in) return 'נדרשת הסכמה לקבלת עדכונים';
-    return '';
   };
 
   return (
@@ -174,8 +158,8 @@ export default function LoyaltySignupPopup() {
 
             <Button
               onClick={handleJoin}
-              disabled={!canJoin || joining}
-              className="w-full bg-stone-900 hover:bg-stone-800 h-11 text-sm font-medium disabled:opacity-50"
+              disabled={!formData.birthday || joining}
+              className="w-full bg-stone-900 hover:bg-stone-800 h-11 text-sm font-medium"
             >
               {joining ? (
                 <><Loader2 className="w-4 h-4 animate-spin ml-2" /> מצטרפת...</>
@@ -183,12 +167,6 @@ export default function LoyaltySignupPopup() {
                 'הצטרפי וקבלי 30 נקודות 🎁'
               )}
             </Button>
-
-            {!canJoin && !joining && (
-              <p className="text-xs text-center text-red-600 mt-2">
-                {getDisabledReason()}
-              </p>
-            )}
 
             <button
               onClick={handleClose}
