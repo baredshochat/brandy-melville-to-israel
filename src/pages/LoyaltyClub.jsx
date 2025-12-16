@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Gift, Star, Calendar, Award, TrendingUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -144,13 +145,24 @@ export default function LoyaltyClub() {
                   className="mt-1"
                 />
               </div>
-            </div>
 
-            <Button
+              <div className="flex items-start gap-2 pt-2">
+                <Checkbox
+                  id="marketing-club"
+                  checked={joinForm.marketing_opt_in}
+                  onCheckedChange={(checked) => setJoinForm({ ...joinForm, marketing_opt_in: checked })}
+                />
+                <Label htmlFor="marketing-club" className="text-xs text-stone-600 leading-relaxed cursor-pointer">
+                  אני מאשרת קבלת עדכונים, הטבות והנחות במייל *
+                </Label>
+              </div>
+              </div>
+
+              <Button
               onClick={handleJoinClub}
-              disabled={!joinForm.birthday || joining}
+              disabled={!joinForm.birthday || !joinForm.marketing_opt_in || joining}
               className="w-full bg-rose-500 hover:bg-rose-600 h-12"
-            >
+              >
               {joining ? (
                 <><Loader2 className="w-4 h-4 animate-spin ml-2" /> מצטרפת...</>
               ) : (
