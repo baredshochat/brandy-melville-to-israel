@@ -63,7 +63,7 @@ export default function CustomerForm({ onSubmit, onBack, parentOrderId }) {
 
   const isValid = formData.customer_name && formData.customer_email && 
                  formData.customer_phone && formData.shipping_address && 
-                 formData.city && emailValid && termsAccepted;
+                 formData.city && emailValid;
 
   const inputFields = [
       { id: 'customer_name', label: 'שם מלא', placeholder: 'הזיני את שמך המלא', width: 'full', icon: User, component: 'input', required: true },
