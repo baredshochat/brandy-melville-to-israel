@@ -68,12 +68,12 @@ export default function LoyaltyClub() {
     if (!user) {
       return (
         <Button 
-          onClick={() => base44.auth.redirectToLogin(createPageUrl('LoyaltyClub'))}
-          className="bg-rose-500 hover:bg-rose-600 text-white"
-          size={size}
-        >
-          הצטרפי למועדון
-        </Button>
+                        onClick={() => base44.auth.redirectToLogin(createPageUrl('LoyaltyClub'))}
+                        className="bg-rose-500 hover:bg-rose-600 text-white"
+                        size={size}
+                      >
+                        הצטרפי עכשיו – 50 נקודות מתנה (₪25)
+                      </Button>
       );
     }
     
@@ -88,7 +88,7 @@ export default function LoyaltyClub() {
           {joining ? (
             <><Loader2 className="w-4 h-4 animate-spin ml-2" /> מצטרפת...</>
           ) : (
-            <>הצטרפי וקבלי 50 נקודות מתנה</>
+            <>הצטרפי וקבלי 50 נקודות (₪25)</>
           )}
         </Button>
       );

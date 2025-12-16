@@ -220,8 +220,8 @@ export default function ProfilePage() {
                         />
                       </div>
                       <p className="text-xs text-stone-500 mt-2 text-center">
-                        עוד {(user.tier === 'silver' ? 10 : 5) - (user.orders_last_6_months || 0)} הזמנות לדרגה הבאה
-                      </p>
+                                                    עוד {(user.tier === 'silver' ? 10 : 5) - (user.orders_last_6_months || 0)} הזמנות לדרגה הבאה — {user.tier === 'silver' ? 'משלוח חינם כל חודש' : 'משלוח חינם חד-פעמי והטבות נוספות'}
+                                                  </p>
                     </div>
                   )}
                 </CardContent>
@@ -238,7 +238,10 @@ export default function ProfilePage() {
                 <CardContent>
                   <div className="text-center">
                     <p className="text-4xl font-bold text-stone-900">{user.points_balance || 0}</p>
-                    <p className="text-stone-600 mt-1 font-medium">נקודות זמינות</p>
+                                              <p className="text-stone-600 mt-1 font-medium">נקודות זמינות</p>
+                                              <p className="text-sm text-stone-600 mt-1">
+                                                שווה ל-₪{(((user.points_balance || 0) * 0.5) || 0).toFixed(0)}
+                                              </p>
 
                     {user.points_balance >= 100 ? (
                       <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
@@ -263,11 +266,18 @@ export default function ProfilePage() {
                       </div>
                     )}
 
-                    <Link to={createPageUrl('LoyaltyClub')}>
-                      <Button variant="outline" size="sm" className="mt-4">
-                        לדף המועדון
-                      </Button>
-                    </Link>
+                    <div className="flex justify-center gap-2 mt-4">
+                                                <Link to={createPageUrl('Home?redeem=1')}>
+                                                  <Button size="sm" className="bg-rose-500 hover:bg-rose-600 text-white">
+                                                    ממשי נקודות עכשיו
+                                                  </Button>
+                                                </Link>
+                                                <Link to={createPageUrl('LoyaltyClub')}>
+                                                  <Button variant="outline" size="sm">
+                                                    לדף המועדון
+                                                  </Button>
+                                                </Link>
+                                              </div>
                   </div>
                 </CardContent>
               </Card>
