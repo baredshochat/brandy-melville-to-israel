@@ -1,5 +1,15 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
+// Helper to calculate tier earn percentage
+function getTierEarnPercentage(tier) {
+  switch (tier) {
+    case 'gold': return 0.10;  // 10%
+    case 'silver': return 0.07; // 7%
+    case 'member': 
+    default: return 0.05;       // 5%
+  }
+}
+
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
   
@@ -35,20 +45,25 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get earn percentage setting
-    let earnPercentage = 0.1; // default 10%
-    try {
-      const settings = await base44.asServiceRole.entities.LoyaltySettings.filter({
-        setting_key: 'earn_percentage'
-      });
-      if (settings && settings.length > 0) {
-        earnPercentage = parseFloat(settings[0].value);
-      }
-    } catch (e) {
-      console.log('Using default earn percentage:', e.message);
+    // Get current user data
+    const users = await base44.asServiceRole.entities.User.filter({
+      email: order.customer_email
+    });
+
+    let currentBalance = 0;
+    let userId = null;
+    let userTier = 'member';
+
+    if (users && users.length > 0) {
+      currentBalance = users[0].points_balance || 0;
+      userId = users[0].id;
+      userTier = users[0].tier || 'member';
     }
 
-    // Calculate points (10% of order total, excluding points used)
+    // Get earn percentage based on tier
+    const earnPercentage = getTierEarnPercentage(userTier);
+
+    // Calculate points (percentage of order total)
     const orderTotal = order.total_price_ils || 0;
     const pointsToEarn = Math.floor(orderTotal * earnPercentage);
 
@@ -59,25 +74,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get current user data
-    const users = await base44.asServiceRole.entities.User.filter({
-      email: order.customer_email
-    });
-
-    let currentBalance = 0;
-    let userId = null;
-
-    if (users && users.length > 0) {
-      currentBalance = users[0].points_balance || 0;
-      userId = users[0].id;
-    }
-
     const newBalance = currentBalance + pointsToEarn;
 
-    // Update user balance
+    // Update user balance and order count
     if (userId) {
+      const currentOrders = users[0].orders_last_6_months || 0;
       await base44.asServiceRole.entities.User.update(userId, {
-        points_balance: newBalance
+        points_balance: newBalance,
+        orders_last_6_months: currentOrders + 1
       });
     }
 
@@ -87,14 +91,16 @@ Deno.serve(async (req) => {
       type: 'earn',
       amount: pointsToEarn,
       source: order.order_number,
-      description: `צבירה מהזמנה #${order.order_number}`,
+      description: `צבירת ${Math.round(earnPercentage * 100)}% מהזמנה #${order.order_number}`,
       balance_after: newBalance
     });
 
     return Response.json({ 
       success: true, 
       points_earned: pointsToEarn,
-      new_balance: newBalance
+      new_balance: newBalance,
+      tier: userTier,
+      earn_percentage: earnPercentage
     });
 
   } catch (error) {
