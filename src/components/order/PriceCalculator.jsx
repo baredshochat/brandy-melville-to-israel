@@ -36,6 +36,7 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack, parentO
   const [user, setUser] = useState(null);
   const [redeemingPoints, setRedeemingPoints] = useState(false);
   const [pointsRedeemed, setPointsRedeemed] = useState(0);
+  const [pointsInput, setPointsInput] = useState(0);
 
   useEffect(() => {
     const loadData = async () => {
@@ -268,55 +269,38 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack, parentO
       return;
     }
 
+    const requestedPoints = Math.floor(Number(pointsInput || 0));
+    if (requestedPoints <= 0) {
+      alert('הכניסי מספר נקודות למימוש');
+      return;
+    }
+
     const availablePoints = user.points_balance || 0;
-    if (availablePoints < 100) {
-      alert('אין לך מספיק נקודות למימוש. צריך לפחות 100 נקודות.');
+    if (requestedPoints > availablePoints) {
+      alert('אין לך מספיק נקודות');
       return;
     }
-
-    // Calculate how many 100-point chunks can be redeemed
-    const maxRedemptions = Math.floor(availablePoints / 100);
-    const currentTotal = getFinalPriceWithDiscount() + pointsRedeemed; // Add back current redemption
-    
-    // Calculate max redemption value (50 ILS per 100 points)
-    const maxRedemptionValue = maxRedemptions * 50;
-    
-    // Don't allow redemption more than order total
-    const maxAllowedRedemption = Math.min(maxRedemptionValue, currentTotal);
-    
-    if (maxAllowedRedemption <= 0) {
-      alert('סכום ההזמנה נמוך מדי למימוש נקודות');
-      return;
-    }
-
-    const pointsToRedeem = Math.floor(maxAllowedRedemption / 50) * 100;
-    const redemptionValue = (pointsToRedeem / 100) * 50;
-
-    const confirmed = confirm(
-      `למממש ${pointsToRedeem} נקודות?\n` +
-      `תקבלי הנחה של ${redemptionValue}₪\n` +
-      `יישארו לך ${availablePoints - pointsToRedeem} נקודות`
-    );
-
-    if (!confirmed) return;
 
     setRedeemingPoints(true);
     try {
+      const orderTotal = getFinalPriceWithDiscount() + pointsRedeemed; // לפני המימוש
       const { data } = await base44.functions.invoke('redeemPoints', {
-        points: pointsToRedeem
+        points_to_redeem: requestedPoints,
+        order_total: orderTotal
       });
 
-      if (data.success) {
-        setPointsRedeemed(redemptionValue);
-        // Update user balance locally
+      if (data?.success) {
+        const discountIls = Math.round(data.discount_amount || 0);
+        setPointsRedeemed(discountIls);
         setUser({ ...user, points_balance: data.new_balance });
-        alert(`מימשת ${pointsToRedeem} נקודות בהצלחה! 🎉\nקיבלת הנחה של ${redemptionValue}₪`);
+        setPointsInput(0);
+        alert(`מימשת ${requestedPoints} נקודות בהצלחה! 🎉\nהנחה של ${discountIls}₪`);
       } else {
-        alert(data.message || 'שגיאה במימוש נקודות');
+        alert(data?.error || data?.message || 'שגיאה במימוש נקודות');
       }
     } catch (error) {
-      console.error('Error redeeming points:', error);
-      alert('שגיאה במימוש נקודות. נסי שוב.');
+      const msg = error?.response?.data?.error || error.message || 'שגיאה במימוש נקודות';
+      alert(msg);
     } finally {
       setRedeemingPoints(false);
     }
