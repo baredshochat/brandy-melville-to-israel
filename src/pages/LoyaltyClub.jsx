@@ -235,10 +235,6 @@ export default function LoyaltyClub() {
                     <CheckCircle className="w-4 h-4 text-rose-500 mt-0.5 flex-shrink-0" />
                     <span>בונוס יום הולדת: 50 נקודות</span>
                   </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 text-rose-500 mt-0.5 flex-shrink-0" />
-                    <span>חלון משלוח חינם אחרי הזמנה</span>
-                  </li>
                 </ul>
               </CardContent>
             </Card>
@@ -273,7 +269,7 @@ export default function LoyaltyClub() {
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle className="w-4 h-4 text-rose-500 mt-0.5 flex-shrink-0" />
-                    <span>קדימות במלאי</span>
+                    <span>הפתעות והטבות נוספות</span>
                   </li>
                 </ul>
               </CardContent>
@@ -309,7 +305,7 @@ export default function LoyaltyClub() {
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle className="w-4 h-4 text-rose-600 mt-0.5 flex-shrink-0" />
-                    <span>מתנות והעדפה בטיפול</span>
+                    <span>הפתעות והטבות נוספות</span>
                   </li>
                 </ul>
               </CardContent>
@@ -335,10 +331,6 @@ export default function LoyaltyClub() {
                 <li className="flex items-start gap-3">
                   <Gift className="w-5 h-5 text-rose-500 mt-0.5 flex-shrink-0" />
                   <span>כל 100 נקודות פותחות הטבה של 50 ₪</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-rose-500 mt-0.5 flex-shrink-0" />
-                  <span>ההטבה תקפה ל-30 ימים מרגע פתיחתה</span>
                 </li>
               </ul>
               
@@ -373,9 +365,6 @@ export default function LoyaltyClub() {
                   <p className="text-2xl font-bold text-rose-600">100 נקודות</p>
                 </div>
               </div>
-              <p className="text-xs text-center text-stone-600 mt-4">
-                הטבת יום הולדת תקפה ל-30 ימים
-              </p>
             </CardContent>
           </Card>
         </section>
@@ -423,7 +412,6 @@ export default function LoyaltyClub() {
         <section className="border-t border-stone-200 pt-8">
           <div className="text-center text-xs text-stone-500 space-y-1 max-w-3xl mx-auto">
             <p>• נקודות אינן שוות כסף ואינן ניתנות להמרה ישירה</p>
-            <p>• הטבות מוגבלות בזמן</p>
             <p>• תנאי המועדון עשויים להשתנות</p>
           </div>
         </section>
