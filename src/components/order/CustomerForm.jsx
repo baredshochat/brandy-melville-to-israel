@@ -50,7 +50,7 @@ export default function CustomerForm({ onSubmit, onBack, parentOrderId }) {
   const handleSubmit = (e) => {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
     
-    if (!formData.terms_accepted) {
+    if (!termsAccepted) {
       alert('יש לאשר את התקנון');
       return;
     }
@@ -161,7 +161,7 @@ export default function CustomerForm({ onSubmit, onBack, parentOrderId }) {
           <Button
             type="submit"
             form="customer-form"
-            disabled={!isValid}
+            disabled={!isValid || !termsAccepted}
             className="order-1 sm:order-none h-10 sm:h-12 px-6 sm:px-8 bg-black hover:bg-stone-800 active:bg-stone-700 text-white font-medium transition-all duration-300 flex items-center justify-center gap-2 rounded-none text-sm sm:text-base" 
             onClick={undefined}
           >
