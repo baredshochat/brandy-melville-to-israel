@@ -500,28 +500,36 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack, parentO
                       <Star className="w-4 h-4 text-rose-500" />
                       יש לך {user.points_balance || 0} נקודות
                     </label>
-                    {(user.points_balance || 0) >= 100 ? (
-                      <>
-                        <p className="text-xs text-stone-600">
-                          תוכלי למממש עד {Math.floor((user.points_balance || 0) / 100) * 50}₪
-                        </p>
+                    {(user.points_balance || 0) > 0 ? (
+                      <div className="flex items-end gap-2">
+                        <div className="flex-1">
+                          <Input
+                            type="number"
+                            min={0}
+                            max={user.points_balance || 0}
+                            value={pointsInput}
+                            onChange={(e) => setPointsInput(Math.max(0, Math.min(Number(e.target.value || 0), user.points_balance || 0)))}
+                            placeholder="כמה נקודות תרצי לממש?"
+                          />
+                          <p className="text-xs text-stone-600 mt-1">
+                            שווה ל-₪{Math.round((pointsInput || 0) * 0.5)}
+                          </p>
+                        </div>
                         <Button
                           onClick={handleRedeemPoints}
-                          disabled={redeemingPoints}
+                          disabled={redeemingPoints || (pointsInput || 0) <= 0}
                           variant="outline"
-                          className="w-full border-rose-300 text-rose-600 hover:bg-rose-50"
+                          className="border-rose-300 text-rose-600 hover:bg-rose-50"
                         >
                           {redeemingPoints ? (
                             <><Loader2 className="w-4 h-4 animate-spin ml-2" /> ממממשת...</>
                           ) : (
-                            <>מממשי נקודות</>
+                            <>מימוש</>
                           )}
                         </Button>
-                      </>
+                      </div>
                     ) : (
-                      <p className="text-xs text-stone-500">
-                        עוד {100 - (user.points_balance || 0)} נקודות למימוש הטבה
-                      </p>
+                      <p className="text-xs text-stone-500">אין לך נקודות זמינות למימוש</p>
                     )}
                   </div>
                 ) : (
