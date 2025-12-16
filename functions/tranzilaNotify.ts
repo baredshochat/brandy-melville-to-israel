@@ -322,15 +322,13 @@ Deno.serve(async (req) => {
           });
           console.log('Order updated to completed and pending with free shipping until:', freeShippingUntil);
           
-          // Schedule free shipping reminder email after 25 minutes
-          setTimeout(async () => {
-            try {
-              await base44.asServiceRole.functions.invoke('sendFreeShippingReminder', { order_id: order.id });
-              console.log(`Free shipping reminder scheduled for order ${order.id}`);
-            } catch (scheduleError) {
-              console.error(`Failed to schedule free shipping reminder:`, scheduleError);
-            }
-          }, 25 * 60 * 1000); // 25 minutes
+          // Send free shipping reminder email immediately
+          try {
+            await base44.asServiceRole.functions.invoke('sendFreeShippingReminder', { order_id: order.id });
+            console.log(`Free shipping reminder sent immediately for order ${order.id}`);
+          } catch (reminderError) {
+            console.error(`Failed to send free shipping reminder:`, reminderError);
+          }
           
           // Update local stock quantities for local items
           const items = order.items || [];
