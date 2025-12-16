@@ -200,7 +200,7 @@ export default function ProfilePage() {
                     <p className="text-sm text-stone-600">
                       {user.tier === 'gold' ? 'צבירת 10% נקודות • משלוח חינם חודשי' : 
                        user.tier === 'silver' ? 'צבירת 7% נקודות • משלוח חינם חד-פעמי' : 
-                       'צבירת 5% נקודות • משלוח חינם 24 שעות'}
+                       'צבירת 5% נקודות'}
                     </p>
                   </div>
 
