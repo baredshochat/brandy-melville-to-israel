@@ -90,7 +90,7 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack, parentO
                 fullPrice: item.original_price * item.quantity
               })),
               cartSubtotal: itemsTotal,
-              domesticShipping,
+              domesticShipping: currentDomesticShipping,
               finalTotal: Math.round(finalTotal),
               isLocal: true
             }
@@ -116,7 +116,7 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack, parentO
             breakdown: {
               items: itemsWithPrices,
               cartSubtotal: itemsTotal,
-              domesticShipping: DOMESTIC_SHIPPING,
+              domesticShipping: domesticShippingCost,
               finalTotal: Math.round(finalTotal),
               isLocal: false
             }
