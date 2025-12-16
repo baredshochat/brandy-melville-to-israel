@@ -746,6 +746,18 @@ export default function ProfitReports() {
                         <td className="p-3">
                           <div className="flex items-center gap-2 flex-wrap">
                             <Badge variant="outline">#{order.order_number}</Badge>
+                            {/* Site badge */}
+                            {order.site && (
+                              <Badge className={
+                                order.site === 'us' ? 'bg-blue-100 text-blue-700' :
+                                order.site === 'eu' ? 'bg-green-100 text-green-700' :
+                                order.site === 'uk' ? 'bg-purple-100 text-purple-700' :
+                                order.site === 'local' ? 'bg-rose-100 text-rose-700' :
+                                'bg-stone-100 text-stone-700'
+                              }>
+                                {order.site === 'local' ? '🇮🇱' : order.site.toUpperCase()}
+                              </Badge>
+                            )}
                             {/* Show unique batches for this order's items */}
                             {(() => {
                               const orderBatchIds = new Set();
