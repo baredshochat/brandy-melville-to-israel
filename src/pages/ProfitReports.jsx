@@ -1283,7 +1283,7 @@ export default function ProfitReports() {
                   <div>
                     <Label className="text-xs">מק"ט</Label>
                     <Input
-                      placeholder="מק\"ט פנימי"
+                      placeholder="מקט פנימי"
                       value={currentInventoryItem.product_sku}
                       onChange={(e) => setCurrentInventoryItem(prev => ({ ...prev, product_sku: e.target.value }))}
                       className="h-9"
