@@ -22,6 +22,8 @@ import ProfitReports from './pages/ProfitReports';
 import CompletePayment from './pages/CompletePayment';
 import BackInStockNotifications from './pages/BackInStockNotifications';
 import ManageCodes from './pages/ManageCodes';
+import LoyaltyClub from './pages/LoyaltyClub';
+import LoyaltyAdmin from './pages/LoyaltyAdmin';
 import __Layout from './Layout.jsx';
 
 
@@ -50,6 +52,8 @@ export const PAGES = {
     "CompletePayment": CompletePayment,
     "BackInStockNotifications": BackInStockNotifications,
     "ManageCodes": ManageCodes,
+    "LoyaltyClub": LoyaltyClub,
+    "LoyaltyAdmin": LoyaltyAdmin,
 }
 
 export const pagesConfig = {
