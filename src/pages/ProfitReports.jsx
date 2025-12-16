@@ -95,6 +95,11 @@ export default function ProfitReports() {
   const [parseText, setParseText] = useState('');
   const [parsing, setParsing] = useState(false);
 
+  // עריכת עלויות פריטים בחבילה
+  const [editingCostsBatch, setEditingCostsBatch] = useState(null);
+  const [editedInventoryItems, setEditedInventoryItems] = useState([]); // items inside batch
+  const [editedLinkedItems, setEditedLinkedItems] = useState([]); // items from orders linked to batch
+
   useEffect(() => {
     const init = async () => {
       try {
@@ -443,6 +448,95 @@ export default function ProfitReports() {
       alert('שגיאה בניתוח הטקסט');
     } finally {
       setParsing(false);
+    }
+  };
+
+  // פתיחת עורך עלויות עבור חבילה
+  const openEditCosts = (batch) => {
+    const inv = (batch.inventory_items || []).map((item, idx) => ({
+      _index: idx,
+      product_name: item.product_name || '',
+      product_sku: item.product_sku || '',
+      color: item.color || '',
+      size: item.size || '',
+      quantity: item.quantity || 1,
+      actual_cost_price: item.actual_cost_price ?? '',
+      actual_cost_currency: item.actual_cost_currency || 'USD',
+      source_url: item.source_url || '',
+      notes: item.notes || ''
+    }));
+
+    const linked = (batch.item_links || []).map((link) => {
+      const order = orders.find(o => o.id === link.order_id);
+      const item = order?.items?.[link.item_index];
+      if (!order || !item) return null;
+      return {
+        orderId: order.id,
+        orderNumber: order.order_number,
+        itemIndex: link.item_index,
+        product_name: link.product_name || item.product_name || '',
+        color: item.color || '',
+        size: item.size || '',
+        quantity: item.quantity || 1,
+        actual_cost_price: item.actual_cost_price ?? '',
+        actual_cost_currency: item.actual_cost_currency || 'ILS'
+      };
+    }).filter(Boolean);
+
+    setEditedInventoryItems(inv);
+    setEditedLinkedItems(linked);
+    setEditingCostsBatch({ id: batch.id, batch_name: batch.batch_name });
+  };
+
+  // שמירת עלויות ערוכות
+  const saveEditedCosts = async () => {
+    if (!editingCostsBatch) return;
+    setSaving(true);
+    try {
+      // 1) עדכון פריטי המלאי בחבילה
+      const batch = batches.find(b => b.id === editingCostsBatch.id);
+      if (batch) {
+        const newInventory = editedInventoryItems.map(({ _index, ...rest }) => ({
+          ...rest,
+          actual_cost_price: rest.actual_cost_price === '' ? null : Number(rest.actual_cost_price),
+          quantity: rest.quantity === '' ? 1 : Number(rest.quantity)
+        }));
+        await ShipmentBatch.update(batch.id, { inventory_items: newInventory });
+      }
+
+      // 2) עדכון פריטים בהזמנות המקושרות
+      const byOrder = editedLinkedItems.reduce((acc, it) => {
+        acc[it.orderId] = acc[it.orderId] || [];
+        acc[it.orderId].push(it);
+        return acc;
+      }, {});
+
+      const updates = Object.entries(byOrder).map(async ([orderId, items]) => {
+        const order = orders.find(o => o.id === orderId);
+        if (!order) return;
+        const updatedItems = [...(order.items || [])];
+        items.forEach((it) => {
+          if (updatedItems[it.itemIndex]) {
+            updatedItems[it.itemIndex] = {
+              ...updatedItems[it.itemIndex],
+              actual_cost_price: it.actual_cost_price === '' ? null : Number(it.actual_cost_price),
+              actual_cost_currency: it.actual_cost_currency || 'ILS'
+            };
+          }
+        });
+        await Order.update(orderId, { items: updatedItems });
+      });
+
+      await Promise.all(updates);
+      await loadOrders();
+      setEditingCostsBatch(null);
+      setEditedInventoryItems([]);
+      setEditedLinkedItems([]);
+    } catch (e) {
+      console.error('Error saving edited costs:', e);
+      alert('שגיאה בשמירת עלויות');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -804,6 +898,10 @@ export default function ProfitReports() {
                               }}>
                                 <Plus className="w-4 h-4 ml-1" />
                                 הוסף פריטים
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => openEditCosts(batch)}>
+                                <DollarSign className="w-4 h-4" />
+                                עריכת עלויות
                               </Button>
                               <Button size="sm" variant="outline" onClick={() => setEditingBatch(batch)}>
                                 <Edit2 className="w-4 h-4" />
@@ -1728,6 +1826,115 @@ Mocha / XS/S
                   נתח והוסף פריטים
                 </>
               )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* דיאלוג עריכת עלויות פריטים בחבילה */}
+      <Dialog open={!!editingCostsBatch} onOpenChange={(open) => setEditingCostsBatch(open ? editingCostsBatch : null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>עריכת עלויות — {editingCostsBatch?.batch_name || ''}</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-6 mt-2">
+            {/* פריטי מלאי בתוך החבילה */}
+            <div>
+              <h3 className="text-sm font-semibold text-stone-700 mb-2">פריטי מלאי בחבילה</h3>
+              {editedInventoryItems.length === 0 ? (
+                <p className="text-xs text-stone-500">אין פריטי מלאי</p>
+              ) : (
+                <div className="space-y-2">
+                  {editedInventoryItems.map((it, idx) => (
+                    <div key={idx} className="grid grid-cols-12 gap-2 items-end p-2 bg-orange-50 border border-orange-200">
+                      <div className="col-span-4">
+                        <Label className="text-xs">מוצר</Label>
+                        <Input value={it.product_name} onChange={(e)=>{
+                          const arr=[...editedInventoryItems]; arr[idx]={...arr[idx], product_name:e.target.value}; setEditedInventoryItems(arr);
+                        }} className="h-8 text-xs" />
+                      </div>
+                      <div className="col-span-2">
+                        <Label className="text-xs">כמות</Label>
+                        <Input type="number" value={it.quantity} onChange={(e)=>{
+                          const arr=[...editedInventoryItems]; arr[idx]={...arr[idx], quantity:e.target.value}; setEditedInventoryItems(arr);
+                        }} className="h-8 text-xs" />
+                      </div>
+                      <div className="col-span-3">
+                        <Label className="text-xs">עלות ליח׳</Label>
+                        <Input type="number" value={it.actual_cost_price} onChange={(e)=>{
+                          const arr=[...editedInventoryItems]; arr[idx]={...arr[idx], actual_cost_price:e.target.value}; setEditedInventoryItems(arr);
+                        }} className="h-8 text-xs" />
+                      </div>
+                      <div className="col-span-3">
+                        <Label className="text-xs">מטבע</Label>
+                        <Select value={it.actual_cost_currency} onValueChange={(v)=>{
+                          const arr=[...editedInventoryItems]; arr[idx]={...arr[idx], actual_cost_currency:v}; setEditedInventoryItems(arr);
+                        }}>
+                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="USD">$ USD</SelectItem>
+                            <SelectItem value="EUR">€ EUR</SelectItem>
+                            <SelectItem value="GBP">£ GBP</SelectItem>
+                            <SelectItem value="ILS">₪ ILS</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* פריטים מקושרים מהזמנות */}
+            <div>
+              <h3 className="text-sm font-semibold text-stone-700 mb-2">פריטים מקושרים מהזמנות</h3>
+              {editedLinkedItems.length === 0 ? (
+                <p className="text-xs text-stone-500">אין פריטים מקושרים</p>
+              ) : (
+                <div className="space-y-2">
+                  {editedLinkedItems.map((it, idx) => (
+                    <div key={idx} className="grid grid-cols-12 gap-2 items-end p-2 bg-white border">
+                      <div className="col-span-4">
+                        <Label className="text-xs">#{it.orderNumber} • מוצר</Label>
+                        <Input value={it.product_name} disabled className="h-8 text-xs" />
+                      </div>
+                      <div className="col-span-2">
+                        <Label className="text-xs">כמות</Label>
+                        <Input type="number" value={it.quantity} disabled className="h-8 text-xs" />
+                      </div>
+                      <div className="col-span-3">
+                        <Label className="text-xs">עלות ליח׳</Label>
+                        <Input type="number" value={it.actual_cost_price} onChange={(e)=>{
+                          const arr=[...editedLinkedItems]; arr[idx]={...arr[idx], actual_cost_price:e.target.value}; setEditedLinkedItems(arr);
+                        }} className="h-8 text-xs" />
+                      </div>
+                      <div className="col-span-3">
+                        <Label className="text-xs">מטבע</Label>
+                        <Select value={it.actual_cost_currency} onValueChange={(v)=>{
+                          const arr=[...editedLinkedItems]; arr[idx]={...arr[idx], actual_cost_currency:v}; setEditedLinkedItems(arr);
+                        }}>
+                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="ILS">₪ ILS</SelectItem>
+                            <SelectItem value="USD">$ USD</SelectItem>
+                            <SelectItem value="EUR">€ EUR</SelectItem>
+                            <SelectItem value="GBP">£ GBP</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 mt-6">
+            <Button variant="outline" onClick={() => setEditingCostsBatch(null)}>ביטול</Button>
+            <Button onClick={saveEditedCosts} disabled={saving} className="bg-stone-900 hover:bg-black">
+              {saving ? <Loader2 className="w-4 h-4 ml-1 animate-spin" /> : <Save className="w-4 h-4 ml-1" />}
+              שמירת עלויות
             </Button>
           </div>
         </DialogContent>
