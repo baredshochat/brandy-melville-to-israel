@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowRight, ArrowLeft, Loader2, ShieldCheck, Tag } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Loader2, ShieldCheck, Tag, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { PricingLabels } from '@/entities/PricingLabels';
 import { Code } from '@/entities/Code';
@@ -572,6 +572,15 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack, parentO
                 </span>
               </div>
             }
+
+            {pointsRedeemed > 0 && (
+              <div className="flex justify-between items-center py-2 border-t border-green-200 bg-green-50">
+                <span className="text-sm font-medium text-green-900">מימוש נקודות</span>
+                <span className="text-sm font-bold text-green-600">
+                  -{formatMoney(pointsRedeemed)}
+                </span>
+              </div>
+            )}
 
             <div className="flex justify-between items-center pt-4 border-t-2 border-rose-200">
               <span className="text-lg font-bold text-stone-900">
