@@ -15,7 +15,7 @@ export default function LoyaltyClub() {
   const [loading, setLoading] = useState(true);
   const [recentLedger, setRecentLedger] = useState([]);
   const [activeCodes, setActiveCodes] = useState([]);
-  const [joinForm, setJoinForm] = useState({ birthday: '', phone: '' });
+  const [joinForm, setJoinForm] = useState({ birthday: '', marketing_opt_in: true });
   const [joining, setJoining] = useState(false);
 
   useEffect(() => {
@@ -116,22 +116,19 @@ export default function LoyaltyClub() {
               <div className="flex items-start gap-3">
                 <Star className="w-5 h-5 text-rose-500 mt-0.5" />
                 <div>
-                  <p className="font-medium">צברי 10% נקודות על כל הזמנה</p>
-                  <p className="text-sm text-stone-600">כל נקודה = 1 ₪ הנחה</p>
+                  <p className="font-medium">צבירת נקודות בכל הזמנה</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <Calendar className="w-5 h-5 text-rose-500 mt-0.5" />
                 <div>
                   <p className="font-medium">הטבת יום הולדת מיוחדת</p>
-                  <p className="text-sm text-stone-600">20% הנחה על ההזמנה ביום ההולדת שלך</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <Gift className="w-5 h-5 text-rose-500 mt-0.5" />
                 <div>
-                  <p className="font-medium">30 נקודות בונוס בהצטרפות!</p>
-                  <p className="text-sm text-stone-600">מתנה מאיתנו רק בשבילך</p>
+                  <p className="font-medium">הטבות שמתקדמות איתך עם הזמן</p>
                 </div>
               </div>
             </div>
@@ -147,17 +144,6 @@ export default function LoyaltyClub() {
                   className="mt-1"
                 />
               </div>
-              <div>
-                <Label htmlFor="phone">מספר טלפון (אופציונלי)</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="05X-XXXXXXX"
-                  value={joinForm.phone}
-                  onChange={(e) => setJoinForm({ ...joinForm, phone: e.target.value })}
-                  className="mt-1"
-                />
-              </div>
             </div>
 
             <Button
@@ -168,7 +154,7 @@ export default function LoyaltyClub() {
               {joining ? (
                 <><Loader2 className="w-4 h-4 animate-spin ml-2" /> מצטרפת...</>
               ) : (
-                <>הצטרפי עכשיו וקבלי 30 נקודות! 🎁</>
+                <>הצטרפי עכשיו וקבלי 50 נקודות! 🎁</>
               )}
             </Button>
           </CardContent>
@@ -280,10 +266,10 @@ export default function LoyaltyClub() {
         <CardContent className="pt-6">
           <h3 className="font-medium mb-3">איך זה עובד?</h3>
           <ul className="space-y-2 text-sm text-stone-600">
-            <li>• צברי 10% נקודות על כל הזמנה שהושלמה</li>
-            <li>• ממשי עד 30% מסכום ההזמנה בנקודות</li>
+            <li>• צברי נקודות על כל הזמנה שהושלמה</li>
             <li>• כל נקודה שווה 1 ₪ הנחה</li>
             <li>• קבלי הטבת יום הולדת מיוחדת כל שנה</li>
+            <li>• ההטבות שלך משתפרות ככל שאת קונה יותר</li>
           </ul>
         </CardContent>
       </Card>
