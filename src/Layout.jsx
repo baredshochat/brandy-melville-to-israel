@@ -5,6 +5,7 @@ import { Home, Package, Truck, Settings, Heart, FileText, Calculator, MessageSqu
 import { User } from "@/entities/User";
 import SheetNav from './components/layout/SheetNav';
 import CartPopover from './components/layout/CartPopover';
+import LoyaltySignupPopup from './components/loyalty/LoyaltySignupPopup';
 
 const MAINTENANCE_MODE = false; // שנה ל-true כדי לסגור את האתר
 
@@ -74,6 +75,7 @@ export default function Layout({ children }) {
 
   return (
     <>
+      <LoyaltySignupPopup />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&display=swap');
         body { font-family: 'Assistant', sans-serif; background-color: #fcfbf9; color: #333; direction: rtl; }
