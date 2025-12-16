@@ -5,6 +5,9 @@ import { ArrowRight, ArrowLeft, Loader2, ShieldCheck, Tag } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { PricingLabels } from '@/entities/PricingLabels';
 import { Code } from '@/entities/Code';
+import { Order } from '@/entities/Order';
+import { CalculationSettings } from '@/entities/CalculationSettings';
+import { base44 } from '@/api/base44Client';
 
 const formatMoney = (amount) => {
   return `₪${Math.round(amount).toLocaleString('he-IL')}`;
@@ -20,10 +23,11 @@ const EXCHANGE_RATES = {
 const MULTIPLIER = 2.5;
 const DOMESTIC_SHIPPING = 30;
 
-export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
+export default function PriceCalculator({ cart, site, onConfirm, onBack, parentOrderId }) {
   const [loading, setLoading] = useState(true);
   const [labels, setLabels] = useState(null);
   const [priceData, setPriceData] = useState(null);
+  const [calSettings, setCalSettings] = useState(null);
   const [error, setError] = useState('');
   const [codeInput, setCodeInput] = useState('');
   const [appliedCode, setAppliedCode] = useState(null);
@@ -43,8 +47,31 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
 
         setLabels(currentLabels);
 
+        // Load CalculationSettings
+        const calculationSettingsList = await CalculationSettings.list();
+        const currentCalSettings = calculationSettingsList && calculationSettingsList.length > 0 ? calculationSettingsList[0] : {};
+        setCalSettings(currentCalSettings);
+
         // Check if all items are local
         const isLocalOrder = cart.every((item) => item.site === 'local');
+        
+        // Calculate domestic shipping cost
+        let domesticShippingCost = 0;
+        if (site === 'local' && cart.length > 0) {
+          domesticShippingCost = currentCalSettings.domestic_ship_ils || 35;
+        }
+
+        // Apply free shipping if part of an add-on order with active free shipping
+        if (parentOrderId) {
+          try {
+            const parentOrder = await Order.get(parentOrderId);
+            if (parentOrder && parentOrder.free_shipping_until && new Date(parentOrder.free_shipping_until) > new Date()) {
+              domesticShippingCost = 0; // Apply free shipping
+            }
+          } catch (e) {
+            console.error('Error checking parent order for free shipping:', e);
+          }
+        }
 
         if (isLocalOrder) {
           // Simple calculation for local items - just item price + shipping
@@ -52,8 +79,8 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
 
           // Check if all items have free shipping
           const allFreeShipping = cart.every((item) => item.free_shipping === true);
-          const domesticShipping = allFreeShipping ? 0 : DOMESTIC_SHIPPING;
-          const finalTotal = itemsTotal + domesticShipping;
+          const currentDomesticShipping = allFreeShipping ? 0 : domesticShippingCost;
+          const finalTotal = itemsTotal + currentDomesticShipping;
 
           setPriceData({
             finalPriceILS: Math.round(finalTotal),
@@ -72,8 +99,9 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
           // חישוב חדש ופשוט: מחיר מקורי * שער המרה * 2.5 + 30 משלוח
           const itemsWithPrices = cart.map((item) => {
             const currency = item.original_currency || (site === 'uk' ? 'GBP' : 'EUR');
-            const exchangeRate = EXCHANGE_RATES[currency] || 4;
-            const itemPriceILS = item.original_price * exchangeRate * MULTIPLIER * item.quantity;
+            const exchangeRate = EXCHANGE_RATES[currency] || currentCalSettings.fx_eur_ils || 4;
+            const multiplier = currentCalSettings.initial_display_percent ? (1 / currentCalSettings.initial_display_percent) : MULTIPLIER;
+            const itemPriceILS = item.original_price * exchangeRate * multiplier * item.quantity;
             return {
               ...item,
               fullPrice: Math.round(itemPriceILS)
@@ -81,7 +109,7 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
           });
 
           const itemsTotal = itemsWithPrices.reduce((sum, item) => sum + item.fullPrice, 0);
-          const finalTotal = itemsTotal + DOMESTIC_SHIPPING;
+          const finalTotal = itemsTotal + domesticShippingCost;
 
           setPriceData({
             finalPriceILS: Math.round(finalTotal),
@@ -106,7 +134,7 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
     if (cart && cart.length > 0) {
       loadData();
     }
-  }, [cart, site]);
+  }, [cart, site, parentOrderId]);
 
   const handleApplyCode = async () => {
     if (!codeInput.trim()) {
@@ -310,7 +338,9 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
             סיכום הזמנה
           </h2>
           <p className="text-sm sm:text-base text-stone-600">
-            פירוט מלא של העלויות
+            {parentOrderId && priceData?.breakdown?.domesticShipping === 0 
+              ? "משלוח זה יצורף להזמנה הקיימת שלך, ללא עלות נוספת! 🎉"
+              : "פירוט מלא של העלויות"}
           </p>
         </div>
 
@@ -340,7 +370,9 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
             <div className="flex justify-between items-center py-2 border-t border-stone-200">
               <span className="text-xs text-stone-600 italic">משלוח עד הבית</span>
               <span className="text-xs italic text-stone-700">
-                {formatMoney(domesticShipping)}
+                {priceData?.breakdown?.domesticShipping === 0 && parentOrderId
+                  ? "חינם! 🎁"
+                  : formatMoney(priceData?.breakdown?.domesticShipping || 0)}
               </span>
             </div>
 

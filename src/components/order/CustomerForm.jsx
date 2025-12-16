@@ -10,7 +10,7 @@ import { User as UserEntity } from "@/entities/User";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 
-export default function CustomerForm({ onSubmit, onBack }) {
+export default function CustomerForm({ onSubmit, onBack, parentOrderId }) {
   const [user, setUser] = useState(null);
   const [formData, setFormData] = useState({
     customer_name: '',
@@ -49,7 +49,13 @@ export default function CustomerForm({ onSubmit, onBack }) {
 
   const handleSubmit = (e) => {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
-    onSubmit(formData);
+    
+    if (!formData.terms_accepted) {
+      alert('יש לאשר את התקנון');
+      return;
+    }
+    
+    onSubmit(formData, parentOrderId);
   };
 
   // Add proper email validation
