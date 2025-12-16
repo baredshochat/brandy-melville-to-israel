@@ -191,8 +191,8 @@ export default function LoyaltyClub() {
         </CardHeader>
         <CardContent>
           <div className="text-center">
-            <p className="text-5xl font-bold text-rose-600">{user.points_balance || 0}</p>
-            <p className="text-stone-600 mt-2">נקודות זמינות למימוש</p>
+            <p className="text-6xl font-bold text-rose-500">{user.points_balance || 0}</p>
+            <p className="text-stone-700 mt-3 font-medium">נקודות זמינות למימוש</p>
             <p className="text-sm text-stone-500 mt-1">שווי: ₪{user.points_balance || 0}</p>
           </div>
         </CardContent>
@@ -274,14 +274,26 @@ export default function LoyaltyClub() {
       </Card>
 
       {/* Info */}
-      <Card className="bg-stone-50 border-stone-200">
+      <Card className="bg-white border-stone-200">
         <CardContent className="pt-6">
-          <h3 className="font-medium mb-3">איך זה עובד?</h3>
-          <ul className="space-y-2 text-sm text-stone-600">
-            <li>• צברי נקודות על כל הזמנה שהושלמה</li>
-            <li>• כל נקודה שווה 1 ₪ הנחה</li>
-            <li>• קבלי הטבת יום הולדת מיוחדת כל שנה</li>
-            <li>• ההטבות שלך משתפרות ככל שאת קונה יותר</li>
+          <h3 className="font-semibold mb-4 text-lg">איך זה עובד?</h3>
+          <ul className="space-y-3 text-sm text-stone-700">
+            <li className="flex items-start gap-2">
+              <span className="text-rose-500 font-bold">•</span>
+              <span>צברי נקודות על כל הזמנה שהושלמה</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-rose-500 font-bold">•</span>
+              <span>כל נקודה שווה 1 ש״ח הנחה</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-rose-500 font-bold">•</span>
+              <span>קבלי הטבת יום הולדת מיוחדת כל שנה</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-rose-500 font-bold">•</span>
+              <span>ההטבות שלך משתפרות ככל שאת קונה יותר</span>
+            </li>
           </ul>
         </CardContent>
       </Card>
