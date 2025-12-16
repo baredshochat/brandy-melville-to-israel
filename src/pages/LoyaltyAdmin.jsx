@@ -271,54 +271,32 @@ export default function LoyaltyAdmin() {
             <CardHeader>
               <CardTitle>הגדרות מערכת</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>אחוז צבירה</Label>
-                  <p className="text-sm text-stone-500">אחוז הנקודות שנצברות מכל הזמנה</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    step="0.01"
-                    defaultValue={settings.earn_percentage || '0.1'}
-                    className="w-24"
-                    id="earn-pct"
-                  />
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      const val = document.getElementById('earn-pct').value;
-                      handleUpdateSetting('earn_percentage', val);
-                    }}
-                  >
-                    עדכן
-                  </Button>
+            <CardContent className="space-y-6">
+              <div className="border-b pb-4">
+                <h3 className="font-medium mb-3">מודל נקודות</h3>
+                <div className="bg-stone-50 p-4 rounded-lg space-y-2 text-sm">
+                  <p><strong>100 נקודות</strong> = הטבה של <strong>50₪</strong></p>
+                  <p className="text-stone-600">• אין מימוש חלקי</p>
+                  <p className="text-stone-600">• תוקף הטבה: 30 ימים</p>
+                  <p className="text-stone-600">• צבירה לפי דרגה: Member 5% • Silver 7% • Gold 10%</p>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>מקסימום מימוש</Label>
-                  <p className="text-sm text-stone-500">אחוז מקסימלי לשימוש בנקודות בהזמנה</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    step="0.01"
-                    defaultValue={settings.max_redeem_percentage || '0.3'}
-                    className="w-24"
-                    id="redeem-pct"
-                  />
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      const val = document.getElementById('redeem-pct').value;
-                      handleUpdateSetting('max_redeem_percentage', val);
-                    }}
-                  >
-                    עדכן
-                  </Button>
+              <div className="border-b pb-4">
+                <h3 className="font-medium mb-3">דרגות מועדון</h3>
+                <div className="space-y-3">
+                  <div className="bg-stone-50 p-3 rounded-lg">
+                    <p className="font-medium">💖 Member</p>
+                    <p className="text-xs text-stone-600">צבירה: 5% • יום הולדת: 50 נקודות</p>
+                  </div>
+                  <div className="bg-stone-50 p-3 rounded-lg">
+                    <p className="font-medium">✨ Silver (5 הזמנות ב-6 חודשים)</p>
+                    <p className="text-xs text-stone-600">צבירה: 7% • יום הולדת: 75 נקודות • משלוח חינם חד-פעמי</p>
+                  </div>
+                  <div className="bg-stone-50 p-3 rounded-lg">
+                    <p className="font-medium">⭐ Gold (10 הזמנות ב-6 חודשים)</p>
+                    <p className="text-xs text-stone-600">צבירה: 10% • יום הולדת: 100 נקודות • משלוח חינם חודשי</p>
+                  </div>
                 </div>
               </div>
 
