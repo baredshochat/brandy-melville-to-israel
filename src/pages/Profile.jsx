@@ -50,6 +50,7 @@ export default function ProfilePage() {
   const [recentLedger, setRecentLedger] = useState([]);
   const [activeCodes, setActiveCodes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [updatingMarketing, setUpdatingMarketing] = useState(false);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -92,6 +93,31 @@ export default function ProfilePage() {
       case 'bonus': return <Gift className="w-4 h-4 text-rose-500" />;
       case 'use': return <Star className="w-4 h-4 text-blue-600" />;
       default: return <Award className="w-4 h-4 text-stone-500" />;
+    }
+  };
+
+  const handleMarketingOptIn = async (checked) => {
+    setUpdatingMarketing(true);
+    try {
+      const updateData = {
+        marketing_opt_in: checked,
+        marketing_source: 'profile'
+      };
+      
+      if (checked) {
+        updateData.marketing_opt_in_at = new Date().toISOString();
+        updateData.unsubscribed_at = null;
+      } else {
+        updateData.unsubscribed_at = new Date().toISOString();
+      }
+
+      await base44.auth.updateMe(updateData);
+      setUser({ ...user, ...updateData });
+    } catch (error) {
+      console.error('Error updating marketing preferences:', error);
+      alert('שגיאה בעדכון העדפות דיוור');
+    } finally {
+      setUpdatingMarketing(false);
     }
   };
 
@@ -402,6 +428,20 @@ export default function ProfilePage() {
                   </div>
                 </div>
               )}
+
+              <div className="pt-3 border-t border-stone-200">
+                <div className="flex items-start gap-2">
+                  <Checkbox
+                    id="marketing-profile"
+                    checked={user.marketing_opt_in || false}
+                    onCheckedChange={handleMarketingOptIn}
+                    disabled={updatingMarketing}
+                  />
+                  <Label htmlFor="marketing-profile" className="text-xs text-stone-600 leading-relaxed cursor-pointer">
+                    קבלת עדכונים והטבות למייל
+                  </Label>
+                </div>
+              </div>
 
               <Button 
                 variant="outline" 

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Gift, Star, Calendar, Loader2, X } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { motion } from 'framer-motion';
 import { User } from '@/entities/User';
 import { joinClub } from '@/functions/joinClub';
@@ -11,7 +12,7 @@ import { joinClub } from '@/functions/joinClub';
 export default function LoyaltySignupPopup() {
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState(null);
-  const [formData, setFormData] = useState({ birthday: '', phone: '' });
+  const [formData, setFormData] = useState({ birthday: '', phone: '', marketing_opt_in: false });
   const [joining, setJoining] = useState(false);
 
   useEffect(() => {
@@ -156,6 +157,17 @@ export default function LoyaltySignupPopup() {
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 className="mt-1 h-10"
               />
+            </div>
+
+            <div className="flex items-start gap-2 pt-2">
+              <Checkbox
+                id="marketing"
+                checked={formData.marketing_opt_in}
+                onCheckedChange={(checked) => setFormData({ ...formData, marketing_opt_in: checked })}
+              />
+              <Label htmlFor="marketing" className="text-xs text-stone-600 leading-relaxed cursor-pointer">
+                אני מעוניינת לקבל עדכונים, הטבות והנחות בלעדיות למייל
+              </Label>
             </div>
 
             <Button
