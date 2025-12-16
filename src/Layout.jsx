@@ -55,6 +55,7 @@ export default function Layout({ children }) {
   const allNavLinks = [
   { name: "Home", label: "הזמנה חדשה", icon: Home, roles: ['admin', 'user'] },
   { name: "TrackOrder", label: "מעקב משלוח", icon: Truck, roles: ['admin', 'user'] },
+  { name: "LoyaltyClub", label: "מועדון לקוחות", icon: Heart, roles: ['admin', 'user'] },
   { name: "Chat", label: "שירות לקוחות", icon: MessageSquare, roles: ['admin', 'user'] },
   { name: "Terms", label: "תקנון", icon: FileText, roles: ['admin', 'user'] },
   { name: "Orders", label: "ניהול הזמנות", icon: Package, roles: ['admin'] },
@@ -65,6 +66,7 @@ export default function Layout({ children }) {
   { name: "CalculationSettings", label: "הגדרות חישוב מחיר", icon: Calculator, roles: ['admin'] },
   { name: "ExchangeRates", label: "שערי חליפין", icon: DollarSign, roles: ['admin'] },
   { name: "ManageCodes", label: "ניהול קודים והטבות", icon: FileText, roles: ['admin'] },
+  { name: "LoyaltyAdmin", label: "ניהול מועדון לקוחות", icon: Heart, roles: ['admin'] },
     { name: "ChatLogs", label: "לוג שיחות צ'אט", icon: MessageSquare, roles: ['admin'] }];
 
 

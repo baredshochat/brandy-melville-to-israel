@@ -934,6 +934,14 @@ export default function Home() {
         }
       }
 
+      // Earn points for completed order
+      try {
+        await base44.functions.invoke('earnPoints', { order_id: currentOrder.id });
+        console.log('Points earned successfully');
+      } catch (e) {
+        console.error('Failed to earn points:', e);
+      }
+
       // Do NOT delete cart items - they are saved in the order anyway
       // The cart will be cleared when user starts a new order (selects a site)
 
