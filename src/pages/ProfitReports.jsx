@@ -1892,10 +1892,22 @@ Mocha / XS/S
                       </div>
                       <div className="col-span-2">
                         <Label className="text-xs">עלות בפועל</Label>
-                        <Input disabled className="h-8 text-xs bg-stone-100" value={() => {
-                          const total = convertToILS(Number(it.actual_cost_price) * Number(it.quantity || 1), it.actual_cost_currency);
-                          return isNaN(total) ? '' : `₪${total.toFixed(0)}`;
-                        }} />
+                        <Input
+                          type="number"
+                          className="h-8 text-xs"
+                          value={(() => {
+                            const total = convertToILS(Number(it.actual_cost_price) * Number(it.quantity || 1), it.actual_cost_currency);
+                            return isNaN(total) ? '' : Number(total).toFixed(0);
+                          })()}
+                          onChange={(e) => {
+                            const q = Number(it.quantity || 1) || 1;
+                            const totalIls = Number(e.target.value || 0);
+                            const perUnitIls = q > 0 ? totalIls / q : totalIls;
+                            const arr = [...editedInventoryItems];
+                            arr[idx] = { ...arr[idx], actual_cost_price: perUnitIls, actual_cost_currency: 'ILS' };
+                            setEditedInventoryItems(arr);
+                          }}
+                        />
                       </div>
                       <div className="col-span-2">
                         <Label className="text-xs">עלות ליח׳</Label>
