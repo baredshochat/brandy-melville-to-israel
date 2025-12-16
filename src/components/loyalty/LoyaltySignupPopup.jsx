@@ -12,7 +12,7 @@ import { joinClub } from '@/functions/joinClub';
 export default function LoyaltySignupPopup() {
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState(null);
-  const [formData, setFormData] = useState({ birthday: '', phone: '', marketing_opt_in: false });
+  const [formData, setFormData] = useState({ birthday: '', marketing_opt_in: false });
   const [joining, setJoining] = useState(false);
 
   useEffect(() => {
@@ -70,7 +70,7 @@ export default function LoyaltySignupPopup() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-md p-0 gap-0 overflow-hidden border-0">
+      <DialogContent className="max-w-md p-0 gap-0 overflow-hidden border-0" hideClose>
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -79,7 +79,7 @@ export default function LoyaltySignupPopup() {
           {/* Close button */}
           <button
             onClick={handleClose}
-            className="absolute top-3 left-3 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white/80 hover:bg-white transition-colors"
+            className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white/80 hover:bg-white transition-colors"
           >
             <X className="w-4 h-4 text-stone-600" />
           </button>
@@ -141,20 +141,6 @@ export default function LoyaltySignupPopup() {
                 type="date"
                 value={formData.birthday}
                 onChange={(e) => setFormData({ ...formData, birthday: e.target.value })}
-                className="mt-1 h-10"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="phone" className="text-xs text-stone-600">
-                מספר טלפון (אופציונלי)
-              </Label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="05X-XXXXXXX"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 className="mt-1 h-10"
               />
             </div>
