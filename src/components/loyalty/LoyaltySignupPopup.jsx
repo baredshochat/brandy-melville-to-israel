@@ -49,11 +49,15 @@ export default function LoyaltySignupPopup() {
       return;
     }
 
+    if (!formData.marketing_opt_in) {
+      alert('נדרשת הסכמה לקבלת עדכונים כדי להצטרף למועדון');
+      return;
+    }
+
     setJoining(true);
     try {
       const { data } = await joinClub(formData);
       if (data.success) {
-        alert(`🎉 הצטרפת בהצלחה למועדון!\nקיבלת ${data.bonus_points} נקודות בונוס!`);
         setOpen(false);
         localStorage.setItem('loyalty_popup_dismissed', 'true');
         window.location.reload();
@@ -66,6 +70,17 @@ export default function LoyaltySignupPopup() {
     } finally {
       setJoining(false);
     }
+  };
+
+  // Check if button should be enabled
+  const canJoin = !user?.club_member && formData.birthday && formData.marketing_opt_in;
+  
+  // Get disabled reason
+  const getDisabledReason = () => {
+    if (user?.club_member) return 'כבר חברה במועדון';
+    if (!formData.birthday) return 'נדרש תאריך יום הולדת';
+    if (!formData.marketing_opt_in) return 'נדרשת הסכמה לקבלת עדכונים';
+    return '';
   };
 
   return (
@@ -90,10 +105,10 @@ export default function LoyaltySignupPopup() {
               <Gift className="w-8 h-8 text-rose-500" />
             </div>
             <h2 className="text-2xl font-semibold text-stone-900 mb-2">
-              הצטרפי למועדון! ✨
+              ✨ הצטרפי למועדון
             </h2>
             <p className="text-sm text-stone-600">
-              צברי נקודות וקבלי הטבות מיוחדות
+              צברי נקודות, קבלי הטבות, ותיהני מהטבות בלעדיות
             </p>
           </div>
 
@@ -104,8 +119,7 @@ export default function LoyaltySignupPopup() {
                 <Star className="w-4 h-4 text-rose-500" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-stone-900">10% נקודות על כל הזמנה</p>
-                <p className="text-xs text-stone-500">כל נקודה = 1 ₪ הנחה</p>
+                <p className="text-sm font-medium text-stone-900">צבירת נקודות בכל הזמנה</p>
               </div>
             </div>
 
@@ -115,7 +129,6 @@ export default function LoyaltySignupPopup() {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-stone-900">הטבת יום הולדת מיוחדת</p>
-                <p className="text-xs text-stone-500">20% הנחה ביום ההולדת שלך</p>
               </div>
             </div>
 
@@ -124,8 +137,7 @@ export default function LoyaltySignupPopup() {
                 <Gift className="w-4 h-4 text-rose-500" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-stone-900">30 נקודות בונוס עכשיו!</p>
-                <p className="text-xs text-stone-500">מתנה בהצטרפות</p>
+                <p className="text-sm font-medium text-stone-900">הטבות שמתקדמות איתך עם הזמן</p>
               </div>
             </div>
           </div>
@@ -152,21 +164,27 @@ export default function LoyaltySignupPopup() {
                 onCheckedChange={(checked) => setFormData({ ...formData, marketing_opt_in: checked })}
               />
               <Label htmlFor="marketing" className="text-xs text-stone-600 leading-relaxed cursor-pointer">
-                אני מעוניינת לקבל עדכונים, הטבות והנחות בלעדיות למייל
+                אני מאשרת קבלת עדכונים, הטבות והנחות במייל
               </Label>
             </div>
 
             <Button
               onClick={handleJoin}
-              disabled={!formData.birthday || joining}
-              className="w-full bg-stone-900 hover:bg-stone-800 h-11 text-sm font-medium"
+              disabled={!canJoin || joining}
+              className="w-full bg-stone-900 hover:bg-stone-800 h-11 text-sm font-medium disabled:opacity-50"
             >
               {joining ? (
                 <><Loader2 className="w-4 h-4 animate-spin ml-2" /> מצטרפת...</>
               ) : (
-                'הצטרפי וקבלי 30 נקודות 🎁'
+                '🎁 הצטרפי וקבלי 50 נקודות'
               )}
             </Button>
+
+            {!canJoin && !joining && (
+              <p className="text-xs text-center text-red-600 mt-2">
+                {getDisabledReason()}
+              </p>
+            )}
 
             <button
               onClick={handleClose}
