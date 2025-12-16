@@ -350,11 +350,11 @@ export default function ProfilePage() {
                 </div>
                 <h3 className="font-semibold text-xl mb-2">הצטרפי למועדון!</h3>
                 <p className="text-sm text-stone-600 mb-4 max-w-sm mx-auto">
-                  צברי 10% נקודות על כל הזמנה וקבלי הטבות מיוחדות ביום ההולדת
+                  צברי נקודות בכל הזמנה, קבלי הטבות מיוחדות ביום ההולדת והטבות שמתקדמות איתך
                 </p>
                 <Link to={createPageUrl('LoyaltyClub')}>
                   <Button className="bg-stone-900 hover:bg-stone-800">
-                    הצטרפי עכשיו וקבלי 30 נקודות! 🎁
+                    הצטרפי עכשיו וקבלי 50 נקודות! 🎁
                   </Button>
                 </Link>
               </CardContent>
