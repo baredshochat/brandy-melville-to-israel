@@ -51,6 +51,23 @@ const convertToILS = (amount, currency) => {
   return Number(amount) * (EXCHANGE_RATES[currency] || 1);
 };
 
+// המרות לפי שערים ייעודיים להזמנה
+const getFxRates = (order) => {
+  const fx = order?.price_breakdown?.fx_rates;
+  return {
+    USD: fx?.USD ?? EXCHANGE_RATES.USD,
+    EUR: fx?.EUR ?? EXCHANGE_RATES.EUR,
+    GBP: fx?.GBP ?? EXCHANGE_RATES.GBP,
+    ILS: 1,
+  };
+};
+
+const convertToILSWithRates = (amount, currency, rates) => {
+  if (!amount || !currency) return 0;
+  const rate = rates?.[currency] ?? EXCHANGE_RATES[currency] ?? 1;
+  return Number(amount) * rate;
+};
+
 export default function ProfitReports() {
   const [orders, setOrders] = useState([]);
   const [batches, setBatches] = useState([]);
@@ -60,6 +77,7 @@ export default function ProfitReports() {
   const [editingOrder, setEditingOrder] = useState(null);
   const [editingItems, setEditingItems] = useState([]);
   const [editingShipping, setEditingShipping] = useState({ cost: 0, currency: 'ILS' });
+  const [fxRates, setFxRates] = useState({ USD: 3.7, EUR: 4.0, GBP: 4.6 });
   const [saving, setSaving] = useState(false);
   const [dateFilter, setDateFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -254,9 +272,10 @@ export default function ProfitReports() {
   }, [orders, dateFilter, statusFilter]);
 
   // חישוב רווח לפריט בודד
-  const calculateItemProfit = (item) => {
+  const calculateItemProfit = (item, order) => {
     const soldPrice = convertToILS(item.original_price, item.original_currency) * (item.quantity || 1);
-    const costPrice = convertToILS(item.actual_cost_price, item.actual_cost_currency || 'ILS') * (item.quantity || 1);
+    const rates = getFxRates(order);
+    const costPrice = convertToILSWithRates(item.actual_cost_price, item.actual_cost_currency || 'ILS', rates) * (item.quantity || 1);
     const profit = soldPrice - costPrice;
     const hasCost = item.actual_cost_price != null && item.actual_cost_price > 0;
     return { soldPrice, costPrice, profit, hasCost };
@@ -269,7 +288,8 @@ export default function ProfitReports() {
     let allItemsHaveCost = true;
     
     (order.items || []).forEach(item => {
-      const itemCost = convertToILS(item.actual_cost_price, item.actual_cost_currency || 'ILS') * (item.quantity || 1);
+      const rates = getFxRates(order);
+      const itemCost = convertToILSWithRates(item.actual_cost_price, item.actual_cost_currency || 'ILS', rates) * (item.quantity || 1);
       totalCost += itemCost;
       if (!item.actual_cost_price || item.actual_cost_price <= 0) {
         allItemsHaveCost = false;
@@ -341,6 +361,12 @@ export default function ProfitReports() {
       cost: order.actual_shipping_cost || '',
       currency: order.actual_shipping_currency || 'ILS'
     });
+    const existingFx = order?.price_breakdown?.fx_rates;
+    setFxRates({
+      USD: existingFx?.USD ?? EXCHANGE_RATES.USD,
+      EUR: existingFx?.EUR ?? EXCHANGE_RATES.EUR,
+      GBP: existingFx?.GBP ?? EXCHANGE_RATES.GBP,
+    });
   };
 
   const handleSave = async () => {
@@ -353,7 +379,11 @@ export default function ProfitReports() {
           actual_cost_price: item.actual_cost_price ? Number(item.actual_cost_price) : null
         })),
         actual_shipping_cost: editingShipping.cost ? Number(editingShipping.cost) : null,
-        actual_shipping_currency: editingShipping.currency
+        actual_shipping_currency: editingShipping.currency,
+        price_breakdown: {
+          ...(editingOrder?.price_breakdown || {}),
+          fx_rates: { USD: Number(fxRates.USD), EUR: Number(fxRates.EUR), GBP: Number(fxRates.GBP) }
+        }
       });
       await loadOrders();
       setEditingOrder(null);
@@ -1138,7 +1168,7 @@ export default function ProfitReports() {
                                 </thead>
                                 <tbody>
                                   {(order.items || []).map((item, idx) => {
-                                    const { costPrice, hasCost } = calculateItemProfit(item);
+                                    const { costPrice, hasCost } = calculateItemProfit(item, order);
                                     const currencySymbol = item.original_currency === 'USD' ? '$' : item.original_currency === 'EUR' ? '€' : item.original_currency === 'GBP' ? '£' : '₪';
                                     const originalPriceDisplay = `${currencySymbol}${Number(item.original_price || 0).toFixed(0)}`;
                                     const customerPrice = item.customer_price_ils || 0;
@@ -2178,6 +2208,32 @@ Mocha / XS/S
             ))}
             
             <div className="pt-4 border-t">
+              {/* שערי המרה לשקלים */}
+              <div className="pt-4 border-t mb-4">
+                <h3 className="font-semibold text-stone-700 mb-2">שערי המרה לשקלים</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <Label className="text-xs">USD ➜ ILS</Label>
+                    <Input type="number" step="0.0001" value={fxRates.USD}
+                      onChange={(e)=> setFxRates(prev => ({...prev, USD: e.target.value}))}
+                      className="h-9" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">EUR ➜ ILS</Label>
+                    <Input type="number" step="0.0001" value={fxRates.EUR}
+                      onChange={(e)=> setFxRates(prev => ({...prev, EUR: e.target.value}))}
+                      className="h-9" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">GBP ➜ ILS</Label>
+                    <Input type="number" step="0.0001" value={fxRates.GBP}
+                      onChange={(e)=> setFxRates(prev => ({...prev, GBP: e.target.value}))}
+                      className="h-9" />
+                  </div>
+                </div>
+                <p className="text-xs text-stone-500 mt-2">הערכים ישמרו להזמנה זו וישמשו לחישוב עלות הפריטים בש״ח.</p>
+              </div>
+
               <h3 className="font-semibold text-stone-700 mb-2">עלות משלוח</h3>
               <div className="flex gap-2 items-end">
                 <div className="flex-1">
