@@ -30,9 +30,12 @@ import {
   Unlink,
   Copy,
   ExternalLink,
-  Receipt
+  Receipt,
+  FileText
 } from "lucide-react";
 import MonthlyExpensesTab from "../components/admin/MonthlyExpensesTab";
+import { Textarea } from "@/components/ui/textarea";
+import { parseInventoryText } from "@/functions/parseInventoryText";
 
 // שערי המרה קבועים (אפשר לשפר בהמשך לשערים דינמיים)
 const EXCHANGE_RATES = {
