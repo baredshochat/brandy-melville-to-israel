@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { motion } from 'framer-motion';
 import { User } from '@/entities/User';
 import { joinClub } from '@/functions/joinClub';
+import { base44 } from '@/api/base44Client';
 
 export default function LoyaltySignupPopup() {
   const [open, setOpen] = useState(false);
@@ -28,13 +29,14 @@ export default function LoyaltySignupPopup() {
       const userData = await User.me();
       setUser(userData);
       
-      // Show popup only if user is logged in and not a club member
-      if (userData && !userData.club_member) {
-        // Delay popup slightly for better UX
+      // Show popup if user is not a club member
+      if (!userData.club_member) {
         setTimeout(() => setOpen(true), 1500);
       }
     } catch (e) {
-      // User not logged in, don't show popup
+      // User not logged in - show popup anyway
+      setUser(null);
+      setTimeout(() => setOpen(true), 1500);
     }
   };
 
@@ -44,6 +46,13 @@ export default function LoyaltySignupPopup() {
   };
 
   const handleJoin = async () => {
+    // If user is not logged in, redirect to login
+    if (!user) {
+      localStorage.removeItem('loyalty_popup_dismissed');
+      base44.auth.redirectToLogin();
+      return;
+    }
+
     if (!formData.birthday) {
       alert('אנא הזיני תאריך יום הולדת');
       return;
