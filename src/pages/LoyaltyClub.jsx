@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { User } from '@/entities/User';
+import { PointsLedger } from '@/entities/PointsLedger';
+import { Code } from '@/entities/Code';
+import { joinClub } from '@/functions/joinClub';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Gift, Star, Award, ShoppingBag, TrendingUp, CheckCircle, Sparkles, Heart } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
-import { base44 } from '@/api/base44Client';
+import { Loader2, Gift, Star, Calendar, Award, TrendingUp } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function LoyaltyClub() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [recentLedger, setRecentLedger] = useState([]);
+  const [activeCodes, setActiveCodes] = useState([]);
   const [joinForm, setJoinForm] = useState({ birthday: '', marketing_opt_in: true });
   const [joining, setJoining] = useState(false);
 
@@ -26,9 +28,25 @@ export default function LoyaltyClub() {
     try {
       const userData = await User.me();
       setUser(userData);
+
+      if (userData && userData.club_member) {
+        // Load recent ledger
+        const ledger = await PointsLedger.filter(
+          { user_email: userData.email },
+          '-created_date',
+          5
+        );
+        setRecentLedger(ledger || []);
+
+        // Load active codes
+        const codes = await Code.filter({
+          allowed_emails: { $in: [userData.email] },
+          is_active: true
+        });
+        setActiveCodes(codes || []);
+      }
     } catch (error) {
       console.error('Error loading data:', error);
-      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -37,7 +55,7 @@ export default function LoyaltyClub() {
   const handleJoinClub = async () => {
     setJoining(true);
     try {
-      const { data } = await base44.functions.invoke('joinClub', joinForm);
+      const { data } = await joinClub(joinForm);
       if (data.success) {
         alert(data.message + `\nקיבלת ${data.bonus_points} נקודות בונוס! 🎉`);
         await loadData();
@@ -52,6 +70,15 @@ export default function LoyaltyClub() {
     }
   };
 
+  const getLedgerIcon = (type) => {
+    switch (type) {
+      case 'earn': return <TrendingUp className="w-4 h-4 text-green-600" />;
+      case 'bonus': return <Gift className="w-4 h-4 text-rose-500" />;
+      case 'use': return <Star className="w-4 h-4 text-blue-600" />;
+      default: return <Award className="w-4 h-4 text-stone-500" />;
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
@@ -60,371 +87,204 @@ export default function LoyaltyClub() {
     );
   }
 
-  // Determine CTA button based on user status
-  const renderCTA = (size = 'default') => {
-    if (!user) {
-      return (
-        <Button 
-          onClick={() => base44.auth.redirectToLogin(createPageUrl('LoyaltyClub'))}
-          className="bg-rose-500 hover:bg-rose-600 text-white"
-          size={size}
-        >
-          הצטרפי למועדון
-        </Button>
-      );
-    }
-    
-    if (!user.club_member) {
-      return (
-        <Button 
-          onClick={handleJoinClub}
-          disabled={!joinForm.birthday || !joinForm.marketing_opt_in || joining}
-          className="bg-rose-500 hover:bg-rose-600 text-white"
-          size={size}
-        >
-          {joining ? (
-            <><Loader2 className="w-4 h-4 animate-spin ml-2" /> מצטרפת...</>
-          ) : (
-            <>הצטרפי וקבלי 50 נקודות מתנה</>
-          )}
-        </Button>
-      );
-    }
-    
+  if (!user) {
     return (
-      <Link to={createPageUrl('Profile')}>
-        <Button className="bg-stone-900 hover:bg-stone-800 text-white" size={size}>
-          לעמוד האישי שלי
-        </Button>
-      </Link>
+      <div className="max-w-2xl mx-auto p-6 text-center">
+        <p className="text-stone-600">אנא התחברי כדי לגשת למועדון הלקוחות</p>
+      </div>
     );
-  };
+  }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-stone-50 via-rose-50/30 to-stone-100">
-      {/* Hero Section */}
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="relative bg-white overflow-hidden"
+  if (!user.club_member) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-2xl mx-auto p-6"
       >
-        <div className="absolute inset-0">
-          <img
-            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/b7a7981b1_IMG_9486.jpg"
-            alt="Brandy Melville aesthetic"
-            className="w-full h-full object-cover opacity-20"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-stone-50 via-rose-50/20 to-transparent" />
-        </div>
+        <Card className="border-2 border-rose-200">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center">
+                <Gift className="w-8 h-8 text-rose-500" />
+              </div>
+            </div>
+            <CardTitle className="text-2xl">הצטרפי למועדון הלקוחות שלנו! 🎉</CardTitle>
+            <p className="text-stone-600 mt-2">צברי נקודות על כל הזמנה וקבלי הטבות מיוחדות</p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="bg-stone-50 p-4 rounded-lg space-y-3">
+              <div className="flex items-start gap-3">
+                <Star className="w-5 h-5 text-rose-500 mt-0.5" />
+                <div>
+                  <p className="font-medium">צבירת נקודות בכל הזמנה</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Calendar className="w-5 h-5 text-rose-500 mt-0.5" />
+                <div>
+                  <p className="font-medium">הטבת יום הולדת מיוחדת</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Gift className="w-5 h-5 text-rose-500 mt-0.5" />
+                <div>
+                  <p className="font-medium">הטבות שמתקדמות איתך עם הזמן</p>
+                </div>
+              </div>
+            </div>
 
-        <div className="relative max-w-4xl mx-auto px-4 py-20 text-center">
-          <Heart className="w-16 h-16 text-rose-400 fill-rose-400/20 mx-auto mb-6" />
-          <h1 className="text-5xl font-light text-stone-800 mb-4">
-            מועדון הלקוחות שלנו
-          </h1>
-          <p className="text-xl text-stone-600 font-light mb-8 max-w-2xl mx-auto">
-            צוברות נקודות, פותחות הטבות, ונהנות יותר מכל הזמנה
-          </p>
-          
-          {/* Join Form for non-members */}
-          {user && !user.club_member && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="max-w-md mx-auto mb-6 space-y-4"
-            >
+            <div className="space-y-4">
               <div>
-                <Label htmlFor="birthday-hero" className="text-right block mb-2">תאריך יום הולדת *</Label>
+                <Label htmlFor="birthday">תאריך יום הולדת *</Label>
                 <Input
-                  id="birthday-hero"
+                  id="birthday"
                   type="date"
                   value={joinForm.birthday}
                   onChange={(e) => setJoinForm({ ...joinForm, birthday: e.target.value })}
-                  className="text-center"
+                  className="mt-1"
                 />
               </div>
-              <div className="flex items-start gap-2 justify-center">
+
+              <div className="flex items-start gap-2 pt-2">
                 <Checkbox
-                  id="marketing-hero"
+                  id="marketing-club"
                   checked={joinForm.marketing_opt_in}
                   onCheckedChange={(checked) => setJoinForm({ ...joinForm, marketing_opt_in: checked })}
                 />
-                <Label htmlFor="marketing-hero" className="text-xs text-stone-600 cursor-pointer">
+                <Label htmlFor="marketing-club" className="text-xs text-stone-600 leading-relaxed cursor-pointer">
                   אני מאשרת קבלת עדכונים, הטבות והנחות במייל *
                 </Label>
               </div>
-            </motion.div>
-          )}
-          
-          {renderCTA('lg')}
-        </div>
+              </div>
+
+              <Button
+              onClick={handleJoinClub}
+              disabled={!joinForm.birthday || !joinForm.marketing_opt_in || joining}
+              className="w-full bg-rose-500 hover:bg-rose-600 h-12"
+              >
+              {joining ? (
+                <><Loader2 className="w-4 h-4 animate-spin ml-2" /> מצטרפת...</>
+              ) : (
+                <>הצטרפי עכשיו וקבלי 50 נקודות! 🎁</>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
       </motion.div>
+    );
+  }
 
-      <div className="max-w-6xl mx-auto px-4 py-12 space-y-16">
-        {/* How It Works - 3 Simple Steps */}
-        <section>
-          <h2 className="text-3xl font-semibold text-center text-stone-800 mb-8">
-            איך המועדון עובד?
-          </h2>
-          <div className="grid md:grid-cols-3 gap-6">
-            <Card className="text-center bg-white/80 backdrop-blur-sm border border-stone-200 shadow-lg">
-              <CardContent className="pt-8 pb-6">
-                <ShoppingBag className="w-12 h-12 text-rose-500 mx-auto mb-4" />
-                <h3 className="font-semibold text-lg mb-2">כמה שיותר קניות – יותר נקודות</h3>
-                <p className="text-sm text-stone-600">
-                  כל הזמנה מזכה אותך בנקודות שמתקדמות אותך להטבות
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="text-center bg-white/80 backdrop-blur-sm border border-stone-200 shadow-lg">
-              <CardContent className="pt-8 pb-6">
-                <Star className="w-12 h-12 text-rose-500 mx-auto mb-4" />
-                <h3 className="font-semibold text-lg mb-2">נקודות = הטבות</h3>
-                <p className="text-sm text-stone-600">
-                  כל 100 נקודות פותחות הטבה של 50 ₪ להזמנה
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="text-center bg-white/80 backdrop-blur-sm border border-stone-200 shadow-lg">
-              <CardContent className="pt-8 pb-6">
-                <Award className="w-12 h-12 text-rose-500 mx-auto mb-4" />
-                <h3 className="font-semibold text-lg mb-2">סטטוס גבוה = יותר יתרונות</h3>
-                <p className="text-sm text-stone-600">
-                  Silver ו-Gold פותחים משלוחים חינם והטבות בלעדיות
-                </p>
-              </CardContent>
-            </Card>
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="max-w-4xl mx-auto p-6 space-y-6"
+    >
+      {/* Points Balance */}
+      <Card className="border-2 border-rose-200 bg-gradient-to-br from-rose-50 to-pink-50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Award className="w-5 h-5 text-rose-500" />
+            היתרה שלך
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center">
+            <p className="text-5xl font-bold text-rose-600">{user.points_balance || 0}</p>
+            <p className="text-stone-600 mt-2">נקודות זמינות למימוש</p>
+            <p className="text-sm text-stone-500 mt-1">שווי: ₪{user.points_balance || 0}</p>
           </div>
-        </section>
+        </CardContent>
+      </Card>
 
-        {/* Tier Cards */}
-        <section>
-          <h2 className="text-3xl font-semibold text-center text-stone-800 mb-8">
-            שלבי המועדון
-          </h2>
-          <div className="grid md:grid-cols-3 gap-6">
-            {/* Member */}
-            <Card className={`bg-white/90 backdrop-blur-sm shadow-lg transition-all ${
-              user?.tier === 'member' ? 'border-4 border-rose-400 scale-105' : 'border border-stone-200'
-            }`}>
-              <CardHeader className="text-center pb-4">
-                <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Star className="w-8 h-8 text-rose-400" />
-                </div>
-                <CardTitle className="text-2xl">💖 Member</CardTitle>
-                {user?.tier === 'member' && (
-                  <span className="text-xs text-rose-600 font-medium">הדרגה שלך</span>
-                )}
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 text-sm text-stone-700">
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 text-rose-500 mt-0.5 flex-shrink-0" />
-                    <span>הצטרפות למועדון</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 text-rose-500 mt-0.5 flex-shrink-0" />
-                    <span>צבירת 5% נקודות מכל הזמנה</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 text-rose-500 mt-0.5 flex-shrink-0" />
-                    <span>בונוס יום הולדת: 50 נקודות</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 text-rose-500 mt-0.5 flex-shrink-0" />
-                    <span>חלון משלוח חינם אחרי הזמנה</span>
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            {/* Silver */}
-            <Card className={`bg-white/90 backdrop-blur-sm shadow-lg transition-all ${
-              user?.tier === 'silver' ? 'border-4 border-rose-400 scale-105' : 'border border-stone-200'
-            }`}>
-              <CardHeader className="text-center pb-4">
-                <div className="w-16 h-16 bg-rose-200 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Star className="w-8 h-8 text-rose-500" />
-                </div>
-                <CardTitle className="text-2xl">✨ Silver</CardTitle>
-                {user?.tier === 'silver' && (
-                  <span className="text-xs text-rose-600 font-medium">הדרגה שלך</span>
-                )}
-                <p className="text-xs text-stone-500 mt-1">5 הזמנות ב-6 חודשים</p>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 text-sm text-stone-700">
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 text-rose-500 mt-0.5 flex-shrink-0" />
-                    <span>צבירת 7% נקודות מכל הזמנה</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 text-rose-500 mt-0.5 flex-shrink-0" />
-                    <span>בונוס יום הולדת: 75 נקודות</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 text-rose-500 mt-0.5 flex-shrink-0" />
-                    <span>משלוח חינם אחד (חד-פעמי)</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 text-rose-500 mt-0.5 flex-shrink-0" />
-                    <span>קדימות במלאי</span>
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            {/* Gold */}
-            <Card className={`bg-white/90 backdrop-blur-sm shadow-lg transition-all ${
-              user?.tier === 'gold' ? 'border-4 border-rose-400 scale-105' : 'border border-stone-200'
-            }`}>
-              <CardHeader className="text-center pb-4">
-                <div className="w-16 h-16 bg-rose-300 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Star className="w-8 h-8 text-rose-600" />
-                </div>
-                <CardTitle className="text-2xl">⭐ Gold</CardTitle>
-                {user?.tier === 'gold' && (
-                  <span className="text-xs text-rose-600 font-medium">הדרגה שלך</span>
-                )}
-                <p className="text-xs text-stone-500 mt-1">10 הזמנות ב-6 חודשים</p>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 text-sm text-stone-700">
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 text-rose-600 mt-0.5 flex-shrink-0" />
-                    <span>צבירת 10% נקודות מכל הזמנה</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 text-rose-600 mt-0.5 flex-shrink-0" />
-                    <span>בונוס יום הולדת: 100 נקודות</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 text-rose-600 mt-0.5 flex-shrink-0" />
-                    <span>משלוח חינם כל חודש</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 text-rose-600 mt-0.5 flex-shrink-0" />
-                    <span>מתנות והעדפה בטיפול</span>
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
-
-        {/* Points & Benefits Explanation */}
-        <section>
-          <Card className="bg-white/80 backdrop-blur-sm border border-stone-200 shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-2xl">
-                <Sparkles className="w-6 h-6 text-rose-500" />
-                איך נקודות הופכות להטבה?
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-3 text-stone-700">
-                <li className="flex items-start gap-3">
-                  <TrendingUp className="w-5 h-5 text-rose-500 mt-0.5 flex-shrink-0" />
-                  <span>נקודות נצברות אוטומטית בכל קנייה</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Gift className="w-5 h-5 text-rose-500 mt-0.5 flex-shrink-0" />
-                  <span>כל 100 נקודות פותחות הטבה של 50 ₪</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-rose-500 mt-0.5 flex-shrink-0" />
-                  <span>ההטבה תקפה ל-30 ימים מרגע פתיחתה</span>
-                </li>
-              </ul>
-              
-              <div className="mt-6 p-4 bg-rose-50 border border-rose-200 rounded-lg">
-                <p className="text-sm font-medium text-rose-800 text-center">
-                  💫 לא משתמשים בנקודות? הן לא נעלמות – רק ההטבה מוגבלת בזמן
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
-
-        {/* Birthday Benefits */}
-        <section>
-          <Card className="bg-gradient-to-br from-rose-100 via-pink-50 to-white border-2 border-rose-200 shadow-xl">
-            <CardHeader className="text-center">
-              <div className="text-5xl mb-3">🎂</div>
-              <CardTitle className="text-2xl">ביום ההולדת – אנחנו חוגגים איתך</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-3 gap-4 text-center">
-                <div className="p-4 bg-white rounded-lg shadow-sm">
-                  <p className="font-semibold text-lg mb-1">💖 Member</p>
-                  <p className="text-2xl font-bold text-rose-600">50 נקודות</p>
-                </div>
-                <div className="p-4 bg-white rounded-lg shadow-sm">
-                  <p className="font-semibold text-lg mb-1">✨ Silver</p>
-                  <p className="text-2xl font-bold text-rose-600">75 נקודות</p>
-                </div>
-                <div className="p-4 bg-white rounded-lg shadow-sm">
-                  <p className="font-semibold text-lg mb-1">⭐ Gold</p>
-                  <p className="text-2xl font-bold text-rose-600">100 נקודות</p>
+      {/* Active Benefits */}
+      {activeCodes.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Gift className="w-5 h-5 text-rose-500" />
+              הטבות פעילות
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {activeCodes.map((code) => (
+              <div
+                key={code.id}
+                className="bg-stone-50 p-4 rounded-lg border border-stone-200"
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-medium text-lg">{code.code}</p>
+                    <p className="text-sm text-stone-600 mt-1">{code.notes || 'הטבה מיוחדה'}</p>
+                  </div>
+                  <div className="text-left">
+                    <p className="text-rose-600 font-bold">
+                      {code.reward_type === 'percent' ? `${code.value}%` : `₪${code.value}`}
+                    </p>
+                    <p className="text-xs text-stone-500">
+                      תוקף: {new Date(code.expires_at).toLocaleDateString('he-IL')}
+                    </p>
+                  </div>
                 </div>
               </div>
-              <p className="text-xs text-center text-stone-600 mt-4">
-                הטבת יום הולדת תקפה ל-30 ימים
-              </p>
-            </CardContent>
-          </Card>
-        </section>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
-        {/* Final CTA */}
-        <section className="text-center py-12">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="max-w-2xl mx-auto"
-          >
-            {!user ? (
-              <>
-                <h2 className="text-3xl font-semibold text-stone-800 mb-4">
-                  כדי להתחיל לצבור – צריך רק להירשם
-                </h2>
-                <p className="text-stone-600 mb-6">
-                  הצטרפי למועדון עכשיו והתחילי לצבור נקודות על כל הזמנה
-                </p>
-              </>
-            ) : !user.club_member ? (
-              <>
-                <h2 className="text-3xl font-semibold text-stone-800 mb-4">
-                  את כבר צעד אחד בפנים
-                </h2>
-                <p className="text-stone-600 mb-6">
-                  עכשיו רק צריך להצטרף למועדון ולהתחיל לצבור נקודות
-                </p>
-              </>
-            ) : (
-              <>
-                <h2 className="text-3xl font-semibold text-stone-800 mb-4">
-                  כל ההתקדמות שלך מחכה בעמוד האישי
-                </h2>
-                <p className="text-stone-600 mb-6">
-                  עקבי אחרי הנקודות שלך, ההטבות והדרגה במועדון
-                </p>
-              </>
-            )}
-            {renderCTA('lg')}
-          </motion.div>
-        </section>
+      {/* Recent Activity */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-rose-500" />
+            פעילות אחרונה
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {recentLedger.length === 0 ? (
+            <p className="text-stone-500 text-center py-8">עדיין אין פעילות</p>
+          ) : (
+            <div className="space-y-3">
+              {recentLedger.map((entry) => (
+                <div
+                  key={entry.id}
+                  className="flex items-center justify-between p-3 bg-stone-50 rounded-lg"
+                >
+                  <div className="flex items-center gap-3">
+                    {getLedgerIcon(entry.type)}
+                    <div>
+                      <p className="font-medium text-sm">{entry.description}</p>
+                      <p className="text-xs text-stone-500">
+                        {new Date(entry.created_date).toLocaleDateString('he-IL')}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-left">
+                    <p className={`font-bold ${entry.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {entry.amount > 0 ? '+' : ''}{entry.amount}
+                    </p>
+                    <p className="text-xs text-stone-500">יתרה: {entry.balance_after}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-        {/* Terms and Conditions */}
-        <section className="border-t border-stone-200 pt-8">
-          <div className="text-center text-xs text-stone-500 space-y-1 max-w-3xl mx-auto">
-            <p>• נקודות אינן שוות כסף ואינן ניתנות להמרה ישירה</p>
-            <p>• הטבות מוגבלות בזמן</p>
-            <p>• תנאי המועדון עשויים להשתנות</p>
-          </div>
-        </section>
-      </div>
-    </div>
+      {/* Info */}
+      <Card className="bg-stone-50 border-stone-200">
+        <CardContent className="pt-6">
+          <h3 className="font-medium mb-3">איך זה עובד?</h3>
+          <ul className="space-y-2 text-sm text-stone-600">
+            <li>• צברי נקודות על כל הזמנה שהושלמה</li>
+            <li>• כל נקודה שווה 1 ₪ הנחה</li>
+            <li>• קבלי הטבת יום הולדת מיוחדת כל שנה</li>
+            <li>• ההטבות שלך משתפרות ככל שאת קונה יותר</li>
+          </ul>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
