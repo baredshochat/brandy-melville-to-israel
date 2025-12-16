@@ -255,7 +255,7 @@ export default function LoyaltyClub() {
                 {user?.tier === 'silver' && (
                   <span className="text-xs text-rose-600 font-medium">הדרגה שלך</span>
                 )}
-                <p className="text-xs text-stone-500 mt-1">5 הזמנות ב-6 חודשים</p>
+                <p className="text-xs text-stone-500 mt-1">5 הזמנות</p>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2 text-sm text-stone-700">
@@ -291,7 +291,7 @@ export default function LoyaltyClub() {
                 {user?.tier === 'gold' && (
                   <span className="text-xs text-rose-600 font-medium">הדרגה שלך</span>
                 )}
-                <p className="text-xs text-stone-500 mt-1">10 הזמנות ב-6 חודשים</p>
+                <p className="text-xs text-stone-500 mt-1">10 הזמנות</p>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2 text-sm text-stone-700">
