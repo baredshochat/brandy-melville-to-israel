@@ -1890,13 +1890,20 @@ Mocha / XS/S
                           const arr=[...editedInventoryItems]; arr[idx]={...arr[idx], quantity:e.target.value}; setEditedInventoryItems(arr);
                         }} className="h-8 text-xs" />
                       </div>
-                      <div className="col-span-3">
+                      <div className="col-span-2">
+                        <Label className="text-xs">עלות בפועל</Label>
+                        <Input disabled className="h-8 text-xs bg-stone-100" value={() => {
+                          const total = convertToILS(Number(it.actual_cost_price) * Number(it.quantity || 1), it.actual_cost_currency);
+                          return isNaN(total) ? '' : `₪${total.toFixed(0)}`;
+                        }} />
+                      </div>
+                      <div className="col-span-2">
                         <Label className="text-xs">עלות ליח׳</Label>
                         <Input type="number" value={it.actual_cost_price} onChange={(e)=>{
                           const arr=[...editedInventoryItems]; arr[idx]={...arr[idx], actual_cost_price:e.target.value}; setEditedInventoryItems(arr);
                         }} className="h-8 text-xs" />
                       </div>
-                      <div className="col-span-3">
+                      <div className="col-span-2">
                         <Label className="text-xs">מטבע</Label>
                         <Select value={it.actual_cost_currency} onValueChange={(v)=>{
                           const arr=[...editedInventoryItems]; arr[idx]={...arr[idx], actual_cost_currency:v}; setEditedInventoryItems(arr);
