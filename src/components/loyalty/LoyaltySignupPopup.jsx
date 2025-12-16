@@ -70,7 +70,7 @@ export default function LoyaltySignupPopup() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-md p-0 gap-0 overflow-hidden border-0" hideClose>
+      <DialogContent className="max-w-md p-0 gap-0 overflow-hidden border-0 [&>button]:hidden">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
