@@ -33,11 +33,22 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack, parentO
   const [appliedCode, setAppliedCode] = useState(null);
   const [codeError, setCodeError] = useState('');
   const [applyingCode, setApplyingCode] = useState(false);
+  const [user, setUser] = useState(null);
+  const [redeemingPoints, setRedeemingPoints] = useState(false);
+  const [pointsRedeemed, setPointsRedeemed] = useState(0);
 
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true);
+
+        // Load current user
+        try {
+          const userData = await base44.auth.me();
+          setUser(userData);
+        } catch (e) {
+          setUser(null);
+        }
 
         // Load pricing labels
         const labelsList = await PricingLabels.list();
@@ -248,7 +259,74 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack, parentO
   const getFinalPriceWithDiscount = () => {
     if (!priceData) return 0;
     const { amount } = calculateDiscount();
-    return Math.max(0, priceData.breakdown.finalTotal - amount);
+    return Math.max(0, priceData.breakdown.finalTotal - amount - pointsRedeemed);
+  };
+
+  const handleRedeemPoints = async () => {
+    if (!user || !user.club_member) {
+      alert('עליך להיות חברת מועדון כדי למממש נקודות');
+      return;
+    }
+
+    const availablePoints = user.points_balance || 0;
+    if (availablePoints < 100) {
+      alert('אין לך מספיק נקודות למימוש. צריך לפחות 100 נקודות.');
+      return;
+    }
+
+    // Calculate how many 100-point chunks can be redeemed
+    const maxRedemptions = Math.floor(availablePoints / 100);
+    const currentTotal = getFinalPriceWithDiscount() + pointsRedeemed; // Add back current redemption
+    
+    // Calculate max redemption value (50 ILS per 100 points)
+    const maxRedemptionValue = maxRedemptions * 50;
+    
+    // Don't allow redemption more than order total
+    const maxAllowedRedemption = Math.min(maxRedemptionValue, currentTotal);
+    
+    if (maxAllowedRedemption <= 0) {
+      alert('סכום ההזמנה נמוך מדי למימוש נקודות');
+      return;
+    }
+
+    const pointsToRedeem = Math.floor(maxAllowedRedemption / 50) * 100;
+    const redemptionValue = (pointsToRedeem / 100) * 50;
+
+    const confirmed = confirm(
+      `למממש ${pointsToRedeem} נקודות?\n` +
+      `תקבלי הנחה של ${redemptionValue}₪\n` +
+      `יישארו לך ${availablePoints - pointsToRedeem} נקודות`
+    );
+
+    if (!confirmed) return;
+
+    setRedeemingPoints(true);
+    try {
+      const { data } = await base44.functions.invoke('redeemPoints', {
+        points: pointsToRedeem
+      });
+
+      if (data.success) {
+        setPointsRedeemed(redemptionValue);
+        // Update user balance locally
+        setUser({ ...user, points_balance: data.new_balance });
+        alert(`מימשת ${pointsToRedeem} נקודות בהצלחה! 🎉\nקיבלת הנחה של ${redemptionValue}₪`);
+      } else {
+        alert(data.message || 'שגיאה במימוש נקודות');
+      }
+    } catch (error) {
+      console.error('Error redeeming points:', error);
+      alert('שגיאה במימוש נקודות. נסי שוב.');
+    } finally {
+      setRedeemingPoints(false);
+    }
+  };
+
+  const handleCancelRedemption = () => {
+    if (confirm('לבטל את מימוש הנקודות?')) {
+      setPointsRedeemed(0);
+      // Note: Points will be restored on the backend when order is not completed
+    }
   };
 
   const handleConfirm = async () => {
@@ -426,10 +504,67 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack, parentO
                     </Button>
                   </div>
                 </div>
-              }
-            </div>
+                }
+                </div>
 
-            {appliedCode && calculateDiscount().amount > 0 &&
+                {/* Points Redemption Section */}
+                {user && user.club_member && (
+                <div className="py-3 border-t-2 border-stone-200">
+                {pointsRedeemed === 0 ? (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-stone-700 flex items-center gap-2">
+                      <Star className="w-4 h-4 text-rose-500" />
+                      יש לך {user.points_balance || 0} נקודות
+                    </label>
+                    {(user.points_balance || 0) >= 100 ? (
+                      <>
+                        <p className="text-xs text-stone-600">
+                          תוכלי למממש עד {Math.floor((user.points_balance || 0) / 100) * 50}₪
+                        </p>
+                        <Button
+                          onClick={handleRedeemPoints}
+                          disabled={redeemingPoints}
+                          variant="outline"
+                          className="w-full border-rose-300 text-rose-600 hover:bg-rose-50"
+                        >
+                          {redeemingPoints ? (
+                            <><Loader2 className="w-4 h-4 animate-spin ml-2" /> ממממשת...</>
+                          ) : (
+                            <>מממשי נקודות</>
+                          )}
+                        </Button>
+                      </>
+                    ) : (
+                      <p className="text-xs text-stone-500">
+                        עוד {100 - (user.points_balance || 0)} נקודות למימוש הטבה
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200">
+                      <div className="flex items-center gap-2">
+                        <Star className="w-4 h-4 text-green-600" />
+                        <div>
+                          <p className="text-sm font-medium text-green-900">נקודות מומשו</p>
+                          <p className="text-xs text-green-700">הנחה של {pointsRedeemed}₪</p>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={handleCancelRedemption}
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        ביטול
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                </div>
+                )}
+
+                {appliedCode && calculateDiscount().amount > 0 &&
             <div className="flex justify-between items-center py-2 border-t border-green-200 bg-green-50">
                 <span className="text-sm font-medium text-green-900">הנחה</span>
                 <span className="text-sm font-bold text-green-600">
