@@ -31,11 +31,11 @@ import {
   Copy,
   ExternalLink,
   Receipt,
-  FileText
+  FileText,
+  Sparkles
 } from "lucide-react";
 import MonthlyExpensesTab from "../components/admin/MonthlyExpensesTab";
-import { Textarea } from "@/components/ui/textarea";
-import { parseInventoryText } from "@/functions/parseInventoryText";
+import { parseInventoryItems } from "@/functions/parseInventoryItems";
 
 // שערי המרה קבועים (אפשר לשפר בהמשך לשערים דינמיים)
 const EXCHANGE_RATES = {
@@ -88,8 +88,11 @@ export default function ProfitReports() {
     notes: ''
   });
   const [inventoryAutocomplete, setInventoryAutocomplete] = useState([]);
-  const [inventoryTextInput, setInventoryTextInput] = useState('');
-  const [parsingText, setParsingText] = useState(false);
+  
+  // ניתוח טקסט חופשי
+  const [showParseDialog, setShowParseDialog] = useState(false);
+  const [parseText, setParseText] = useState('');
+  const [parsing, setParsing] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -412,6 +415,34 @@ export default function ProfitReports() {
 
   const cancelInlineEdit = () => {
     setInlineEditingItem(null);
+  };
+
+  // ניתוח טקסט מהמייל
+  const handleParseText = async () => {
+    if (!parseText.trim()) {
+      alert('יש להדביק טקסט מהמייל');
+      return;
+    }
+    
+    setParsing(true);
+    try {
+      const { data } = await parseInventoryItems({ text: parseText });
+      
+      if (data.success && data.items && data.items.length > 0) {
+        // הוספת הפריטים שנותחו לרשימת המלאי
+        setInventoryItems(prev => [...prev, ...data.items]);
+        setShowParseDialog(false);
+        setParseText('');
+        alert(`נוספו ${data.items.length} פריטים בהצלחה!`);
+      } else {
+        alert(data.error || 'לא הצלחתי לזהות פריטים בטקסט');
+      }
+    } catch (error) {
+      console.error('Error parsing text:', error);
+      alert('שגיאה בניתוח הטקסט');
+    } finally {
+      setParsing(false);
+    }
   };
 
   // פונקציות לניהול חבילות
@@ -1241,66 +1272,22 @@ export default function ProfitReports() {
             <div className="border-t pt-4">
               <div className="flex items-center justify-between mb-2">
                 <Label className="text-base font-semibold">פריטי מלאי</Label>
-                <p className="text-xs text-stone-500">🛍️ פריטים שרכשת ישירות למלאי (לא מהזמנות לקוחות)</p>
-              </div>
-              
-              {/* ניתוח טקסט חופשי */}
-              <div className="bg-blue-50 p-4 border border-blue-200 mb-4 space-y-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <FileText className="w-4 h-4 text-blue-600" />
-                  <Label className="text-sm font-semibold text-blue-800">הדבק טקסט מהמייל של Brandy</Label>
+                <div className="flex gap-2 items-center">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowParseDialog(true)}
+                    className="gap-2"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    ניתוח אוטומטי
+                  </Button>
+                  <p className="text-xs text-stone-500">🛍️ פריטים שרכשת ישירות למלאי</p>
                 </div>
-                <Textarea
-                  placeholder="הדבקי כאן את פרטי הפריטים מהמייל&#10;&#10;לדוגמה:&#10;Erica Sweatshirt × 1&#10;Burgundy / Oversized Fit&#10;£27.00&#10;&#10;Hilary Yoga Pants × 1&#10;Mocha / XS/S&#10;£30.00"
-                  value={inventoryTextInput}
-                  onChange={(e) => setInventoryTextInput(e.target.value)}
-                  className="min-h-32 text-xs font-mono"
-                  dir="ltr"
-                />
-                <Button
-                  size="sm"
-                  onClick={async () => {
-                    if (!inventoryTextInput.trim()) {
-                      alert('יש להדביק טקסט מהמייל');
-                      return;
-                    }
-                    setParsingText(true);
-                    try {
-                      const { data } = await parseInventoryText({ text: inventoryTextInput });
-                      if (data.success && data.items.length > 0) {
-                        setInventoryItems(prev => [...prev, ...data.items]);
-                        setInventoryTextInput('');
-                        alert(`נוספו ${data.items.length} פריטים בהצלחה! עכשיו תוכלי לערוך אותם ולשמור`);
-                      } else {
-                        alert('לא נמצאו פריטים בטקסט. נסי לבדוק את הפורמט');
-                      }
-                    } catch (error) {
-                      console.error('Parse error:', error);
-                      alert('שגיאה בניתוח הטקסט');
-                    } finally {
-                      setParsingText(false);
-                    }
-                  }}
-                  disabled={parsingText || !inventoryTextInput.trim()}
-                  className="w-full bg-blue-600 hover:bg-blue-700"
-                >
-                  {parsingText ? (
-                    <>
-                      <Loader2 className="w-4 h-4 ml-1 animate-spin" />
-                      מנתח טקסט...
-                    </>
-                  ) : (
-                    <>
-                      <FileText className="w-4 h-4 ml-1" />
-                      נתח והוסף פריטים
-                    </>
-                  )}
-                </Button>
               </div>
               
-              {/* טופס הוספת פריט מלאי ידני */}
+              {/* טופס הוספת פריט מלאי */}
               <div className="bg-stone-50 p-4 border mb-4 space-y-3">
-                <Label className="text-sm font-semibold text-stone-700">או הוסף פריט ידנית:</Label>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label className="text-xs">שם המוצר *</Label>
@@ -1469,73 +1456,31 @@ export default function ProfitReports() {
                   <Label className="text-xs font-semibold text-orange-700">פריטי מלאי שנוספו ({inventoryItems.length}):</Label>
                   {inventoryItems.map((item, idx) => {
                     const itemTotal = Number(item.actual_cost_price) * Number(item.quantity);
-                    const hasPrice = item.actual_cost_price && Number(item.actual_cost_price) > 0;
                     return (
-                      <div key={idx} className={`p-3 border ${hasPrice ? 'bg-orange-50 border-orange-200' : 'bg-amber-50 border-amber-300'}`}>
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-sm font-medium">{item.product_name}</span>
-                              {item.product_sku && <span className="text-xs text-stone-400">({item.product_sku})</span>}
-                              {!hasPrice && <Badge className="bg-amber-500 text-white text-xs">חסר מחיר</Badge>}
-                            </div>
-                            <div className="text-xs text-stone-600">
-                              {[item.color, item.size].filter(Boolean).join(' / ')}
-                              {' • '}
-                              כמות: {item.quantity}
-                              {hasPrice && (
-                                <>
-                                  {' • '}
-                                  {item.actual_cost_currency === 'USD' ? '$' : item.actual_cost_currency === 'EUR' ? '€' : item.actual_cost_currency === 'GBP' ? '£' : '₪'}{item.actual_cost_price}
-                                  {' • '}
-                                  סה"כ: ₪{(itemTotal * (item.actual_cost_currency === 'USD' ? 3.7 : item.actual_cost_currency === 'EUR' ? 4.0 : item.actual_cost_currency === 'GBP' ? 4.6 : 1)).toFixed(0)}
-                                </>
-                              )}
-                            </div>
+                      <div key={idx} className="flex items-center justify-between p-2 bg-orange-50 border border-orange-200">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">{item.product_name}</span>
+                            {item.product_sku && <span className="text-xs text-stone-400">({item.product_sku})</span>}
                           </div>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-red-500 hover:text-red-700 h-7 w-7 p-0"
-                            onClick={() => setInventoryItems(prev => prev.filter((_, i) => i !== idx))}
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
+                          <div className="text-xs text-stone-600">
+                            {[item.color, item.size].filter(Boolean).join(' / ')}
+                            {' • '}
+                            כמות: {item.quantity}
+                            {' • '}
+                            {item.actual_cost_currency === 'USD' ? '$' : item.actual_cost_currency === 'EUR' ? '€' : item.actual_cost_currency === 'GBP' ? '£' : '₪'}{item.actual_cost_price}
+                            {' • '}
+                            סה"כ: ₪{(itemTotal * (item.actual_cost_currency === 'USD' ? 3.7 : item.actual_cost_currency === 'EUR' ? 4.0 : item.actual_cost_currency === 'GBP' ? 4.6 : 1)).toFixed(0)}
+                          </div>
                         </div>
-                        
-                        {/* עריכת מחיר במקום */}
-                        {!hasPrice && (
-                          <div className="flex gap-2 mt-2">
-                            <Input
-                              type="number"
-                              placeholder="מחיר"
-                              className="h-8 text-xs flex-1"
-                              onChange={(e) => {
-                                const newItems = [...inventoryItems];
-                                newItems[idx] = { ...newItems[idx], actual_cost_price: e.target.value };
-                                setInventoryItems(newItems);
-                              }}
-                            />
-                            <Select 
-                              value={item.actual_cost_currency}
-                              onValueChange={(v) => {
-                                const newItems = [...inventoryItems];
-                                newItems[idx] = { ...newItems[idx], actual_cost_currency: v };
-                                setInventoryItems(newItems);
-                              }}
-                            >
-                              <SelectTrigger className="h-8 w-20 text-xs">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="USD">$</SelectItem>
-                                <SelectItem value="EUR">€</SelectItem>
-                                <SelectItem value="GBP">£</SelectItem>
-                                <SelectItem value="ILS">₪</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        )}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-500 hover:text-red-700 h-7 w-7 p-0"
+                          onClick={() => setInventoryItems(prev => prev.filter((_, i) => i !== idx))}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
                       </div>
                     );
                   })}
@@ -1720,6 +1665,68 @@ export default function ProfitReports() {
             >
               {saving ? <Loader2 className="w-4 h-4 ml-1 animate-spin" /> : <Plus className="w-4 h-4 ml-1" />}
               {addingItemsToBatch ? 'הוסף לחבילה' : 'יצירת חבילה'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* דיאלוג ניתוח טקסט אוטומטי */}
+      <Dialog open={showParseDialog} onOpenChange={setShowParseDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-purple-500" />
+              ניתוח אוטומטי של פריטי מלאי
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 mt-4">
+            <div>
+              <Label>הדביקי את הטקסט מהמייל של ברנדי</Label>
+              <p className="text-xs text-stone-500 mb-2">
+                💡 הדביקי את רשימת הפריטים מהמייל (שם מוצר, כמות, צבע, מידה, מחיר)
+              </p>
+              <Textarea
+                value={parseText}
+                onChange={(e) => setParseText(e.target.value)}
+                placeholder="לדוגמה:
+Erica Sweatshirt × 1
+Burgundy / Oversized Fit
+£27.00
+Hilary Yoga Pants × 1
+Mocha / XS/S
+£30.00"
+                className="min-h-64 font-mono text-sm"
+                dir="ltr"
+              />
+            </div>
+            
+            <div className="bg-blue-50 border border-blue-200 p-3 text-xs text-blue-800">
+              <p className="font-medium mb-1">💡 טיפ:</p>
+              <p>המערכת תזהה אוטומטית את שמות המוצרים, כמויות, צבעים, מידות ומחירים מהטקסט שהדבקת.</p>
+            </div>
+          </div>
+          
+          <div className="flex justify-end gap-2 mt-6">
+            <Button variant="outline" onClick={() => { setShowParseDialog(false); setParseText(''); }}>
+              ביטול
+            </Button>
+            <Button 
+              onClick={handleParseText}
+              disabled={parsing || !parseText.trim()}
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              {parsing ? (
+                <>
+                  <Loader2 className="w-4 h-4 ml-1 animate-spin" />
+                  מנתח...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 ml-1" />
+                  נתח והוסף פריטים
+                </>
+              )}
             </Button>
           </div>
         </DialogContent>
