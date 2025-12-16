@@ -1,11 +1,11 @@
-
-import React, { useState, useEffect, useMemo } from "react";
-import { User } from "@/entities/User";
-import { Order } from "@/entities/Order";
-import { LoyaltyTransaction } from "@/entities/LoyaltyTransaction";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import React, { useState, useEffect } from 'react';
+import { User } from '@/entities/User';
+import { Order } from '@/entities/Order';
+import { PointsLedger } from '@/entities/PointsLedger';
+import { Code } from '@/entities/Code';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { 
   Heart, 
   ShoppingBag, 
@@ -22,28 +22,33 @@ import {
   Calendar,
   MapPin,
   Phone,
-  Mail
-} from "lucide-react";
-import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
-import { createPageUrl } from "@/utils";
-import { format } from "date-fns";
+  Mail,
+  Award,
+  Star,
+  TrendingUp
+} from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
+import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
+import { base44 } from '@/api/base44Client';
 
 const statusLabels = {
-  pending: "ממתין",
-  ordered: "הוזמן", 
-  warehouse: "במחסן",
-  shipping_to_israel: "בדרך לישראל",
-  in_israel: "בארץ",
-  shipping_to_customer: "בדרך ללקוחה",
-  delivered: "נמסר"
+  pending: 'ממתין',
+  ordered: 'הוזמן', 
+  warehouse: 'במחסן',
+  shipping_to_israel: 'בדרך לישראל',
+  in_israel: 'בארץ',
+  shipping_to_customer: 'בדרך ללקוחה',
+  delivered: 'נמסר'
 };
 
 export default function ProfilePage() {
   const [user, setUser] = useState(null);
   const [recentOrders, setRecentOrders] = useState([]);
-  const [loyaltyTransactions, setLoyaltyTransactions] = useState([]);
+  const [recentLedger, setRecentLedger] = useState([]);
+  const [activeCodes, setActiveCodes] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -56,15 +61,23 @@ export default function ProfilePage() {
         const orders = await Order.filter({ customer_email: currentUser.email }, '-created_date', 3);
         setRecentOrders(orders);
         
-        try {
-          const transactions = await LoyaltyTransaction.filter({ customer_email: currentUser.email }, '-created_date', 5);
-          setLoyaltyTransactions(transactions);
-        } catch (error) {
-          console.log("No loyalty transactions yet");
+        if (currentUser.club_member) {
+          try {
+            const ledger = await PointsLedger.filter({ user_email: currentUser.email }, '-created_date', 3);
+            setRecentLedger(ledger || []);
+
+            const codes = await Code.filter({
+              allowed_emails: { $in: [currentUser.email] },
+              is_active: true
+            });
+            setActiveCodes(codes || []);
+          } catch (error) {
+            console.log('No loyalty data yet');
+          }
         }
         
       } catch (error) {
-        console.error("Error loading user data:", error);
+        console.error('Error loading user data:', error);
         setUser(null);
       } finally {
         setLoading(false);
@@ -72,6 +85,15 @@ export default function ProfilePage() {
     };
     loadUserData();
   }, []);
+
+  const getLedgerIcon = (type) => {
+    switch (type) {
+      case 'earn': return <TrendingUp className="w-4 h-4 text-green-600" />;
+      case 'bonus': return <Gift className="w-4 h-4 text-rose-500" />;
+      case 'use': return <Star className="w-4 h-4 text-blue-600" />;
+      default: return <Award className="w-4 h-4 text-stone-500" />;
+    }
+  };
 
   if (loading) {
     return (
@@ -83,13 +105,22 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
-      <div className="text-center py-12">
-        <Heart className="w-16 h-16 mx-auto text-rose-300 mb-4" />
-        <h2 className="text-2xl font-semibold text-stone-800 mb-4">ברוכה הבאה!</h2>
-        <p className="text-stone-600 mb-6">התחברי כדי לגשת לאיזור האישי שלך</p>
-        <Button onClick={() => User.login()} className="bg-rose-500 hover:bg-rose-600 text-white">
-          התחברי
-        </Button>
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="text-center py-12">
+          <div className="w-20 h-20 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Heart className="w-10 h-10 text-rose-400 fill-rose-400/20" />
+          </div>
+          <h2 className="text-2xl font-semibold mb-3 text-stone-900">איזור אישי</h2>
+          <p className="text-stone-600 mb-6 max-w-md mx-auto">
+            התחברי כדי לצפות בהזמנות שלך, לעקוב אחרי הנקודות שלך ולקבל הטבות מיוחדות
+          </p>
+          <Button 
+            onClick={() => base44.auth.redirectToLogin(createPageUrl('Profile'))}
+            className="bg-stone-900 hover:bg-stone-800 h-11 px-8"
+          >
+            התחברי
+          </Button>
+        </div>
       </div>
     );
   }
@@ -118,9 +149,123 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 -mt-10 relative z-10 grid lg:grid-cols-3 gap-6">
+      <div className="max-w-6xl mx-auto px-4 -mt-10 relative z-10 grid lg:grid-cols-3 gap-6 pb-12">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
+          
+          {/* Loyalty Club Section */}
+          {user.club_member ? (
+            <>
+              {/* Points Balance */}
+              <Card className="bg-gradient-to-br from-rose-100 via-pink-50 to-white border-2 border-rose-200 shadow-xl">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Award className="w-5 h-5 text-rose-500" />
+                    מועדון הלקוחות שלך
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center">
+                    <p className="text-5xl font-bold text-rose-600">{user.points_balance || 0}</p>
+                    <p className="text-stone-700 mt-2 font-medium">נקודות זמינות</p>
+                    <p className="text-sm text-stone-500 mt-1">שווי: ₪{user.points_balance || 0}</p>
+                    <Link to={createPageUrl('LoyaltyClub')}>
+                      <Button variant="outline" size="sm" className="mt-4">
+                        צפייה בהטבות
+                      </Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Active Benefits */}
+              {activeCodes.length > 0 && (
+                <Card className="bg-white/95 backdrop-blur-sm border border-white/50 shadow-xl">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Gift className="w-5 h-5 text-rose-500" />
+                      הטבות פעילות
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {activeCodes.map((code) => (
+                      <div
+                        key={code.id}
+                        className="bg-stone-50 p-3 rounded-lg border border-stone-200"
+                      >
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="font-medium">{code.code}</p>
+                            <p className="text-xs text-stone-600 mt-0.5">{code.notes || 'הטבה מיוחדת'}</p>
+                          </div>
+                          <div className="text-left">
+                            <p className="text-rose-600 font-bold text-sm">
+                              {code.reward_type === 'percent' ? `${code.value}%` : `₪${code.value}`}
+                            </p>
+                            <p className="text-xs text-stone-500">
+                              עד {new Date(code.expires_at).toLocaleDateString('he-IL')}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Recent Points Activity */}
+              {recentLedger.length > 0 && (
+                <Card className="bg-white/95 backdrop-blur-sm border border-white/50 shadow-xl">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-rose-500" />
+                      פעילות נקודות
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {recentLedger.map((entry) => (
+                        <div
+                          key={entry.id}
+                          className="flex items-center justify-between p-2 bg-stone-50 rounded-lg"
+                        >
+                          <div className="flex items-center gap-2">
+                            {getLedgerIcon(entry.type)}
+                            <div>
+                              <p className="font-medium text-xs">{entry.description}</p>
+                              <p className="text-xs text-stone-500">
+                                {new Date(entry.created_date).toLocaleDateString('he-IL')}
+                              </p>
+                            </div>
+                          </div>
+                          <p className={`font-bold text-sm ${entry.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {entry.amount > 0 ? '+' : ''}{entry.amount}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          ) : (
+            <Card className="bg-gradient-to-br from-rose-100 via-pink-50 to-white border-2 border-rose-200 shadow-xl">
+              <CardContent className="p-8 text-center">
+                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                  <Gift className="w-8 h-8 text-rose-500" />
+                </div>
+                <h3 className="font-semibold text-xl mb-2">הצטרפי למועדון!</h3>
+                <p className="text-sm text-stone-600 mb-4 max-w-sm mx-auto">
+                  צברי 10% נקודות על כל הזמנה וקבלי הטבות מיוחדות ביום ההולדת
+                </p>
+                <Link to={createPageUrl('LoyaltyClub')}>
+                  <Button className="bg-stone-900 hover:bg-stone-800">
+                    הצטרפי עכשיו וקבלי 30 נקודות! 🎁
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
           
           {/* Recent Orders */}
           <Card className="bg-white/95 backdrop-blur-sm border border-white/50 shadow-xl">
@@ -129,10 +274,10 @@ export default function ProfilePage() {
                 <Package className="w-5 h-5 text-stone-600" />
                 ההזמנות האחרונות שלי
               </CardTitle>
-              <Link to={createPageUrl("MyOrders")}>
+              <Link to={createPageUrl('MyOrders')}>
                 <Button variant="ghost" size="sm" className="flex items-center gap-2">
                   <Eye className="w-4 h-4" />
-                  צפייה בהכל
+                  כל ההזמנות
                 </Button>
               </Link>
             </CardHeader>
@@ -140,21 +285,21 @@ export default function ProfilePage() {
               {recentOrders.length === 0 ? (
                 <div className="text-center py-8">
                   <Package className="w-12 h-12 mx-auto text-stone-300 mb-3" />
-                  <p className="text-stone-500">עדיין לא ביצעת הזמנות</p>
-                  <Link to={createPageUrl("Home")}>
-                    <Button className="mt-3 bg-rose-500 hover:bg-rose-600 text-white">
+                  <p className="text-stone-500 mb-3">עדיין לא ביצעת הזמנות</p>
+                  <Link to={createPageUrl('Home')}>
+                    <Button className="bg-rose-500 hover:bg-rose-600 text-white">
                       בואי נתחיל לקנות! 💫
                     </Button>
                   </Link>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {recentOrders.map((order) => (
-                    <div key={order.id} className="flex items-center justify-between p-4 bg-stone-50 border border-stone-200">
+                    <div key={order.id} className="flex items-center justify-between p-4 bg-stone-50 border border-stone-200 rounded-lg">
                       <div>
-                        <p className="font-medium text-stone-800">הזמנה #{order.order_number}</p>
+                        <p className="font-medium text-stone-800">#{order.order_number}</p>
                         <p className="text-sm text-stone-500">
-                          {order.created_date && format(new Date(order.created_date), "d בMMMM", { locale: he })}
+                          {order.created_date && format(new Date(order.created_date), 'd בMMMM', { locale: he })}
                         </p>
                         <Badge variant="outline" className={`mt-2 ${
                           order.status === 'delivered' ? 'border-green-500 text-green-700' :
@@ -175,58 +320,56 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
           
-          {/* Quick Links & Actions */}
+          {/* Quick Links */}
           <Card className="bg-white/95 backdrop-blur-sm border border-white/50 shadow-xl">
             <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <ShoppingBag className="w-5 h-5 text-rose-500" />
-                    ניווט מהיר
-                </CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <ShoppingBag className="w-5 h-5 text-rose-500" />
+                ניווט מהיר
+              </CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                    <Link to={createPageUrl("Home")}>
-                        <Button className="w-full h-12 bg-rose-500 hover:bg-rose-600 text-white flex items-center gap-2">
-                            <Plus className="w-4 h-4" />
-                            הזמנה חדשה
-                        </Button>
-                    </Link>
-                    <Link to={createPageUrl("TrackOrder")}>
-                        <Button variant="outline" className="w-full h-12 flex items-center gap-2">
-                            <Truck className="w-4 h-4" />
-                            מעקב הזמנה
-                        </Button>
-                    </Link>
-                </div>
-                
-                <div className="border-t border-stone-200 my-4"></div>
-
-                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                    <Link to={createPageUrl("Chat")}>
-                        <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
-                        <MessageSquare className="w-4 h-4" />
-                        שירות לקוחות
-                        </Button>
-                    </Link>
-                    <Link to={createPageUrl("DefectClaim")}>
-                        <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
-                        <AlertTriangle className="w-4 h-4" />
-                        דיווח על בעיה
-                        </Button>
-                    </Link>
-                    <Link to={createPageUrl("Referral")}>
-                        <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
-                        <Users className="w-4 h-4" />
-                        הפניית חברות
-                        </Button>
-                    </Link>
-                    <Link to={createPageUrl("Terms")}>
-                        <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
-                        <Calendar className="w-4 h-4" />
-                        תקנון האתר
-                        </Button>
-                    </Link>
-                </div>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <Link to={createPageUrl('Home')}>
+                  <Button className="w-full h-12 bg-rose-500 hover:bg-rose-600 text-white flex items-center gap-2">
+                    <Plus className="w-4 h-4" />
+                    הזמנה חדשה
+                  </Button>
+                </Link>
+                <Link to={createPageUrl('TrackOrder')}>
+                  <Button variant="outline" className="w-full h-12 flex items-center gap-2">
+                    <Truck className="w-4 h-4" />
+                    מעקב משלוח
+                  </Button>
+                </Link>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-2">
+                <Link to={createPageUrl('Chat')}>
+                  <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
+                    <MessageSquare className="w-4 h-4" />
+                    שירות לקוחות
+                  </Button>
+                </Link>
+                <Link to={createPageUrl('DefectClaim')}>
+                  <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
+                    <AlertTriangle className="w-4 h-4" />
+                    דיווח בעיה
+                  </Button>
+                </Link>
+                <Link to={createPageUrl('Referral')}>
+                  <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
+                    <Users className="w-4 h-4" />
+                    הפני חברה
+                  </Button>
+                </Link>
+                <Link to={createPageUrl('Terms')}>
+                  <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
+                    <Calendar className="w-4 h-4" />
+                    תקנון
+                  </Button>
+                </Link>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -260,23 +403,14 @@ export default function ProfilePage() {
                 </div>
               )}
 
-              {(user.default_address || user.default_city) && (
-                <div className="flex items-center gap-3">
-                  <MapPin className="w-4 h-4 text-stone-500" />
-                  <div>
-                    <p className="text-sm text-stone-500">כתובת</p>
-                    <p className="font-medium">
-                      {user.default_address && `${user.default_address}, `}
-                      {user.default_city}
-                    </p>
-                  </div>
-                </div>
-              )}
-
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={() => User.logout()}
+                onClick={async () => {
+                  if (confirm('האם את בטוחה שאת רוצה להתנתק?')) {
+                    await base44.auth.logout();
+                  }
+                }}
                 className="w-full flex items-center gap-2"
               >
                 <LogOut className="w-4 h-4" />
@@ -284,35 +418,6 @@ export default function ProfilePage() {
               </Button>
             </CardContent>
           </Card>
-
-          {/* Recent Activity */}
-          {loyaltyTransactions.length > 0 && (
-            <Card className="bg-white/95 backdrop-blur-sm border border-white/50 shadow-xl">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Gift className="w-5 h-5 text-green-500" />
-                  פעילות אחרונה
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {loyaltyTransactions.slice(0, 3).map((transaction) => (
-                    <div key={transaction.id} className="flex items-center justify-between text-sm">
-                      <div>
-                        <p className="font-medium">{transaction.description}</p>
-                        <p className="text-stone-500">
-                          {transaction.created_date && format(new Date(transaction.created_date), "d בMMMM", { locale: he })}
-                        </p>
-                      </div>
-                      <Badge variant={transaction.points > 0 ? "default" : "destructive"}>
-                        {transaction.points > 0 ? '+' : ''}{transaction.points}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
       </div>
     </div>
