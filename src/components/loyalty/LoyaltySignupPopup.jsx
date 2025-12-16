@@ -31,12 +31,12 @@ export default function LoyaltySignupPopup() {
       
       // Show popup if user is not a club member
       if (!userData.club_member) {
-        setTimeout(() => setOpen(true), 1500);
+        setTimeout(() => setOpen(true), 500);
       }
     } catch (e) {
       // User not logged in - show popup anyway
       setUser(null);
-      setTimeout(() => setOpen(true), 1500);
+      setTimeout(() => setOpen(true), 500);
     }
   };
 
