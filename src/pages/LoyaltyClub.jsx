@@ -203,7 +203,7 @@ export default function LoyaltyClub() {
         </section>
 
         {/* Tier Cards */}
-        <section>
+        <section className="hidden md:block">
           <h2 className="text-3xl font-semibold text-center text-stone-800 mb-8">
             שלבי המועדון
           </h2>
