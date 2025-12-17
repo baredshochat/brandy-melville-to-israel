@@ -378,7 +378,7 @@ export default function LoyaltyClub() {
           >
             {!user ? (
               <>
-                <h2 className="text-3xl font-semibold text-stone-800 mb-4">
+                <h2 className="text-2xl md:text-3xl font-semibold text-stone-800 mb-3 md:mb-4">
                   כדי להתחיל לצבור – צריך רק להירשם
                 </h2>
                 <p className="text-stone-600 mb-6">
@@ -387,7 +387,7 @@ export default function LoyaltyClub() {
               </>
             ) : !user.club_member ? (
               <>
-                <h2 className="text-3xl font-semibold text-stone-800 mb-4">
+                <h2 className="text-2xl md:text-3xl font-semibold text-stone-800 mb-3 md:mb-4">
                   את כבר צעד אחד בפנים
                 </h2>
                 <p className="text-stone-600 mb-6">
@@ -396,7 +396,7 @@ export default function LoyaltyClub() {
               </>
             ) : (
               <>
-                <h2 className="text-3xl font-semibold text-stone-800 mb-4">
+                <h2 className="text-2xl md:text-3xl font-semibold text-stone-800 mb-3 md:mb-4">
                   כל ההתקדמות שלך מחכה בעמוד האישי
                 </h2>
                 <p className="text-stone-600 mb-6">
