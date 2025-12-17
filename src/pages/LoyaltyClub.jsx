@@ -120,12 +120,12 @@ export default function LoyaltyClub() {
           <div className="absolute inset-0 bg-gradient-to-t from-stone-50 via-rose-50/20 to-transparent" />
         </div>
 
-        <div className="relative max-w-4xl mx-auto px-4 py-20 text-center">
-          <Heart className="w-16 h-16 text-rose-400 fill-rose-400/20 mx-auto mb-6" />
-          <h1 className="text-5xl font-light text-stone-800 mb-4">
+        <div className="relative max-w-4xl mx-auto px-4 py-12 md:py-20 text-center">
+          <Heart className="w-12 h-12 md:w-16 md:h-16 text-rose-400 fill-rose-400/20 mx-auto mb-4 md:mb-6" />
+          <h1 className="text-3xl md:text-5xl font-light text-stone-800 mb-3 md:mb-4">
             מועדון הלקוחות שלנו
           </h1>
-          <p className="text-xl text-stone-600 font-light mb-8 max-w-2xl mx-auto">
+          <p className="text-base md:text-xl text-stone-600 font-light mb-6 md:mb-8 max-w-2xl mx-auto">
             צוברות נקודות, פותחות הטבות, ונהנות יותר מכל הזמנה
           </p>
           
@@ -134,7 +134,7 @@ export default function LoyaltyClub() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="max-w-md mx-auto mb-6 space-y-4"
+              className="max-w-md mx-auto mb-4 md:mb-6 space-y-3 md:space-y-4"
             >
               <div>
                 <Label htmlFor="birthday-hero" className="text-right block mb-2">תאריך יום הולדת *</Label>
@@ -163,16 +163,16 @@ export default function LoyaltyClub() {
         </div>
       </motion.div>
 
-      <div className="max-w-6xl mx-auto px-4 py-12 space-y-16">
+      <div className="max-w-6xl mx-auto px-4 py-8 md:py-12 space-y-10 md:space-y-16">
         {/* How It Works - 3 Simple Steps */}
         <section>
-          <h2 className="text-3xl font-semibold text-center text-stone-800 mb-8">
+          <h2 className="text-xl md:text-3xl font-semibold text-center text-stone-800 mb-6 md:mb-8">
             איך המועדון עובד?
           </h2>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-4 md:gap-6">
             <Card className="text-center bg-white/80 backdrop-blur-sm border border-stone-200 shadow-lg">
               <CardContent className="pt-8 pb-6">
-                <ShoppingBag className="w-12 h-12 text-rose-500 mx-auto mb-4" />
+                <ShoppingBag className="w-10 h-10 md:w-12 md:h-12 text-rose-500 mx-auto mb-3 md:mb-4" />
                 <h3 className="font-semibold text-lg mb-2">כמה שיותר קניות – יותר נקודות</h3>
                 <p className="text-sm text-stone-600">
                   כל הזמנה מזכה אותך בנקודות שמתקדמות אותך להטבות
@@ -182,7 +182,7 @@ export default function LoyaltyClub() {
 
             <Card className="text-center bg-white/80 backdrop-blur-sm border border-stone-200 shadow-lg">
               <CardContent className="pt-8 pb-6">
-                <Star className="w-12 h-12 text-rose-500 mx-auto mb-4" />
+                <Star className="w-10 h-10 md:w-12 md:h-12 text-rose-500 mx-auto mb-3 md:mb-4" />
                 <h3 className="font-semibold text-lg mb-2">נקודות = הטבות</h3>
                 <p className="text-sm text-stone-600">
                   כל 100 נקודות פותחות הטבה של 50 ₪ להזמנה
@@ -192,7 +192,7 @@ export default function LoyaltyClub() {
 
             <Card className="text-center bg-white/80 backdrop-blur-sm border border-stone-200 shadow-lg">
               <CardContent className="pt-8 pb-6">
-                <Award className="w-12 h-12 text-rose-500 mx-auto mb-4" />
+                <Award className="w-10 h-10 md:w-12 md:h-12 text-rose-500 mx-auto mb-3 md:mb-4" />
                 <h3 className="font-semibold text-lg mb-2">סטטוס גבוה = יותר יתרונות</h3>
                 <p className="text-sm text-stone-600">
                   Silver ו-Gold פותחים משלוחים חינם והטבות בלעדיות
@@ -204,17 +204,17 @@ export default function LoyaltyClub() {
 
         {/* Tier Cards */}
         <section>
-          <h2 className="text-3xl font-semibold text-center text-stone-800 mb-8">
+          <h2 className="text-xl md:text-3xl font-semibold text-center text-stone-800 mb-6 md:mb-8">
             שלבי המועדון
           </h2>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-4 md:gap-6">
             {/* Member */}
             <Card className={`bg-white/90 backdrop-blur-sm shadow-lg transition-all ${
               user?.tier === 'member' ? 'border-4 border-rose-400 scale-105' : 'border border-stone-200'
             }`}>
               <CardHeader className="text-center pb-4">
-                <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Star className="w-8 h-8 text-rose-400" />
+                <div className="w-12 h-12 md:w-16 md:h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-3">
+                  <Star className="w-6 h-6 md:w-8 md:h-8 text-rose-400" />
                 </div>
                 <CardTitle className="text-2xl">💖 Member</CardTitle>
                 {user?.tier === 'member' && (
@@ -244,8 +244,8 @@ export default function LoyaltyClub() {
               user?.tier === 'silver' ? 'border-4 border-rose-400 scale-105' : 'border border-stone-200'
             }`}>
               <CardHeader className="text-center pb-4">
-                <div className="w-16 h-16 bg-rose-200 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Star className="w-8 h-8 text-rose-500" />
+                <div className="w-12 h-12 md:w-16 md:h-16 bg-rose-200 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-3">
+                  <Star className="w-6 h-6 md:w-8 md:h-8 text-rose-500" />
                 </div>
                 <CardTitle className="text-2xl">✨ Silver</CardTitle>
                 {user?.tier === 'silver' && (
@@ -280,8 +280,8 @@ export default function LoyaltyClub() {
               user?.tier === 'gold' ? 'border-4 border-rose-400 scale-105' : 'border border-stone-200'
             }`}>
               <CardHeader className="text-center pb-4">
-                <div className="w-16 h-16 bg-rose-300 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Star className="w-8 h-8 text-rose-600" />
+                <div className="w-12 h-12 md:w-16 md:h-16 bg-rose-300 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-3">
+                  <Star className="w-6 h-6 md:w-8 md:h-8 text-rose-600" />
                 </div>
                 <CardTitle className="text-2xl">⭐ Gold</CardTitle>
                 {user?.tier === 'gold' && (
@@ -347,8 +347,8 @@ export default function LoyaltyClub() {
         <section>
           <Card className="bg-gradient-to-br from-rose-100 via-pink-50 to-white border-2 border-rose-200 shadow-xl">
             <CardHeader className="text-center">
-              <div className="text-5xl mb-3">🎂</div>
-              <CardTitle className="text-2xl">ביום ההולדת – אנחנו חוגגים איתך</CardTitle>
+              <div className="text-3xl md:text-5xl mb-2 md:mb-3">🎂</div>
+              <CardTitle className="text-lg md:text-2xl">ביום ההולדת – אנחנו חוגגים איתך</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid md:grid-cols-3 gap-4 text-center">
@@ -378,7 +378,7 @@ export default function LoyaltyClub() {
           >
             {!user ? (
               <>
-                <h2 className="text-3xl font-semibold text-stone-800 mb-4">
+                <h2 className="text-xl md:text-3xl font-semibold text-stone-800 mb-3 md:mb-4">
                   כדי להתחיל לצבור – צריך רק להירשם
                 </h2>
                 <p className="text-stone-600 mb-6">
@@ -387,7 +387,7 @@ export default function LoyaltyClub() {
               </>
             ) : !user.club_member ? (
               <>
-                <h2 className="text-3xl font-semibold text-stone-800 mb-4">
+                <h2 className="text-xl md:text-3xl font-semibold text-stone-800 mb-3 md:mb-4">
                   את כבר צעד אחד בפנים
                 </h2>
                 <p className="text-stone-600 mb-6">
@@ -396,7 +396,7 @@ export default function LoyaltyClub() {
               </>
             ) : (
               <>
-                <h2 className="text-3xl font-semibold text-stone-800 mb-4">
+                <h2 className="text-xl md:text-3xl font-semibold text-stone-800 mb-3 md:mb-4">
                   כל ההתקדמות שלך מחכה בעמוד האישי
                 </h2>
                 <p className="text-stone-600 mb-6">
@@ -409,7 +409,7 @@ export default function LoyaltyClub() {
         </section>
 
         {/* Terms and Conditions */}
-        <section className="border-t border-stone-200 pt-8">
+        <section className="border-t border-stone-200 pt-6 md:pt-8">
           <div className="text-center text-xs text-stone-500 space-y-1 max-w-3xl mx-auto">
             <p>• נקודות אינן שוות כסף ואינן ניתנות להמרה ישירה</p>
             <p>• תנאי המועדון עשויים להשתנות</p>
