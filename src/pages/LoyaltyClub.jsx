@@ -165,7 +165,7 @@ export default function LoyaltyClub() {
 
       <div className="max-w-6xl mx-auto px-4 py-8 md:py-12 space-y-8 md:space-y-16">
         {/* How It Works - 3 Simple Steps */}
-        <section>
+        <section className="hidden md:block">
           <h2 className="text-3xl font-semibold text-center text-stone-800 mb-8">
             איך המועדון עובד?
           </h2>
