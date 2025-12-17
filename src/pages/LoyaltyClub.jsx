@@ -120,12 +120,12 @@ export default function LoyaltyClub() {
           <div className="absolute inset-0 bg-gradient-to-t from-stone-50 via-rose-50/20 to-transparent" />
         </div>
 
-        <div className="relative max-w-4xl mx-auto px-4 py-20 text-center">
-          <Heart className="w-16 h-16 text-rose-400 fill-rose-400/20 mx-auto mb-6" />
-          <h1 className="text-5xl font-light text-stone-800 mb-4">
+        <div className="relative max-w-4xl mx-auto px-4 py-10 md:py-20 text-center">
+          <Heart className="w-10 h-10 md:w-16 md:h-16 text-rose-400 fill-rose-400/20 mx-auto mb-4 md:mb-6" />
+          <h1 className="text-3xl md:text-5xl font-light text-stone-800 mb-2 md:mb-4">
             מועדון הלקוחות שלנו
           </h1>
-          <p className="text-xl text-stone-600 font-light mb-8 max-w-2xl mx-auto">
+          <p className="text-base md:text-xl text-stone-600 font-light mb-6 md:mb-8 max-w-2xl mx-auto">
             צוברות נקודות, פותחות הטבות, ונהנות יותר מכל הזמנה
           </p>
           
@@ -163,7 +163,7 @@ export default function LoyaltyClub() {
         </div>
       </motion.div>
 
-      <div className="max-w-6xl mx-auto px-4 py-12 space-y-16">
+      <div className="max-w-6xl mx-auto px-4 py-8 md:py-12 space-y-8 md:space-y-16">
         {/* How It Works - 3 Simple Steps */}
         <section>
           <h2 className="text-3xl font-semibold text-center text-stone-800 mb-8">
@@ -314,8 +314,8 @@ export default function LoyaltyClub() {
         </section>
 
         {/* Points & Benefits Explanation */}
-        <section>
-          <Card className="bg-white/80 backdrop-blur-sm border border-stone-200 shadow-lg">
+        <section className="hidden md:block">
+                        <Card className="bg-white/80 backdrop-blur-sm border border-stone-200 shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-2xl">
                 <Sparkles className="w-6 h-6 text-rose-500" />
@@ -344,8 +344,8 @@ export default function LoyaltyClub() {
         </section>
 
         {/* Birthday Benefits */}
-        <section>
-          <Card className="bg-gradient-to-br from-rose-100 via-pink-50 to-white border-2 border-rose-200 shadow-xl">
+        <section className="hidden md:block">
+                        <Card className="bg-gradient-to-br from-rose-100 via-pink-50 to-white border-2 border-rose-200 shadow-xl">
             <CardHeader className="text-center">
               <div className="text-5xl mb-3">🎂</div>
               <CardTitle className="text-2xl">ביום ההולדת – אנחנו חוגגים איתך</CardTitle>
@@ -370,7 +370,7 @@ export default function LoyaltyClub() {
         </section>
 
         {/* Final CTA */}
-        <section className="text-center py-12">
+        <section className="text-center py-8 md:py-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
