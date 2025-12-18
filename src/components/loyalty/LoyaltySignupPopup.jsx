@@ -20,10 +20,10 @@ export default function LoyaltySignupPopup() {
   const title = popupSettings?.popup_title || 'הצטרפי למועדון! ✨';
   const subtitle = popupSettings?.popup_subtitle || 'צברי נקודות וקבלי הטבות מיוחדות';
   const benefit1 = popupSettings?.popup_benefit_1 || '10% נקודות על כל הזמנה';
-  const benefit2 = popupSettings?.popup_benefit_2 || '{benefit2}';
+  const benefit2 = popupSettings?.popup_benefit_2 || 'הטבת יום הולדת מיוחדת';
   const benefit3 = popupSettings?.popup_benefit_3 || `${signupBonus} נקודות בונוס בהצטרפות!`;
   const ctaText = popupSettings?.popup_cta_text || `הצטרפי וקבלי ${signupBonus} נקודות 🎁`;
-  const marketingLabel = popupSettings?.popup_marketing_label || '{marketingLabel}';
+  const marketingLabel = popupSettings?.popup_marketing_label || 'אני מעוניינת לקבל עדכונים, הטבות והנחות למייל';
   const imageUrl = popupSettings?.popup_image_url || '';
 
   useEffect(() => {
