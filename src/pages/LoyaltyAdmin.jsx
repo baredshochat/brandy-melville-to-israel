@@ -230,6 +230,10 @@ export default function LoyaltyAdmin() {
     }
   };
 
+  const filteredUsers = React.useMemo(() => {
+    if (tierFilter === 'All') return users;
+    return users.filter(u => u.tier === tierFilter);
+  }, [tierFilter, users]);
 
   if (loading) {
     return (
@@ -246,11 +250,6 @@ export default function LoyaltyAdmin() {
       </div>
     );
   }
-
-  const filteredUsers = React.useMemo(() => {
-    if (tierFilter === 'All') return users;
-    return users.filter(u => u.tier === tierFilter);
-  }, [tierFilter, users]);
 
   return (
     <div className="max-w-6xl mx-auto p-6">
