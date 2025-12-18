@@ -921,22 +921,30 @@ export default function Home() {
       };
 
       // Redeem points if used
-      if (redeemedPoints > 0) {
+      if (redeemedPoints > 0 && currentOrder?.id) {
         try {
           const result = await redeemPoints({
             points_to_redeem: redeemedPoints,
-            order_total: totalPriceILS
+            order_total: totalPriceILS,
+            order_id: currentOrder.id
           });
-          // Update user state with new balance
-          if (result?.data?.new_balance !== undefined) {
-            setUser(prev => ({ ...prev, points_balance: result.data.new_balance }));
-            console.log('✅ Points redeemed successfully - New balance:', result.data.new_balance);
-          } else {
-            console.error('❌ No new_balance in response:', result);
-          }
+          
+          // ✅ CRITICAL: Refresh user data from server after redemption
+          const freshUser = await User.me();
+          setUser(freshUser);
+          
+          console.log('✅ Points redeemed successfully - New balance:', freshUser?.points_balance);
         } catch (e) {
           console.error("Failed to redeem points:", e);
           alert('שגיאה במימוש הנקודות. אנא פני לשירות לקוחות.');
+          
+          // ✅ Refresh user data even on error
+          try {
+            const freshUser = await User.me();
+            setUser(freshUser);
+          } catch (refreshError) {
+            console.error("Failed to refresh user data:", refreshError);
+          }
         }
       }
 
