@@ -522,15 +522,6 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
               </div>
             )}
 
-            {redeemedPoints > 0 && (
-              <div className="flex justify-between items-center py-2 border-t border-purple-200 bg-purple-50">
-                <span className="text-sm font-medium text-purple-900">מימוש נקודות מועדון</span>
-                <span className="text-sm font-bold text-purple-600">
-                  -{formatMoney(redeemedPoints)}
-                </span>
-              </div>
-            )}
-
             <div className="flex justify-between items-center pt-4 border-t-2 border-rose-200">
               <span className="text-lg font-bold text-stone-900">
                 {labels?.final_total_label || 'סה״כ לתשלום'}
