@@ -15,6 +15,12 @@ import { createPageUrl } from '@/utils';
 import { format, isFuture, parseISO } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { base44 } from '@/api/base44Client';
+import LoyaltyHero from '@/components/loyalty/LoyaltyHero';
+import ValueProps from '@/components/loyalty/ValueProps';
+import PointsSummary from '@/components/loyalty/PointsSummary';
+import BirthdayGiftCard from '@/components/loyalty/BirthdayGiftCard';
+import TiersGrid from '@/components/loyalty/TiersGrid';
+import StickyCTA from '@/components/loyalty/StickyCTA';
 
 export default function LoyaltyClub() {
   const [user, setUser] = useState(null);
@@ -77,6 +83,11 @@ export default function LoyaltyClub() {
   const expiringEntry = useMemo(() => {
     return recentLedger.find(e => !!e.expires_at && isFuture(parseISO(e.expires_at)));
   }, [recentLedger]);
+
+  const expiringDateStr = useMemo(
+    () => (expiringEntry ? format(parseISO(expiringEntry.expires_at), 'dd/MM/yyyy', { locale: he }) : null),
+    [expiringEntry]
+  );
 
   // Active birthday bonus if exists
   const birthdayBonusActive = useMemo(() => {
@@ -272,33 +283,7 @@ export default function LoyaltyClub() {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto p-6 space-y-8">
       {/* 1. Hero */}
-      <div className="text-center space-y-3">
-        <h1 className="text-5xl font-extrabold text-stone-800">מועדון הלקוחות שלנו <span className="text-rose-400">💖</span></h1>
-        <p className="text-lg text-stone-600">קונות, צוברות נקודות, ומקבלות יותר – פשוט כי אתן כאן.</p>
-        <p className="text-xl font-semibold text-rose-500 flex items-center justify-center gap-2">
-          <CheckCircle className="w-6 h-6" /> היי {user.first_name || user.full_name?.split(' ')[0] || 'יקרה'}! את כבר חברה במועדון
-        </p>
-        {Number(user.points_balance || 0) > 0 && (
-          <p className="text-base text-stone-700">יש לך כרגע ₪{Number(user.points_balance || 0)} לניצול ברכישה הבאה</p>
-        )}
-        <div className="flex items-center justify-center gap-3 pt-2 flex-wrap">
-          <Link to={createPageUrl('Home')}>
-            <Button className="bg-stone-900 hover:bg-stone-800 h-11 px-6 flex items-center gap-2">
-              <ShoppingBag className="w-4 h-4" /> התחילי הזמנה חדשה
-            </Button>
-          </Link>
-          <Link to={createPageUrl('LocalStock')}>
-            <Button variant="outline" className="h-11 px-6 flex items-center gap-2">
-              <Truck className="w-4 h-4" /> מלאי מקומי – אספקה מהירה
-            </Button>
-          </Link>
-          <Link to={createPageUrl('Chat')}>
-            <Button variant="ghost" className="h-11 px-6 flex items-center gap-2">
-              <MessageSquare className="w-4 h-4" /> צריך עזרה?
-            </Button>
-          </Link>
-        </div>
-      </div>
+      <LoyaltyHero user={user} points={Number(user.points_balance || 0)} />
 
       {/* Shop banner */}
       <div className="relative overflow-hidden rounded border border-stone-200">
@@ -306,7 +291,9 @@ export default function LoyaltyClub() {
       </div>
 
       {/* Value props */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <ValueProps />
+      {/* Old grid removed */}
+      <div className="hidden">
         <div className="flex items-center gap-3 bg-white/80 border border-stone-200 p-3">
           <Truck className="w-5 h-5 text-rose-500" />
           <div>
@@ -348,7 +335,9 @@ export default function LoyaltyClub() {
       </Card>
 
       {/* 3. Points */}
-      <Card className="bg-white/80 backdrop-blur-sm shadow-lg border border-stone-100">
+      <PointsSummary points={Number(user.points_balance || 0)} expiringDateString={expiringDateStr} />
+      {/* Old card removed */}
+      <div className="hidden">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-stone-800"><Star className="w-5 h-5 text-rose-500" /> הנקודות שלך</CardTitle>
         </CardHeader>
@@ -374,38 +363,8 @@ export default function LoyaltyClub() {
 
       {/* Gift + Tiers split layout */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="bg-white/80 backdrop-blur-sm shadow-lg border border-stone-100">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-stone-800"><Gift className="w-5 h-5 text-purple-500" /> מתנת יום הולדת</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-center">
-            {birthdayBonusActive ? (
-              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
-                <p className="text-3xl font-bold text-rose-600 mb-1">מחכות לך {birthdayBonusActive.amount} נקודות מתנה</p>
-                <p className="text-md text-stone-700">בתוקף עד סוף חודש {format(birthdayBonusActive.expires, 'MM/yyyy', { locale: he })}</p>
-              </motion.div>
-            ) : (
-              <p className="text-md text-stone-700">בחודש יום ההולדת מחכה לך מתנה לפי הסטטוס שלך</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <div className="space-y-3">
-          <h3 className="text-2xl font-bold text-stone-800 text-center">שלבי המועדון</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {TIERS.map((t) => (
-              <Card key={t.name} className={`text-center p-6 shadow-lg transition-all duration-300 ${userTier.name === t.name ? 'border-4 border-rose-400 scale-105' : 'border border-stone-200'} ${userTier.name === t.name ? `bg-gradient-to-br ${t.grad}` : 'bg-white'}`}>
-                <CardContent className="space-y-2">
-                  <t.icon className={`w-10 h-10 mx-auto ${userTier.name === t.name ? 'text-stone-800' : 'text-stone-500'}`} />
-                  <h4 className="text-xl font-bold text-stone-800">{t.name}</h4>
-                  <p className="text-sm text-stone-700">{t.earn} צבירה</p>
-                  <p className="text-sm text-stone-700">{t.birthdayGift} נקודות יום הולדת</p>
-                  {t.name === 'Gold' && <p className="text-sm font-bold text-amber-600">VIP ✨</p>}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
+        <BirthdayGiftCard amount={birthdayBonusActive?.amount || null} expiresText={birthdayExpiresText} />
+        <TiersGrid tiers={TIERS} userTier={userTier} />
       </div>
 
       {/* 6. Newsletter */}
@@ -424,12 +383,13 @@ export default function LoyaltyClub() {
       </Card>
 
       {/* 7. Emotional summary */}
-      <div className="text-center space-y-3 pb-4">
+      <div className="text-center space-y-3 pb-24">
         <p className="text-lg text-stone-600 max-w-xl mx-auto">כל קנייה שלך שווה יותר כאן. נקודות, מתנות, והטבות – כי מגיע לך.</p>
         <Link to={createPageUrl('Home')}>
           <Button className="bg-rose-500 hover:bg-rose-600 text-white text-lg px-8 py-3 rounded-full shadow-lg">לחזרה לחנות</Button>
         </Link>
       </div>
+      <StickyCTA points={Number(user.points_balance || 0)} />
     </motion.div>
   );
 }
