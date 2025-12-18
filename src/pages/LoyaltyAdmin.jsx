@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
@@ -32,16 +33,6 @@ export default function LoyaltyAdmin() {
   const [historyUser, setHistoryUser] = useState(null); // New state for user in history dialog
   const [historyLedger, setHistoryLedger] = useState([]); // New state for ledger in history dialog
   const [settings, setSettings] = useState({});
-  const defaultPopupConfig = {
-    enabled: true,
-    title: 'הצטרפי למועדון! ✨',
-    subtitle: 'צברי נקודות וקבלי הטבות מיוחדות',
-    benefits: ['10% נקודות על כל הזמנה', 'הטבת יום הולדת מיוחדת', '30 נקודות בונוס עכשיו!'],
-    cta_text: 'הצטרפי וקבלי 30 נקודות 🎁',
-    dismiss_text: 'אולי מאוחר יותר',
-    delay_ms: 1500
-  };
-  const [popupConfig, setPopupConfig] = useState(defaultPopupConfig);
   const [actionForm, setActionForm] = useState({
     user_email: '',
     amount: '',
@@ -77,12 +68,6 @@ export default function LoyaltyAdmin() {
           settingsObj[s.setting_key] = s.value;
         });
         setSettings(settingsObj);
-        const cfgStr = settingsObj.signup_popup_config;
-        let cfg = defaultPopupConfig;
-        if (cfgStr) {
-          try { cfg = { ...defaultPopupConfig, ...JSON.parse(cfgStr) }; } catch {}
-        }
-        setPopupConfig(cfg);
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -359,70 +344,141 @@ export default function LoyaltyAdmin() {
               <CardTitle>הגדרות מערכת</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-...
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>הגדרות פופ-אפ המועדון</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label>הפעלת הפופ-אפ</Label>
-                  <p className="text-sm text-stone-500">האם להציג את הפופ-אפ למשתמשות שאינן חברות</p>
+                  <Label>אחוז צבירה</Label>
+                  <p className="text-sm text-stone-500">אחוז הנקודות שנצברות מכל הזמנה</p>
                 </div>
-                <input
-                  type="checkbox"
-                  checked={!!popupConfig.enabled}
-                  onChange={(e) => setPopupConfig({ ...popupConfig, enabled: e.target.checked })}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <Label>כותרת</Label>
-                  <Input value={popupConfig.title} onChange={(e) => setPopupConfig({ ...popupConfig, title: e.target.value })} />
-                </div>
-                <div>
-                  <Label>תת-כותרת</Label>
-                  <Input value={popupConfig.subtitle} onChange={(e) => setPopupConfig({ ...popupConfig, subtitle: e.target.value })} />
-                </div>
-              </div>
-
-              <div>
-                <Label>יתרונות (שורה לכל יתרון)</Label>
-                <textarea
-                  className="w-full border rounded-md p-2 text-sm bg-white"
-                  rows={4}
-                  value={(popupConfig.benefits || []).join('\n')}
-                  onChange={(e) => setPopupConfig({ ...popupConfig, benefits: e.target.value.split('\n').filter(Boolean) })}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div>
-                  <Label>טקסט כפתור</Label>
-                  <Input value={popupConfig.cta_text} onChange={(e) => setPopupConfig({ ...popupConfig, cta_text: e.target.value })} />
-                </div>
-                <div>
-                  <Label>טקסט דחייה</Label>
-                  <Input value={popupConfig.dismiss_text} onChange={(e) => setPopupConfig({ ...popupConfig, dismiss_text: e.target.value })} />
-                </div>
-                <div>
-                  <Label>השהיה (מילישניות)</Label>
-                  <Input type="number" value={popupConfig.delay_ms} onChange={(e) => setPopupConfig({ ...popupConfig, delay_ms: Number(e.target.value || 0) })} />
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    defaultValue={settings.earn_percentage || '0.1'}
+                    className="w-24"
+                    id="earn-pct"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      const val = document.getElementById('earn-pct').value;
+                      handleUpdateSetting('earn_percentage', val);
+                    }}
+                  >
+                    עדכן
+                  </Button>
                 </div>
               </div>
 
-              <div className="flex justify-end">
-                <Button onClick={() => handleUpdateSetting('signup_popup_config', JSON.stringify(popupConfig))}>
-                  עדכן פופ-אפ
-                </Button>
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>מקסימום מימוש</Label>
+                  <p className="text-sm text-stone-500">אחוז מקסימלי לשימוש בנקודות בהזמנה</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    defaultValue={settings.max_redeem_percentage || '0.3'}
+                    className="w-24"
+                    id="redeem-pct"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      const val = document.getElementById('redeem-pct').value;
+                      handleUpdateSetting('max_redeem_percentage', val);
+                    }}
+                  >
+                    עדכן
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>בונוס הצטרפות</Label>
+                  <p className="text-sm text-stone-500">נקודות בונוס בהצטרפות למועדון</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    defaultValue={settings.signup_bonus || '30'}
+                    className="w-24"
+                    id="signup-bonus"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      const val = document.getElementById('signup-bonus').value;
+                      handleUpdateSetting('signup_bonus', val);
+                    }}
+                  >
+                    עדכן
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>הגדרות פופ־אפ הצטרפות</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label>הצג פופ־אפ</Label>
+                <p className="text-sm text-stone-500">הפעל/כבה את הופעת הפופ־אפ למשתמשות שאינן חברות</p>
+              </div>
+              <Switch
+                checked={(settings.popup_enabled ?? 'true') !== 'false'}
+                onCheckedChange={(checked) => handleUpdateSetting('popup_enabled', checked ? 'true' : 'false')}
+              />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>כותרת</Label>
+                <Input id="popup-title" defaultValue={settings.popup_title || ''} />
+                <Button size="sm" onClick={() => handleUpdateSetting('popup_title', document.getElementById('popup-title').value)}>עדכן</Button>
+              </div>
+              <div className="space-y-2">
+                <Label>תת־כותרת</Label>
+                <Input id="popup-subtitle" defaultValue={settings.popup_subtitle || ''} />
+                <Button size="sm" onClick={() => handleUpdateSetting('popup_subtitle', document.getElementById('popup-subtitle').value)}>עדכן</Button>
+              </div>
+              <div className="space-y-2">
+                <Label>בולט 1</Label>
+                <Input id="popup-benefit-1" defaultValue={settings.popup_benefit_1 || ''} />
+                <Button size="sm" onClick={() => handleUpdateSetting('popup_benefit_1', document.getElementById('popup-benefit-1').value)}>עדכן</Button>
+              </div>
+              <div className="space-y-2">
+                <Label>בולט 2</Label>
+                <Input id="popup-benefit-2" defaultValue={settings.popup_benefit_2 || ''} />
+                <Button size="sm" onClick={() => handleUpdateSetting('popup_benefit_2', document.getElementById('popup-benefit-2').value)}>עדכן</Button>
+              </div>
+              <div className="space-y-2">
+                <Label>בולט 3</Label>
+                <Input id="popup-benefit-3" defaultValue={settings.popup_benefit_3 || ''} />
+                <Button size="sm" onClick={() => handleUpdateSetting('popup_benefit_3', document.getElementById('popup-benefit-3').value)}>עדכן</Button>
+              </div>
+              <div className="space-y-2">
+                <Label>טקסט כפתור</Label>
+                <Input id="popup-cta" defaultValue={settings.popup_cta_text || ''} />
+                <Button size="sm" onClick={() => handleUpdateSetting('popup_cta_text', document.getElementById('popup-cta').value)}>עדכן</Button>
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label>טקסט הסכמה לשיווק</Label>
+                <Input id="popup-marketing" defaultValue={settings.popup_marketing_text || ''} />
+                <Button size="sm" onClick={() => handleUpdateSetting('popup_marketing_text', document.getElementById('popup-marketing').value)}>עדכן</Button>
+              </div>
+              <div className="space-y-2">
+                <Label>השהייה (ms)</Label>
+                <Input id="popup-delay" type="number" defaultValue={settings.popup_delay_ms || '1500'} className="w-40" />
+                <Button size="sm" onClick={() => handleUpdateSetting('popup_delay_ms', document.getElementById('popup-delay').value)}>עדכן</Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
         </TabsContent>
 
         <TabsContent value="members">
