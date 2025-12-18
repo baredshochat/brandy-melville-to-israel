@@ -170,6 +170,11 @@ export default function LoyaltyClub() {
           <p className="text-lg text-stone-600">קונות, צוברות נקודות, ומקבלות יותר – פשוט כי אתן כאן.</p>
         </div>
 
+        {/* Shop banner */}
+        <div className="relative overflow-hidden rounded border border-stone-200">
+          <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/b7a7981b1_IMG_9486.jpg" alt="תמונה מהחנות" className="w-full h-44 sm:h-56 object-cover" />
+        </div>
+
         {/* Benefits snapshot */}
         <Card className="border-2 border-rose-200 bg-gradient-to-br from-rose-50 to-white">
           <CardContent className="p-6 space-y-4">
@@ -295,6 +300,11 @@ export default function LoyaltyClub() {
         </div>
       </div>
 
+      {/* Shop banner */}
+      <div className="relative overflow-hidden rounded border border-stone-200">
+        <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/b7a7981b1_IMG_9486.jpg" alt="תמונה מהחנות" className="w-full h-48 sm:h-64 object-cover" />
+      </div>
+
       {/* Value props */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="flex items-center gap-3 bg-white/80 border border-stone-200 p-3">
@@ -362,38 +372,39 @@ export default function LoyaltyClub() {
         </CardContent>
       </Card>
 
-      {/* 4. Birthday Gift */}
-      <Card className="bg-white/80 backdrop-blur-sm shadow-lg border border-stone-100">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-stone-800"><Gift className="w-5 h-5 text-purple-500" /> מתנת יום הולדת</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-center">
-          {birthdayBonusActive ? (
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
-              <p className="text-3xl font-bold text-rose-600 mb-1">מחכות לך {birthdayBonusActive.amount} נקודות מתנה</p>
-              <p className="text-md text-stone-700">בתוקף עד סוף חודש {format(birthdayBonusActive.expires, 'MM/yyyy', { locale: he })}</p>
-            </motion.div>
-          ) : (
-            <p className="text-md text-stone-700">בחודש יום ההולדת מחכה לך מתנה לפי הסטטוס שלך</p>
-          )}
-        </CardContent>
-      </Card>
+      {/* Gift + Tiers split layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card className="bg-white/80 backdrop-blur-sm shadow-lg border border-stone-100">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-stone-800"><Gift className="w-5 h-5 text-purple-500" /> מתנת יום הולדת</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-center">
+            {birthdayBonusActive ? (
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+                <p className="text-3xl font-bold text-rose-600 mb-1">מחכות לך {birthdayBonusActive.amount} נקודות מתנה</p>
+                <p className="text-md text-stone-700">בתוקף עד סוף חודש {format(birthdayBonusActive.expires, 'MM/yyyy', { locale: he })}</p>
+              </motion.div>
+            ) : (
+              <p className="text-md text-stone-700">בחודש יום ההולדת מחכה לך מתנה לפי הסטטוס שלך</p>
+            )}
+          </CardContent>
+        </Card>
 
-      {/* 5. Tiers cards */}
-      <div className="space-y-3">
-        <h3 className="text-3xl font-bold text-stone-800 text-center">שלבי המועדון</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {TIERS.map((t) => (
-            <Card key={t.name} className={`text-center p-6 shadow-lg transition-all duration-300 ${userTier.name === t.name ? 'border-4 border-rose-400 scale-105' : 'border border-stone-200'} ${userTier.name === t.name ? `bg-gradient-to-br ${t.grad}` : 'bg-white'}`}>
-              <CardContent className="space-y-2">
-                <t.icon className={`w-10 h-10 mx-auto ${userTier.name === t.name ? 'text-stone-800' : 'text-stone-500'}`} />
-                <h4 className="text-2xl font-bold text-stone-800">{t.name}</h4>
-                <p className="text-md text-stone-700">{t.earn} צבירה</p>
-                <p className="text-md text-stone-700">{t.birthdayGift} נקודות יום הולדת</p>
-                {t.name === 'Gold' && <p className="text-lg font-bold text-amber-600">VIP ✨</p>}
-              </CardContent>
-            </Card>
-          ))}
+        <div className="space-y-3">
+          <h3 className="text-2xl font-bold text-stone-800 text-center">שלבי המועדון</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {TIERS.map((t) => (
+              <Card key={t.name} className={`text-center p-6 shadow-lg transition-all duration-300 ${userTier.name === t.name ? 'border-4 border-rose-400 scale-105' : 'border border-stone-200'} ${userTier.name === t.name ? `bg-gradient-to-br ${t.grad}` : 'bg-white'}`}>
+                <CardContent className="space-y-2">
+                  <t.icon className={`w-10 h-10 mx-auto ${userTier.name === t.name ? 'text-stone-800' : 'text-stone-500'}`} />
+                  <h4 className="text-xl font-bold text-stone-800">{t.name}</h4>
+                  <p className="text-sm text-stone-700">{t.earn} צבירה</p>
+                  <p className="text-sm text-stone-700">{t.birthdayGift} נקודות יום הולדת</p>
+                  {t.name === 'Gold' && <p className="text-sm font-bold text-amber-600">VIP ✨</p>}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </div>
 
