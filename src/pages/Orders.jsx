@@ -35,7 +35,9 @@ import {
   Truck,
   Loader2,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Tag,
+  Star
 } from "lucide-react";
 
 import { OrderStatusSteps } from "@/entities/OrderStatusSteps";
@@ -1440,54 +1442,112 @@ export default function Orders() {
                                 {isExpanded && (
                                   <tr className="bg-stone-50 border-b border-stone-100">
                                     <td colSpan={7} className="p-4">
-                                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                                        <div className="space-y-1">
-                                          <div className="text-stone-500">סה״כ בש״ח</div>
-                                          <div className="font-semibold">₪{(order.total_price_ils || 0).toLocaleString()}</div>
-                                        </div>
-                                        <div className="space-y-1">
-                                          <div className="text-stone-500">רווח נטו</div>
-                                          <div className="font-semibold text-green-600">
-                                            ₪{netProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                          </div>
-                                        </div>
-                                        <div className="space-y-1">
-                                          <div className="text-stone-500">מכס</div>
-                                          <div className="font-semibold text-red-600">
-                                            {customsAmount > 0 ? `₪${customsAmount.toLocaleString()}` : 'לא חויב'}
-                                          </div>
-                                        </div>
+                                      <div className="space-y-6">
+                                        {/* Price Calculation Breakdown */}
+                                        {order.price_breakdown && (
+                                          <div className="bg-white p-4 rounded-lg border border-stone-200">
+                                            <h4 className="font-semibold text-stone-900 mb-3 flex items-center gap-2">
+                                              <Calculator className="w-4 h-4" />
+                                              פירוט חישוב מחיר
+                                            </h4>
+                                            <div className="space-y-2 text-sm">
+                                              {/* Items Subtotal */}
+                                              {order.price_breakdown.cartSubtotal && (
+                                                <div className="flex justify-between">
+                                                  <span className="text-stone-600">סכום פריטים:</span>
+                                                  <span className="font-medium">₪{order.price_breakdown.cartSubtotal.toLocaleString()}</span>
+                                                </div>
+                                              )}
+                                              
+                                              {/* Domestic Shipping */}
+                                              {order.price_breakdown.domesticShipping !== undefined && (
+                                                <div className="flex justify-between">
+                                                  <span className="text-stone-600">משלוח עד הבית:</span>
+                                                  <span className="font-medium">₪{order.price_breakdown.domesticShipping.toLocaleString()}</span>
+                                                </div>
+                                              )}
 
-                                        <div className="space-y-1">
-                                          <div className="text-stone-500">מספר פריטים</div>
-                                          <div className="font-semibold">{order.items?.length || 0}</div>
-                                        </div>
-                                        <div className="space-y-1">
-                                          <div className="text-stone-500">אתר</div>
-                                          <div className="font-semibold">{siteInfo[order.site]?.name} {siteInfo[order.site]?.flag}</div>
-                                        </div>
-                                        <div className="space-y-1">
-                                          <div className="text-stone-500">סטטוס תשלום</div>
-                                          <div className="font-semibold">
-                                            {order.payment_status === 'completed' ? 'שולם' : order.payment_status === 'failed' ? 'נכשל' : 'ממתין'}
-                                          </div>
-                                        </div>
+                                              {/* Code Discount */}
+                                              {order.price_breakdown.code && (
+                                                <div className="flex justify-between items-start py-2 px-3 bg-green-50 border border-green-200 rounded">
+                                                  <div>
+                                                    <div className="flex items-center gap-2">
+                                                      <Tag className="w-4 h-4 text-green-600" />
+                                                      <span className="font-semibold text-green-900">קוד הנחה: {order.price_breakdown.code.code}</span>
+                                                    </div>
+                                                    <div className="text-xs text-green-700 mt-1">{order.price_breakdown.code.message}</div>
+                                                  </div>
+                                                  <span className="font-bold text-green-600">-₪{(order.price_breakdown.code.discount || 0).toLocaleString()}</span>
+                                                </div>
+                                              )}
 
-                                        <div className="space-y-1 md:col-span-3">
-                                          <div className="text-stone-500">פרטי משלוח</div>
-                                          <div className="font-medium">
-                                            {order.shipping_address ? `${order.shipping_address}${order.city ? `, ${order.city}` : ''}` : '—'}
-                                          </div>
-                                        </div>
+                                              {/* Points Redemption */}
+                                              {order.price_breakdown.redeemedPoints > 0 && (
+                                                <div className="flex justify-between items-center py-2 px-3 bg-rose-50 border border-rose-200 rounded">
+                                                  <div className="flex items-center gap-2">
+                                                    <Star className="w-4 h-4 text-rose-600 fill-rose-600" />
+                                                    <span className="font-semibold text-rose-900">מימוש נקודות מועדון</span>
+                                                  </div>
+                                                  <span className="font-bold text-rose-600">-₪{order.price_breakdown.redeemedPoints.toLocaleString()}</span>
+                                                </div>
+                                              )}
 
-                                        {order.internal_notes && (
-                                          <div className="space-y-1 md:col-span-3">
-                                            <div className="text-stone-500">הערות פנימיות</div>
-                                            <div className="font-medium">{order.internal_notes}</div>
+                                              {/* Final Total */}
+                                              <div className="flex justify-between pt-2 border-t-2 border-stone-300">
+                                                <span className="font-bold text-stone-900">סה״כ לתשלום:</span>
+                                                <span className="font-bold text-lg text-blue-600">₪{(order.total_price_ils || 0).toLocaleString()}</span>
+                                              </div>
+                                            </div>
                                           </div>
                                         )}
 
-                                        <div className="md:col-span-3 flex gap-2 pt-2">
+                                        {/* Order Details Grid */}
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                          <div className="space-y-1">
+                                            <div className="text-stone-500">רווח נטו</div>
+                                            <div className="font-semibold text-green-600">
+                                              ₪{netProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </div>
+                                          </div>
+                                          <div className="space-y-1">
+                                            <div className="text-stone-500">מכס</div>
+                                            <div className="font-semibold text-red-600">
+                                              {customsAmount > 0 ? `₪${customsAmount.toLocaleString()}` : 'לא חויב'}
+                                            </div>
+                                          </div>
+                                          <div className="space-y-1">
+                                            <div className="text-stone-500">מספר פריטים</div>
+                                            <div className="font-semibold">{order.items?.length || 0}</div>
+                                          </div>
+
+                                          <div className="space-y-1">
+                                            <div className="text-stone-500">אתר</div>
+                                            <div className="font-semibold">{siteInfo[order.site]?.name} {siteInfo[order.site]?.flag}</div>
+                                          </div>
+                                          <div className="space-y-1">
+                                            <div className="text-stone-500">סטטוס תשלום</div>
+                                            <div className="font-semibold">
+                                              {order.payment_status === 'completed' ? 'שולם' : order.payment_status === 'failed' ? 'נכשל' : 'ממתין'}
+                                            </div>
+                                          </div>
+
+                                          <div className="space-y-1 md:col-span-3">
+                                            <div className="text-stone-500">פרטי משלוח</div>
+                                            <div className="font-medium">
+                                              {order.shipping_address ? `${order.shipping_address}${order.city ? `, ${order.city}` : ''}` : '—'}
+                                            </div>
+                                          </div>
+
+                                          {order.internal_notes && (
+                                            <div className="space-y-1 md:col-span-3">
+                                              <div className="text-stone-500">הערות פנימיות</div>
+                                              <div className="font-medium">{order.internal_notes}</div>
+                                            </div>
+                                          )}
+                                        </div>
+
+                                        {/* Action Buttons */}
+                                        <div className="flex gap-2 pt-2">
                                           <Button
                                             size="sm"
                                             variant="outline"
