@@ -175,6 +175,20 @@ export default function LoyaltyAdmin() {
     }
   };
 
+  // Remove user from loyalty club (club_member=false)
+  const handleRemoveFromClub = async (u) => {
+    if (!u) return;
+    if (!confirm(`להסיר את ${u.full_name || u.email} מהמועדון?`)) return;
+    try {
+      await User.update(u.id, { club_member: false });
+      setUsers(prev => prev.map(x => x.id === u.id ? { ...x, club_member: false } : x));
+      alert('המשתמש הוסר מהמועדון');
+    } catch (e) {
+      console.error('Remove from club failed', e);
+      alert('שגיאה בהסרה מהמועדון');
+    }
+  };
+
 
   if (loading) {
     return (
@@ -413,7 +427,7 @@ export default function LoyaltyAdmin() {
               <p className="text-stone-600 mt-2">טוען משתמשים...</p>
             </div>
           ) : (
-            <MembersTable users={users} onAdjust={handleAdjust} onOpenHistory={openHistory} />
+            <MembersTable users={users} onAdjust={handleAdjust} onOpenHistory={openHistory} onRemoveFromClub={handleRemoveFromClub} />
           )}
         </TabsContent>
 

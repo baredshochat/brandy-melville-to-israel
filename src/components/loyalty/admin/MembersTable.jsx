@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Eye, Plus, Minus } from 'lucide-react';
+import { Eye, Plus, Minus, Trash2 } from 'lucide-react';
 
 function getTier(points) {
   const p = Number(points || 0);
@@ -13,7 +13,7 @@ function getTier(points) {
   return { name: 'Member', color: 'bg-rose-100 text-rose-800' };
 }
 
-export default function MembersTable({ users = [], onAdjust, onOpenHistory }) {
+export default function MembersTable({ users = [], onAdjust, onOpenHistory, onRemoveFromClub }) {
   const [q, setQ] = useState('');
   const [selected, setSelected] = useState(null);
   const [delta, setDelta] = useState('');
@@ -77,6 +77,7 @@ export default function MembersTable({ users = [], onAdjust, onOpenHistory }) {
                       <Button size="sm" variant="outline" onClick={() => startAdjust(u, 'plus')} className="h-8 px-2"><Plus className="w-3 h-3" /> הוסף</Button>
                       <Button size="sm" variant="outline" onClick={() => startAdjust(u, 'minus')} className="h-8 px-2"><Minus className="w-3 h-3" /> הפחת</Button>
                       <Button size="sm" variant="ghost" onClick={() => onOpenHistory(u)} className="h-8 px-2"><Eye className="w-4 h-4" /> היסטוריה</Button>
+                      <Button size="sm" variant="destructive" onClick={() => onRemoveFromClub && onRemoveFromClub(u)} className="h-8 px-2"><Trash2 className="w-4 h-4" /> הסר מהמועדון</Button>
                     </div>
                   </TableCell>
                 </TableRow>
