@@ -44,16 +44,12 @@ export default function LoyaltySignupPopup() {
   };
 
   const handleJoin = async () => {
-            if (!formData.birthday) {
-              alert('אנא הזיני תאריך יום הולדת');
-              return;
-            }
-            if (!formData.marketing_opt_in) {
-              alert('אנא סמני קבלת עדכונים והטבות למייל');
-              return;
-            }
+    if (!formData.birthday) {
+      alert('אנא הזיני תאריך יום הולדת');
+      return;
+    }
 
-            setJoining(true);
+    setJoining(true);
     try {
       const { data } = await joinClub(formData);
       if (data.success) {
@@ -74,7 +70,7 @@ export default function LoyaltySignupPopup() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-md p-0 gap-0 overflow-hidden border-0 text-xs">
+      <DialogContent className="max-w-md p-0 gap-0 overflow-hidden border-0">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -93,10 +89,10 @@ export default function LoyaltySignupPopup() {
             <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
               <Gift className="w-8 h-8 text-rose-500" />
             </div>
-            <h2 className="text-xl font-semibold text-stone-900 mb-2">
+            <h2 className="text-2xl font-semibold text-stone-900 mb-2">
               הצטרפי למועדון! ✨
             </h2>
-            <p className="text-xs text-stone-600">
+            <p className="text-sm text-stone-600">
               צברי נקודות וקבלי הטבות מיוחדות
             </p>
           </div>
@@ -175,10 +171,10 @@ export default function LoyaltySignupPopup() {
             </div>
 
             <Button
-                                onClick={handleJoin}
-                                disabled={!formData.birthday || !formData.marketing_opt_in || joining}
-                                className="w-full bg-stone-900 hover:bg-stone-800 h-11 text-sm font-medium"
-                              >
+              onClick={handleJoin}
+              disabled={!formData.birthday || joining}
+              className="w-full bg-stone-900 hover:bg-stone-800 h-11 text-sm font-medium"
+            >
               {joining ? (
                 <><Loader2 className="w-4 h-4 animate-spin ml-2" /> מצטרפת...</>
               ) : (

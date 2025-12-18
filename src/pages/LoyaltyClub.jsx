@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Gift, Star, Calendar, Award, TrendingUp, PiggyBank } from 'lucide-react';
+import { Loader2, Gift, Star, Calendar, Award, TrendingUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function LoyaltyClub() {
@@ -17,8 +17,6 @@ export default function LoyaltyClub() {
   const [activeCodes, setActiveCodes] = useState([]);
   const [joinForm, setJoinForm] = useState({ birthday: '', phone: '' });
   const [joining, setJoining] = useState(false);
-        const [totalSavings, setTotalSavings] = useState(0);
-        const [benefitsReceived, setBenefitsReceived] = useState([]);
 
   useEffect(() => {
     loadData();
@@ -31,26 +29,13 @@ export default function LoyaltyClub() {
       setUser(userData);
 
       if (userData && userData.club_member) {
-        // Load recent ledger (last 5 for display)
+        // Load recent ledger
         const ledger = await PointsLedger.filter(
           { user_email: userData.email },
           '-created_date',
           5
         );
         setRecentLedger(ledger || []);
-
-        // Load full ledger for calculations
-        const allLedger = await PointsLedger.filter(
-          { user_email: userData.email },
-          '-created_date'
-        );
-        const savings = (allLedger || [])
-          .filter((e) => e.type === 'use')
-          .reduce((sum, e) => sum + Math.abs(Number(e.amount || 0)), 0);
-        setTotalSavings(savings);
-
-        const benefits = (allLedger || []).filter((e) => ['bonus', 'admin_add'].includes(e.type));
-        setBenefitsReceived(benefits);
 
         // Load active codes
         const codes = await Code.filter({
@@ -214,48 +199,6 @@ export default function LoyaltyClub() {
           </div>
         </CardContent>
       </Card>
-
-      <Card className="bg-white/95 backdrop-blur-sm border border-white/50 shadow-xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <PiggyBank className="w-5 h-5 text-rose-500" />
-            החיסכון שלך עד היום
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center">
-            <p className="text-3xl font-bold text-stone-800">₪{totalSavings || 0}</p>
-            <p className="text-xs text-stone-500 mt-1">מבוסס על נקודות שמומשו (1 נקודה = ₪1)</p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {benefitsReceived.length > 0 && (
-        <Card className="bg-white/95 backdrop-blur-sm border border-white/50 shadow-xl">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Gift className="w-5 h-5 text-rose-500" />
-              הטבות שכבר קיבלת
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {benefitsReceived.map((b) => (
-                <div key={b.id} className="flex items-center justify-between p-2 bg-stone-50 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <Gift className="w-4 h-4 text-rose-500" />
-                    <div>
-                      <p className="text-xs font-medium">{b.description || 'הטבת מועדון'}</p>
-                      <p className="text-[10px] text-stone-500">{new Date(b.created_date).toLocaleDateString('he-IL')}</p>
-                    </div>
-                  </div>
-                  <p className="text-xs font-bold text-rose-600">+{b.amount} נק'</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Active Benefits */}
       {activeCodes.length > 0 && (
