@@ -1057,24 +1057,14 @@ export default function Home() {
         const finalAmountAfterPoints = Math.max(0, totalPriceILS - redeemedPoints);
         return (
           <div className="max-w-2xl mx-auto">
-            <FinalPriceSummary 
-              finalPriceILS={totalPriceILS} 
-              breakdown={priceBreakdown}
-              userPoints={user?.points_balance || 0}
-              onRedeemPoints={setRedeemedPoints}
-              redeemedAmount={redeemedPoints}
-              maxRedeemAmount={Math.floor(totalPriceILS * maxRedeemPct)}
+            <TranzilaPayment
+              order={currentOrder}
+              totalAmount={finalAmountAfterPoints}
+              customerData={customerData}
+              cart={cart}
+              onSuccess={handlePaymentSuccess}
+              onBack={() => setStep(6)}
             />
-            <div className="mt-6">
-              <TranzilaPayment
-                order={currentOrder}
-                totalAmount={finalAmountAfterPoints}
-                customerData={customerData}
-                cart={cart}
-                onSuccess={handlePaymentSuccess}
-                onBack={() => setStep(6)}
-              />
-            </div>
           </div>
         );
       case 8: // Success page
