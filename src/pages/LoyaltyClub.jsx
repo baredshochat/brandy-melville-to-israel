@@ -341,30 +341,7 @@ export default function LoyaltyClub() {
 
       {/* 3. Points */}
       <PointsSummary points={Number(user.points_balance || 0)} expiringDateString={expiringDateStr} />
-      {/* Old card removed */}
-      <div className="hidden">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-stone-800"><Star className="w-5 h-5 text-rose-500" /> הנקודות שלך</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 text-center">
-          <div className="text-5xl font-extrabold text-rose-600">{user.points_balance || 0}</div>
-          <p className="text-md text-stone-700">כל נקודה שווה 1 ₪ בקנייה הבאה</p>
-          {expiringEntry && (
-            <p className="text-sm text-orange-600 flex items-center justify-center gap-1">
-              <Calendar className="w-4 h-4" /> יש לך נקודות שעומדות לפוג בתאריך {format(parseISO(expiringEntry.expires_at), 'dd/MM/yyyy', { locale: he })}
-            </p>
-          )}
-          {Number(user.points_balance || 0) > 0 && (
-            <div className="pt-2">
-              <Link to={createPageUrl('Home')}>
-                <Button className="bg-stone-900 hover:bg-stone-800 h-10 px-4 flex items-center gap-2">
-                  נצלי {Number(user.points_balance || 0)} ₪ עכשיו <ArrowRight className="w-4 h-4" />
-                </Button>
-              </Link>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+
 
       {/* Gift + Tiers split layout */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
