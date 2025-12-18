@@ -264,8 +264,12 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
 
   const handleConfirm = async () => {
     if (priceData) {
-      const finalPrice = getFinalPriceWithDiscount();
+      let currentFinalPrice = priceData.breakdown.finalTotal;
       const { amount: discountAmount, message: discountMessage } = calculateDiscount();
+      
+      // Apply discounts in order
+      currentFinalPrice = Math.max(0, currentFinalPrice - discountAmount);
+      currentFinalPrice = Math.max(0, currentFinalPrice - redeemedPoints);
       
       const breakdown = {
         ...priceData.breakdown,
@@ -277,7 +281,7 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
           message: discountMessage
         } : null,
         redeemedPoints: redeemedPoints,
-        finalTotal: finalPrice
+        finalTotal: currentFinalPrice
       };
 
       // Increment code usage if applied

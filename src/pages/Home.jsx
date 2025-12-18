@@ -840,10 +840,8 @@ export default function Home() {
   const handlePriceConfirm = (price, weight, breakdown) => { 
     setTotalPriceILS(price); 
     setTotalWeight(weight); 
-    setPriceBreakdown(breakdown); 
-    if (breakdown && breakdown.redeemedPoints) {
-      setRedeemedPoints(breakdown.redeemedPoints);
-    }
+    setPriceBreakdown(breakdown);
+    setRedeemedPoints(breakdown?.redeemedPoints || 0);
     setStep(6); 
   };
 
@@ -917,13 +915,14 @@ export default function Home() {
       // Redeem points if used
       if (redeemedPoints > 0) {
         try {
-          const { data } = await redeemPoints({
+          const result = await redeemPoints({
             points_to_redeem: redeemedPoints,
             order_total: totalPriceILS
           });
           // Update user state with new balance
-          if (data && data.new_balance !== undefined) {
-            setUser(prev => ({ ...prev, points_balance: data.new_balance }));
+          if (result?.data?.new_balance !== undefined) {
+            setUser(prev => ({ ...prev, points_balance: result.data.new_balance }));
+            console.log('✅ Points updated - New balance:', result.data.new_balance);
           }
         } catch (e) {
           console.error("Failed to redeem points:", e);
