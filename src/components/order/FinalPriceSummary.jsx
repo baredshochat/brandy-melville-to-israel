@@ -98,42 +98,14 @@ export default function FinalPriceSummary({
         )}
       </div>
 
-      {/* מימוש נקודות */}
-      {userPoints > 0 && (
+      {/* הצגת נקודות שמומשו בלבד */}
+      {redeemedAmount > 0 && (
         <div style={{marginTop: 12, background: "#fff1f2", padding: 10, borderRadius: 8, border: "1px dashed #fda4af"}}>
-          {redeemedAmount > 0 ? (
-            <div style={{display: "flex", justifyContent: "space-between", alignItems: "center"}}>
-              <span style={{color: "#be123c", fontWeight: 600, fontSize: 14}}>
-                ממשת {redeemedAmount} נקודות
-              </span>
-              <button onClick={handleRemoveRedeem} style={{background: "none", border: "none", cursor: "pointer", color: "#9f1239"}}>
-                <X size={16} />
-              </button>
-            </div>
-          ) : (
-            <div style={{display: "flex", gap: 8, alignItems: "center"}}>
-              <div style={{flex: 1}}>
-                <div style={{fontSize: 13, fontWeight: 600, color: "#be123c", marginBottom: 4}}>
-                  יש לך {userPoints} נקודות
-                </div>
-                <div style={{fontSize: 11, color: "#be123c"}}>
-                  ניתן לממש עד {Math.min(userPoints, maxRedeemAmount)} בהזמנה זו
-                </div>
-              </div>
-              <div style={{display: "flex", gap: 4}}>
-                <Input 
-                  type="number" 
-                  placeholder="סכום" 
-                  value={pointsInput}
-                  onChange={e => setPointsInput(e.target.value)}
-                  style={{width: 60, height: 32, fontSize: 13, padding: "0 8px"}}
-                />
-                <Button size="sm" onClick={handleRedeemClick} style={{height: 32, background: "#be123c", fontSize: 12}}>
-                  ממש
-                </Button>
-              </div>
-            </div>
-          )}
+          <div style={{display: "flex", justifyContent: "space-between", alignItems: "center"}}>
+            <span style={{color: "#be123c", fontWeight: 600, fontSize: 14}}>
+              מומשו {redeemedAmount} נקודות הנחה ✨
+            </span>
+          </div>
         </div>
       )}
 

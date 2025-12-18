@@ -837,7 +837,15 @@ export default function Home() {
 
   const handleEditItem = (item) => { setEditingItem(item); setCurrentItem(item); setStep(3); };
 
-  const handlePriceConfirm = (price, weight, breakdown) => { setTotalPriceILS(price); setTotalWeight(weight); setPriceBreakdown(breakdown); setStep(6); };
+  const handlePriceConfirm = (price, weight, breakdown) => { 
+    setTotalPriceILS(price); 
+    setTotalWeight(weight); 
+    setPriceBreakdown(breakdown); 
+    if (breakdown && breakdown.redeemedPoints) {
+      setRedeemedPoints(breakdown.redeemedPoints);
+    }
+    setStep(6); 
+  };
 
   // CHANGED: on customer submit create order with awaiting_payment status
   // Cart items are NOT deleted until payment is confirmed
