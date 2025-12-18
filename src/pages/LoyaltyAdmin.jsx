@@ -32,6 +32,16 @@ export default function LoyaltyAdmin() {
   const [historyUser, setHistoryUser] = useState(null); // New state for user in history dialog
   const [historyLedger, setHistoryLedger] = useState([]); // New state for ledger in history dialog
   const [settings, setSettings] = useState({});
+  const defaultPopupConfig = {
+    enabled: true,
+    title: 'הצטרפי למועדון! ✨',
+    subtitle: 'צברי נקודות וקבלי הטבות מיוחדות',
+    benefits: ['10% נקודות על כל הזמנה', 'הטבת יום הולדת מיוחדת', '30 נקודות בונוס עכשיו!'],
+    cta_text: 'הצטרפי וקבלי 30 נקודות 🎁',
+    dismiss_text: 'אולי מאוחר יותר',
+    delay_ms: 1500
+  };
+  const [popupConfig, setPopupConfig] = useState(defaultPopupConfig);
   const [actionForm, setActionForm] = useState({
     user_email: '',
     amount: '',
@@ -67,6 +77,12 @@ export default function LoyaltyAdmin() {
           settingsObj[s.setting_key] = s.value;
         });
         setSettings(settingsObj);
+        const cfgStr = settingsObj.signup_popup_config;
+        let cfg = defaultPopupConfig;
+        if (cfgStr) {
+          try { cfg = { ...defaultPopupConfig, ...JSON.parse(cfgStr) }; } catch {}
+        }
+        setPopupConfig(cfg);
       }
     } catch (error) {
       console.error('Error loading data:', error);
