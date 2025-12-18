@@ -323,16 +323,16 @@ export default function LoyaltyClub() {
       </div>
 
       {/* 2. Status */}
-      <Card className={`text-center py-8 shadow-xl border-2 ${userTier.name === 'Gold' ? 'border-amber-400' : 'border-rose-200'} bg-gradient-to-r ${userTier.grad}`}>
-        <CardContent className="space-y-4">
-          {userTier.icon && <userTier.icon className="w-12 h-12 text-stone-800 mx-auto mb-2" />}
-          <h2 className="text-3xl font-bold text-stone-800">הסטטוס שלך: <span className="text-rose-600">{userTier.name}</span></h2>
-          <p className="text-md text-stone-700">{userTier.desc}</p>
+      <Card className={`text-center py-5 shadow-sm border ${userTier.name === 'Gold' ? 'border-amber-300' : 'border-stone-200'} bg-white`}>
+        <CardContent className="space-y-3">
+          {userTier.icon && <userTier.icon className="w-8 h-8 text-stone-800 mx-auto mb-2" />}
+          <h2 className="text-xl font-semibold text-stone-800">הסטטוס שלך: <span className="text-rose-600">{userTier.name}</span></h2>
+          <p className="text-sm text-stone-700">{userTier.desc}</p>
           {nextTier && (
             <div className="mt-3">
-              <p className="text-sm text-stone-600 mb-2">לסטטוס {nextTier.name}: עוד {Math.max(0, nextTier.minPoints - Number(user.points_balance || 0))} נקודות</p>
+              <p className="text-xs text-stone-600 mb-1">לסטטוס {nextTier.name}: עוד {Math.max(0, nextTier.minPoints - Number(user.points_balance || 0))} נקודות</p>
               <div className="max-w-sm mx-auto">
-                <Progress value={tierProgress} className="h-2 bg-stone-200" indicatorColor="bg-rose-500" />
+                <Progress value={tierProgress} className="h-1 bg-stone-200" indicatorColor="bg-rose-500" />
               </div>
             </div>
           )}
