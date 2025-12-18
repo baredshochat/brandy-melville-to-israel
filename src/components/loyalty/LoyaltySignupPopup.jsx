@@ -25,6 +25,9 @@ export default function LoyaltySignupPopup() {
   const ctaText = popupSettings?.popup_cta_text || `הצטרפי וקבלי ${signupBonus} נקודות 🎁`;
   const marketingLabel = popupSettings?.popup_marketing_text || 'אני מעוניינת לקבל עדכונים, הטבות והנחות בלעדיות למייל';
   const imageUrl = popupSettings?.popup_image_url || '';
+  const benefit1Sub = popupSettings?.popup_benefit_1_sub || 'כל נקודה = 1 ₪ הנחה';
+  const benefit2Sub = popupSettings?.popup_benefit_2_sub || '20% הנחה ביום ההולדת שלך';
+  const benefit3Sub = popupSettings?.popup_benefit_3_sub || 'מתנה בהצטרפות';
 
   useEffect(() => {
     checkAndShowPopup();
@@ -130,9 +133,7 @@ export default function LoyaltySignupPopup() {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-stone-900">{benefit1}</p>
-                {popupSettings?.popup_benefit_1 ? null : (
-                  <p className="text-xs text-stone-500">כל נקודה = 1 ₪ הנחה</p>
-                )}
+                <p className="text-xs text-stone-500">{benefit1Sub}</p>
               </div>
             </div>
 
@@ -142,9 +143,7 @@ export default function LoyaltySignupPopup() {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-stone-900">{benefit2}</p>
-                {popupSettings?.popup_benefit_2 ? null : (
-                  <p className="text-xs text-stone-500">20% הנחה ביום ההולדת שלך</p>
-                )}
+                <p className="text-xs text-stone-500">{benefit2Sub}</p>
               </div>
             </div>
 
@@ -154,9 +153,7 @@ export default function LoyaltySignupPopup() {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-stone-900">{benefit3}</p>
-                {popupSettings?.popup_benefit_3 ? null : (
-                  <p className="text-xs text-stone-500">מתנה בהצטרפות</p>
-                )}
+                <p className="text-xs text-stone-500">{benefit3Sub}</p>
               </div>
             </div>
           </div>

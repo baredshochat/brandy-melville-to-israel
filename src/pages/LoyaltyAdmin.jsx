@@ -466,7 +466,15 @@ export default function LoyaltyAdmin() {
                     <Input id="popup-benefit-1" defaultValue={settings.popup_benefit_1 || ''} onChange={(e) => updateDraft('popup_benefit_1', e.target.value)} />
                   </div>
                   <Button size="sm" onClick={() => handleUpdateSetting('popup_benefit_1', document.getElementById('popup-benefit-1').value)}>שמור</Button>
-                </div>
+                  </div>
+
+                  <div className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <Label>תת-כותרת בולט 1</Label>
+                    <Input id="popup-benefit-1-sub" defaultValue={settings.popup_benefit_1_sub || ''} onChange={(e) => updateDraft('popup_benefit_1_sub', e.target.value)} />
+                  </div>
+                  <Button size="sm" onClick={() => handleUpdateSetting('popup_benefit_1_sub', document.getElementById('popup-benefit-1-sub').value)}>שמור</Button>
+                  </div>
 
                 <div className="flex items-end gap-2">
                   <div className="flex-1">
@@ -474,7 +482,15 @@ export default function LoyaltyAdmin() {
                     <Input id="popup-benefit-2" defaultValue={settings.popup_benefit_2 || ''} onChange={(e) => updateDraft('popup_benefit_2', e.target.value)} />
                   </div>
                   <Button size="sm" onClick={() => handleUpdateSetting('popup_benefit_2', document.getElementById('popup-benefit-2').value)}>שמור</Button>
-                </div>
+                  </div>
+
+                  <div className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <Label>תת-כותרת בולט 2</Label>
+                    <Input id="popup-benefit-2-sub" defaultValue={settings.popup_benefit_2_sub || ''} onChange={(e) => updateDraft('popup_benefit_2_sub', e.target.value)} />
+                  </div>
+                  <Button size="sm" onClick={() => handleUpdateSetting('popup_benefit_2_sub', document.getElementById('popup-benefit-2-sub').value)}>שמור</Button>
+                  </div>
 
                 <div className="flex items-end gap-2">
                   <div className="flex-1">
@@ -482,7 +498,15 @@ export default function LoyaltyAdmin() {
                     <Input id="popup-benefit-3" defaultValue={settings.popup_benefit_3 || ''} onChange={(e) => updateDraft('popup_benefit_3', e.target.value)} />
                   </div>
                   <Button size="sm" onClick={() => handleUpdateSetting('popup_benefit_3', document.getElementById('popup-benefit-3').value)}>שמור</Button>
-                </div>
+                  </div>
+
+                  <div className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <Label>תת-כותרת בולט 3</Label>
+                    <Input id="popup-benefit-3-sub" defaultValue={settings.popup_benefit_3_sub || ''} onChange={(e) => updateDraft('popup_benefit_3_sub', e.target.value)} />
+                  </div>
+                  <Button size="sm" onClick={() => handleUpdateSetting('popup_benefit_3_sub', document.getElementById('popup-benefit-3-sub').value)}>שמור</Button>
+                  </div>
 
                 <div className="flex items-end gap-2">
                   <div className="flex-1">
@@ -526,7 +550,7 @@ export default function LoyaltyAdmin() {
               <div className="flex items-start gap-6 flex-col md:flex-row">
                 <div className="md:w-1/2 w-full space-y-3">
                   <Button className="bg-stone-900 text-white" onClick={async () => {
-                    const keys = ['popup_enabled','popup_title','popup_subtitle','popup_benefit_1','popup_benefit_2','popup_benefit_3','popup_cta_text','popup_marketing_text','popup_image_url','popup_delay_ms'];
+                    const keys = ['popup_enabled','popup_title','popup_subtitle','popup_benefit_1','popup_benefit_1_sub','popup_benefit_2','popup_benefit_2_sub','popup_benefit_3','popup_benefit_3_sub','popup_cta_text','popup_marketing_text','popup_image_url','popup_delay_ms'];
                     for (const k of keys) {
                       const v = (draftSettings ?? {})[k];
                       const existing = await LoyaltySettings.filter({ setting_key: k });

@@ -37,7 +37,7 @@ export default function LoyaltySignupPreview({ settings = {} }) {
           </div>
           <div className="flex-1">
             <p className="text-sm font-medium text-stone-900">{benefit1}</p>
-            <p className="text-xs text-stone-500">כל נקודה = 1 ₪ הנחה</p>
+            <p className="text-xs text-stone-500">{settings.popup_benefit_1_sub || 'כל נקודה = 1 ₪ הנחה'}</p>
           </div>
         </div>
 
@@ -47,7 +47,7 @@ export default function LoyaltySignupPreview({ settings = {} }) {
           </div>
           <div className="flex-1">
             <p className="text-sm font-medium text-stone-900">{benefit2}</p>
-            <p className="text-xs text-stone-500">20% הנחה ביום ההולדת שלך</p>
+            <p className="text-xs text-stone-500">{settings.popup_benefit_2_sub || '20% הנחה ביום ההולדת שלך'}</p>
           </div>
         </div>
 
@@ -57,7 +57,7 @@ export default function LoyaltySignupPreview({ settings = {} }) {
           </div>
           <div className="flex-1">
             <p className="text-sm font-medium text-stone-900">{benefit3}</p>
-            <p className="text-xs text-stone-500">מתנה בהצטרפות</p>
+            <p className="text-xs text-stone-500">{settings.popup_benefit_3_sub || 'מתנה בהצטרפות'}</p>
           </div>
         </div>
       </div>
