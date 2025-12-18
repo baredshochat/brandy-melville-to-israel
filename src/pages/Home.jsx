@@ -367,24 +367,12 @@ export default function Home() {
   const [user, setUser] = useState(null);
   const [currentOrder, setCurrentOrder] = useState(null);
   const [confirmingItem, setConfirmingItem] = useState(false); // NEW: prevent double-create
-  const [redeemedPoints, setRedeemedPoints] = useState(0);
-  const [maxRedeemPct, setMaxRedeemPct] = useState(0.3);
-  const [redemptionTokenId, setRedemptionTokenId] = useState(null); // NEW: Store token ID
-
   const [userLoaded, setUserLoaded] = useState(false);
   
   useEffect(() => { 
     User.me()
       .then(u => { setUser(u); setUserLoaded(true); })
       .catch(() => { setUser(null); setUserLoaded(true); }); 
-      
-    LoyaltySettings.filter({ setting_key: 'max_redeem_percentage' })
-      .then(settings => {
-        if (settings && settings.length > 0) {
-          setMaxRedeemPct(parseFloat(settings[0].value));
-        }
-      })
-      .catch(console.error);
   }, []);
 
   // Helper: identify 404/not found errors in various shapes
@@ -843,28 +831,6 @@ export default function Home() {
     setTotalPriceILS(price); 
     setTotalWeight(weight); 
     setPriceBreakdown(breakdown);
-    setRedeemedPoints(0); // Reset points
-    setRedemptionTokenId(null); // Reset token
-    
-    // If user wants to redeem points, create token now
-    if (breakdown?.redeemedPoints && breakdown.redeemedPoints > 0) {
-      try {
-        const { data } = await createRedemptionToken({ 
-          points_amount: breakdown.redeemedPoints 
-        });
-        
-        if (data?.token_id) {
-          setRedemptionTokenId(data.token_id);
-          setRedeemedPoints(breakdown.redeemedPoints);
-          console.log('✅ Redemption token created:', data.token_id);
-        }
-      } catch (error) {
-        console.error('Failed to create redemption token:', error);
-        alert('שגיאה ביצירת אסימון מימוש. אנא נסי שוב.');
-        return; // Stop flow if token creation fails
-      }
-    }
-    
     setStep(6); 
   };
 
@@ -933,46 +899,11 @@ export default function Home() {
   const handlePaymentSuccess = async () => {
     console.log('🔥 handlePaymentSuccess called');
     console.log('🔥 Current cart:', cart);
-    console.log('🔥 Redeemed points:', redeemedPoints);
     
     try {
-      // Price breakdown already includes redeemed points from PriceCalculator
       const updatedBreakdown = {
         ...priceBreakdown
       };
-
-      // Redeem points if token exists
-      if (redemptionTokenId && currentOrder?.id) {
-        try {
-          const result = await redeemPoints({
-            redemption_token_id: redemptionTokenId,
-            order_id: currentOrder.id
-          });
-          
-          // ✅ CRITICAL: Refresh user data from server after redemption
-          const freshUser = await User.me();
-          setUser(freshUser);
-          
-          console.log('✅ Points redeemed successfully - New balance:', freshUser?.points_balance);
-        } catch (e) {
-          console.error("Failed to redeem points:", e);
-          
-          // Check if it's a "token already used" error
-          if (e?.response?.data?.code === 'TOKEN_ALREADY_USED') {
-            console.log('Token already used - skipping alert');
-          } else {
-            alert('שגיאה במימוש הנקודות. אנא פני לשירות לקוחות.');
-          }
-          
-          // ✅ Refresh user data even on error
-          try {
-            const freshUser = await User.me();
-            setUser(freshUser);
-          } catch (refreshError) {
-            console.error("Failed to refresh user data:", refreshError);
-          }
-        }
-      }
 
       // Update order with final breakdown and payment status
       if (currentOrder?.id) {
