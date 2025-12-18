@@ -841,7 +841,7 @@ export default function Home() {
     setTotalPriceILS(price); 
     setTotalWeight(weight); 
     setPriceBreakdown(breakdown);
-    setRedeemedPoints(breakdown?.redeemedPoints || 0);
+    setRedeemedPoints(0); // Reset points - will be set in FinalPriceSummary
     setStep(6); 
   };
 
@@ -910,8 +910,16 @@ export default function Home() {
   const handlePaymentSuccess = async () => {
     console.log('🔥 handlePaymentSuccess called');
     console.log('🔥 Current cart:', cart);
+    console.log('🔥 Redeemed points:', redeemedPoints);
     
     try {
+      // Update price breakdown with redeemed points
+      const updatedBreakdown = {
+        ...priceBreakdown,
+        redeemedPoints: redeemedPoints,
+        finalTotal: Math.max(0, totalPriceILS - redeemedPoints)
+      };
+
       // Redeem points if used
       if (redeemedPoints > 0) {
         try {
@@ -922,18 +930,23 @@ export default function Home() {
           // Update user state with new balance
           if (result?.data?.new_balance !== undefined) {
             setUser(prev => ({ ...prev, points_balance: result.data.new_balance }));
-            console.log('✅ Points updated - New balance:', result.data.new_balance);
+            console.log('✅ Points redeemed successfully - New balance:', result.data.new_balance);
+          } else {
+            console.error('❌ No new_balance in response:', result);
           }
         } catch (e) {
           console.error("Failed to redeem points:", e);
+          alert('שגיאה במימוש הנקודות. אנא פני לשירות לקוחות.');
         }
       }
 
-      // Update order payment status AND move to pending (confirmed) status
+      // Update order with final breakdown and payment status
       if (currentOrder?.id) {
         await Order.update(currentOrder.id, { 
           payment_status: 'completed',
-          status: 'pending' // Move from awaiting_payment to pending
+          status: 'pending',
+          price_breakdown: updatedBreakdown,
+          total_price_ils: updatedBreakdown.finalTotal
         });
         
         // Update local stock quantities for local items
@@ -1041,6 +1054,7 @@ export default function Home() {
       }
       case 6: return <CustomerForm onSubmit={handleCustomerSubmit} onBack={() => setStep(5)} />;
       case 7: // Tranzila Payment
+        const finalAmountAfterPoints = Math.max(0, totalPriceILS - redeemedPoints);
         return (
           <div className="max-w-2xl mx-auto">
             <FinalPriceSummary 
@@ -1054,7 +1068,7 @@ export default function Home() {
             <div className="mt-6">
               <TranzilaPayment
                 order={currentOrder}
-                totalAmount={totalPriceILS}
+                totalAmount={finalAmountAfterPoints}
                 customerData={customerData}
                 cart={cart}
                 onSuccess={handlePaymentSuccess}
