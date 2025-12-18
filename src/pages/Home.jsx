@@ -21,6 +21,9 @@ import LottieSuccess from '../components/ui/LottieSuccess';
 import CartImport from '../components/order/CartImport';
 import TranzilaPayment from '../components/payment/TranzilaPayment';
 import { extractProductMetadata, mergeMetadataWithLLM } from '../components/order/MetadataExtractor';
+import FinalPriceSummary from '../components/order/FinalPriceSummary';
+import { redeemPoints } from "@/functions/redeemPoints";
+import { LoyaltySettings } from "@/entities/LoyaltySettings";
 
 // ---- Helpers ----
 async function normalizeLLMResult(res) {
@@ -363,6 +366,8 @@ export default function Home() {
   const [user, setUser] = useState(null);
   const [currentOrder, setCurrentOrder] = useState(null);
   const [confirmingItem, setConfirmingItem] = useState(false); // NEW: prevent double-create
+  const [redeemedPoints, setRedeemedPoints] = useState(0);
+  const [maxRedeemPct, setMaxRedeemPct] = useState(0.3);
 
   const [userLoaded, setUserLoaded] = useState(false);
   
@@ -370,6 +375,14 @@ export default function Home() {
     User.me()
       .then(u => { setUser(u); setUserLoaded(true); })
       .catch(() => { setUser(null); setUserLoaded(true); }); 
+      
+    LoyaltySettings.filter({ setting_key: 'max_redeem_percentage' })
+      .then(settings => {
+        if (settings && settings.length > 0) {
+          setMaxRedeemPct(parseFloat(settings[0].value));
+        }
+      })
+      .catch(console.error);
   }, []);
 
   // Helper: identify 404/not found errors in various shapes
@@ -893,6 +906,18 @@ export default function Home() {
     console.log('🔥 Current cart:', cart);
     
     try {
+      // Redeem points if used
+      if (redeemedPoints > 0) {
+        try {
+          await redeemPoints({
+            points_to_redeem: redeemedPoints,
+            order_total: totalPriceILS
+          });
+        } catch (e) {
+          console.error("Failed to redeem points:", e);
+        }
+      }
+
       // Update order payment status AND move to pending (confirmed) status
       if (currentOrder?.id) {
         await Order.update(currentOrder.id, { 
@@ -1006,14 +1031,26 @@ export default function Home() {
       case 6: return <CustomerForm onSubmit={handleCustomerSubmit} onBack={() => setStep(5)} />;
       case 7: // Tranzila Payment
         return (
-          <TranzilaPayment
-            order={currentOrder}
-            totalAmount={totalPriceILS}
-            customerData={customerData}
-            cart={cart}
-            onSuccess={handlePaymentSuccess}
-            onBack={() => setStep(6)}
-          />
+          <div className="max-w-2xl mx-auto">
+            <FinalPriceSummary 
+              finalPriceILS={totalPriceILS} 
+              breakdown={priceBreakdown}
+              userPoints={user?.points_balance || 0}
+              onRedeemPoints={setRedeemedPoints}
+              redeemedAmount={redeemedPoints}
+              maxRedeemAmount={Math.floor(totalPriceILS * maxRedeemPct)}
+            />
+            <div className="mt-6">
+              <TranzilaPayment
+                order={currentOrder}
+                totalAmount={Math.max(0, totalPriceILS - redeemedPoints)}
+                customerData={customerData}
+                cart={cart}
+                onSuccess={handlePaymentSuccess}
+                onBack={() => setStep(6)}
+              />
+            </div>
+          </div>
         );
       case 8: // Success page
         return (
