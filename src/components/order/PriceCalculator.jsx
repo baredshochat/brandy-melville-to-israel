@@ -70,7 +70,7 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack, parentO
         // Calculate domestic shipping cost
         let domesticShippingCost = 0;
         if (site === 'local' && cart.length > 0) {
-          domesticShippingCost = currentCalSettings.domestic_ship_ils || 35;
+          domesticShippingCost = currentCalSettings.domestic_ship_ils || 30;
         }
 
         // Apply free shipping if part of an add-on order with active free shipping
