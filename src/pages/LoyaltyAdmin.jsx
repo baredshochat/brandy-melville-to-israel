@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { User } from '@/entities/User';
 import { PointsLedger } from '@/entities/PointsLedger';
@@ -9,12 +10,115 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Plus, Minus, Ban, Gift, Settings, Users } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Loader2, Plus, Minus, Ban, Gift, Settings, Users, ArrowUpDown } from 'lucide-react';
+
+// Dummy component for MembersTable - Replace with actual implementation
+function MembersTable({ users, onAdjust, onOpenHistory }) {
+  if (!users || users.length === 0) {
+    return <p className="text-stone-600">אין משתמשים להצגה.</p>;
+  }
+  return (
+    <div className="space-y-4">
+      {users.map(user => (
+        <Card key={user.id}>
+          <CardContent className="flex items-center justify-between p-4">
+            <div>
+              <p className="font-medium">{user.email}</p>
+              <p className="text-sm text-stone-500">נקודות: {user.loyalty_points || 0}</p>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={() => onAdjust(user.email)}>נהל</Button>
+              <Button size="sm" variant="outline" onClick={() => onOpenHistory(user.id, user.email)}>היסטוריה</Button>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+// Dummy component for NewsletterList - Replace with actual implementation
+function NewsletterList({ users }) {
+  const newsletterUsers = users.filter(user => user.newsletter_opt_in); // Assuming a 'newsletter_opt_in' field
+
+  if (newsletterUsers.length === 0) {
+    return <p className="text-stone-600">אין משתמשים רשומים לרשימת הדיוור.</p>;
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>משתמשים רשומים לדיוור ({newsletterUsers.length})</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2 max-h-[400px] overflow-y-auto">
+          {newsletterUsers.map(user => (
+            <div key={user.id} className="p-2 border-b last:border-b-0">
+              <p className="text-sm">{user.email}</p>
+            </div>
+          ))}
+        </div>
+        {/* Example: button to export list */}
+        <Button className="mt-4">ייצוא רשימה</Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Dummy component for UserHistoryDialog - Replace with actual implementation
+function UserHistoryDialog({ open, onOpenChange, user, ledger }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>היסטוריית נקודות עבור {user?.email}</DialogTitle>
+        </DialogHeader>
+        <div className="py-4 space-y-2 max-h-[400px] overflow-y-auto">
+          {ledger.length === 0 ? (
+            <p className="text-center text-stone-500">אין תנועות עבור משתמש זה.</p>
+          ) : (
+            ledger.map((entry) => (
+              <div
+                key={entry.id}
+                className="flex items-center justify-between p-2 bg-stone-50 rounded-lg border border-stone-200"
+              >
+                <div className="flex-1">
+                  <p className="text-xs text-stone-600">{entry.description}</p>
+                  <p className="text-xs text-stone-500">
+                    {new Date(entry.created_date).toLocaleString('he-IL')}
+                  </p>
+                </div>
+                <div className="text-left">
+                  <p className={`font-bold ${entry.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {entry.amount > 0 ? '+' : ''}{entry.amount}
+                  </p>
+                  <p className="text-xs text-stone-500">יתרה: {entry.balance_after}</p>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 
 export default function LoyaltyAdmin() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [ledger, setLedger] = useState([]);
+  const [users, setUsers] = useState([]); // New state for all users
+  const [loadingUsers, setLoadingUsers] = useState(true); // New state for loading users
+  const [historyOpen, setHistoryOpen] = useState(false); // New state for history dialog
+  const [historyUser, setHistoryUser] = useState(null); // New state for user in history dialog
+  const [historyLedger, setHistoryLedger] = useState([]); // New state for ledger in history dialog
   const [settings, setSettings] = useState({});
   const [actionForm, setActionForm] = useState({
     user_email: '',
@@ -29,6 +133,7 @@ export default function LoyaltyAdmin() {
 
   const loadData = async () => {
     setLoading(true);
+    setLoadingUsers(true); // Set loading for users as well
     try {
       const userData = await User.me();
       setUser(userData);
@@ -37,6 +142,11 @@ export default function LoyaltyAdmin() {
         // Load full ledger
         const ledgerData = await PointsLedger.list('-created_date', 100);
         setLedger(ledgerData || []);
+
+        // Load all users (for members and newsletter tabs)
+        const allUsers = await User.list();
+        setUsers(allUsers || []);
+        setLoadingUsers(false);
 
         // Load settings
         const settingsData = await LoyaltySettings.list();
@@ -91,11 +201,14 @@ export default function LoyaltyAdmin() {
   const handleProcessBirthdays = async () => {
     if (!confirm('האם לעבד ימי הולדת עכשיו?')) return;
 
+    if (processing) return; // Prevent multiple clicks
+
     setProcessing(true);
     try {
       const { data } = await processBirthdays();
       if (data.success) {
         alert(`נשלחו ${data.processed} הטבות יום הולדת`);
+        await loadData(); // Reload data after processing birthdays
       }
     } catch (error) {
       console.error('Error processing birthdays:', error);
@@ -121,6 +234,28 @@ export default function LoyaltyAdmin() {
     }
   };
 
+  // Function to pre-fill action form for a user
+  const handleAdjust = (user_email) => {
+    setActionForm(prev => ({ ...prev, user_email }));
+    // Optionally, navigate to the 'actions' tab here if using a controlled tab component
+  };
+
+  // Function to open user history dialog
+  const openHistory = async (user_id, user_email) => {
+    setHistoryUser({ id: user_id, email: user_email });
+    try {
+      // Fetch ledger for the specific user
+      const userLedger = await PointsLedger.filter({ user_id: user_id }, '-created_date', 100);
+      setHistoryLedger(userLedger || []);
+    } catch (error) {
+      console.error("Error fetching user ledger:", error);
+      setHistoryLedger([]);
+    } finally {
+      setHistoryOpen(true);
+    }
+  };
+
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
@@ -143,9 +278,11 @@ export default function LoyaltyAdmin() {
 
       <Tabs defaultValue="actions" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="actions">פעולות</TabsTrigger>
-          <TabsTrigger value="ledger">היסטוריה</TabsTrigger>
-          <TabsTrigger value="settings">הגדרות</TabsTrigger>
+          <TabsTrigger value="actions"><Settings className="w-4 h-4 ml-2" />פעולות</TabsTrigger>
+          <TabsTrigger value="ledger"><ArrowUpDown className="w-4 h-4 ml-2" />היסטוריה</TabsTrigger>
+          <TabsTrigger value="settings"><Settings className="w-4 h-4 ml-2" />הגדרות</TabsTrigger>
+          <TabsTrigger value="members"><Users className="w-4 h-4 ml-2" />חברות</TabsTrigger>
+          <TabsTrigger value="newsletter"><Gift className="w-4 h-4 ml-2" />רשימת דיוור</TabsTrigger>
         </TabsList>
 
         <TabsContent value="actions" className="space-y-6">
@@ -348,6 +485,24 @@ export default function LoyaltyAdmin() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="members">
+          {loadingUsers ? (
+            <div className="p-6 text-center">
+              <Loader2 className="w-6 h-6 animate-spin text-rose-400" />
+              <p className="text-stone-600 mt-2">טוען משתמשים...</p>
+            </div>
+          ) : (
+            <MembersTable users={users} onAdjust={handleAdjust} onOpenHistory={openHistory} />
+          )}
+        </TabsContent>
+
+        <TabsContent value="newsletter">
+          <NewsletterList users={users} />
+        </TabsContent>
+
+        <UserHistoryDialog open={historyOpen} onOpenChange={setHistoryOpen} user={historyUser} ledger={historyLedger} />
+
       </Tabs>
     </div>
   );
