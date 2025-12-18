@@ -102,15 +102,15 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'Invalid action' }, { status: 400 });
     }
 
-    // Update user balance
+    // ✅ FIX #3: Direct update to points_balance as single source of truth
     await base44.asServiceRole.entities.User.update(targetUser.id, {
       points_balance: newBalance
     });
 
-    // Create ledger entry
+    // Create ledger entry with admin_adjustment type
     await base44.asServiceRole.entities.PointsLedger.create({
       user_email: user_email,
-      type: ledgerType,
+      type: 'admin_adjustment',
       amount: ledgerAmount,
       source: `admin:${user.email}`,
       description: description,

@@ -68,13 +68,21 @@ Deno.serve(async (req) => {
     let userId = null;
 
     if (users && users.length > 0) {
+      // ✅ FIX #2: Only earn points if user is club member
+      if (!users[0].club_member) {
+        return Response.json({ 
+          success: false, 
+          message: 'User is not a club member - points not earned'
+        });
+      }
+      
       currentBalance = users[0].points_balance || 0;
       userId = users[0].id;
     }
 
     const newBalance = currentBalance + pointsToEarn;
 
-    // Update user balance
+    // ✅ FIX #3: Update balance directly as single source of truth
     if (userId) {
       await base44.asServiceRole.entities.User.update(userId, {
         points_balance: newBalance

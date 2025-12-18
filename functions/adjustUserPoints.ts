@@ -25,15 +25,18 @@ Deno.serve(async (req) => {
     const target = users[0];
 
     const current = Number(target.points_balance || 0);
-    const newBalance = current + delta;
+    const newBalance = Math.max(0, current + delta);
 
-    await base44.asServiceRole.entities.User.update(target.id, { points_balance: newBalance });
+    // ✅ FIX #3: Direct update to points_balance as single source of truth
+    await base44.asServiceRole.entities.User.update(target.id, { 
+      points_balance: newBalance
+    });
 
     const type = delta >= 0 ? 'admin_add' : 'admin_deduct';
     await base44.asServiceRole.entities.PointsLedger.create({
       user_email,
-      type,
-      amount: Math.abs(delta),
+      type: 'admin_adjustment',
+      amount: delta,
       source: 'admin',
       description: reason || 'Admin adjustment',
       balance_after: newBalance,
