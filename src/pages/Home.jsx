@@ -917,10 +917,14 @@ export default function Home() {
       // Redeem points if used
       if (redeemedPoints > 0) {
         try {
-          await redeemPoints({
+          const { data } = await redeemPoints({
             points_to_redeem: redeemedPoints,
             order_total: totalPriceILS
           });
+          // Update user state with new balance
+          if (data && data.new_balance !== undefined) {
+            setUser(prev => ({ ...prev, points_balance: data.new_balance }));
+          }
         } catch (e) {
           console.error("Failed to redeem points:", e);
         }
