@@ -4,23 +4,68 @@ Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
   
   try {
-    // ✅ 1. Authenticate user
+    // 1. Authenticate user
     const user = await base44.auth.me();
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { points_to_redeem, order_total, order_id } = await req.json();
+    const { redemption_token_id, order_id } = await req.json();
     
-    if (!points_to_redeem || !order_total) {
-      return Response.json({ error: 'Missing required parameters' }, { status: 400 });
+    if (!redemption_token_id) {
+      return Response.json({ error: 'Missing redemption_token_id' }, { status: 400 });
     }
 
     if (!order_id) {
-      return Response.json({ error: 'Missing order_id - required to prevent duplicate redemption' }, { status: 400 });
+      return Response.json({ error: 'Missing order_id' }, { status: 400 });
     }
 
-    // ✅ 2. CRITICAL: Check if already redeemed for this order (FIRST LINE OF DEFENSE)
+    // 2. Load the token
+    let token;
+    try {
+      token = await base44.asServiceRole.entities.RedemptionToken.get(redemption_token_id);
+      
+      // Normalize response
+      if (typeof Response !== 'undefined' && token instanceof Response) {
+        token = await token.json();
+      } else if (token?.data) {
+        token = token.data;
+      }
+    } catch (e) {
+      return Response.json({ 
+        error: 'Invalid or non-existent token',
+        code: 'TOKEN_NOT_FOUND'
+      }, { status: 404 });
+    }
+
+    // 3. Critical validations on token
+    if (token.status !== 'active') {
+      return Response.json({ 
+        error: `Token already ${token.status}`,
+        code: 'TOKEN_ALREADY_USED'
+      }, { status: 400 });
+    }
+
+    if (new Date(token.expires_at) < new Date()) {
+      // Mark as expired
+      await base44.asServiceRole.entities.RedemptionToken.update(token.id, {
+        status: 'expired'
+      });
+      
+      return Response.json({ 
+        error: 'Token has expired',
+        code: 'TOKEN_EXPIRED'
+      }, { status: 400 });
+    }
+
+    if (token.user_id !== user.id) {
+      return Response.json({ 
+        error: 'Token does not belong to current user',
+        code: 'TOKEN_UNAUTHORIZED'
+      }, { status: 403 });
+    }
+
+    // 4. Check if points already redeemed for this order
     const existingRedemption = await base44.asServiceRole.entities.PointsLedger.filter({
       user_email: user.email,
       source: order_id,
@@ -28,85 +73,75 @@ Deno.serve(async (req) => {
     });
 
     if (existingRedemption && existingRedemption.length > 0) {
+      // Mark token as used anyway
+      await base44.asServiceRole.entities.RedemptionToken.update(token.id, {
+        status: 'used',
+        used_at: new Date().toISOString(),
+        order_id: order_id
+      });
+      
       return Response.json({ 
         error: 'Points already redeemed for this order',
         code: 'ALREADY_REDEEMED'
       }, { status: 400 });
     }
 
-    // ✅ 3. Get max redeem percentage setting
-    let maxRedeemPct = 0.3;
-    try {
-      const settings = await base44.asServiceRole.entities.LoyaltySettings.filter({
-        setting_key: 'max_redeem_percentage'
-      });
-      if (settings && settings.length > 0) {
-        maxRedeemPct = parseFloat(settings[0].value);
-      }
-    } catch (e) {
-      console.log('Using default max redeem percentage:', e.message);
-    }
-
-    // ✅ 4. Get current user data (single read)
+    // 5. Re-verify user conditions (might have changed since token creation)
     const currentUser = await base44.asServiceRole.entities.User.get(user.id);
     
-    // ✅ 5. Validate conditions BEFORE attempting update
     if (!currentUser.club_member) {
       return Response.json({ 
-        error: 'You must be an active club member to redeem points',
+        error: 'User is no longer a club member',
         code: 'NOT_CLUB_MEMBER'
       }, { status: 403 });
     }
-    
+
     const currentBalance = currentUser.points_balance || 0;
-    if (currentBalance < points_to_redeem) {
+    if (currentBalance < token.points_amount) {
       return Response.json({ 
-        error: `Insufficient points. Available: ${currentBalance}, Requested: ${points_to_redeem}`,
+        error: `Insufficient points. Available: ${currentBalance}, Required: ${token.points_amount}`,
         code: 'INSUFFICIENT_POINTS'
       }, { status: 400 });
     }
+
+    // 6. Perform redemption - update points balance
+    const newBalance = currentBalance - token.points_amount;
     
-    const maxRedeemable = Math.floor(order_total * maxRedeemPct);
-    if (points_to_redeem > maxRedeemable) {
-      return Response.json({ 
-        error: `Cannot redeem more than ${Math.round(maxRedeemPct * 100)}% of order total (max: ${maxRedeemable} points)`,
-        code: 'EXCEEDS_MAX_REDEEM'
-      }, { status: 400 });
-    }
-
-    // ✅ 6. Calculate new balance
-    const newBalance = currentBalance - points_to_redeem;
-
-    // ✅ 7. ATOMIC UPDATE: Update points_balance directly
     await base44.asServiceRole.entities.User.update(user.id, {
       points_balance: newBalance
     });
 
-    // ✅ 8. Verify update succeeded by reading back
+    // 7. Verify update succeeded
     const updatedUser = await base44.asServiceRole.entities.User.get(user.id);
     if (updatedUser.points_balance !== newBalance) {
-      // Something went wrong - balance doesn't match what we set
-      console.error(`Balance mismatch after update. Expected: ${newBalance}, Got: ${updatedUser.points_balance}`);
+      console.error(`Balance mismatch. Expected: ${newBalance}, Got: ${updatedUser.points_balance}`);
       return Response.json({ 
-        error: 'Failed to update points balance - please try again',
+        error: 'Failed to update points balance',
         code: 'UPDATE_FAILED'
       }, { status: 500 });
     }
 
-    // ✅ 9. Create ledger entry AFTER successful balance update
+    // 8. Create ledger entry
     await base44.asServiceRole.entities.PointsLedger.create({
       user_email: user.email,
       type: 'redeem',
-      amount: -points_to_redeem,
+      amount: -token.points_amount,
       source: order_id,
       description: `מימוש נקודות להזמנה #${order_id}`,
       balance_after: newBalance
     });
 
-    // ✅ 10. Return success with updated balance
+    // 9. Mark token as used
+    await base44.asServiceRole.entities.RedemptionToken.update(token.id, {
+      status: 'used',
+      used_at: new Date().toISOString(),
+      order_id: order_id
+    });
+
+    // 10. Return success
     return Response.json({ 
       success: true,
-      points_redeemed: points_to_redeem,
+      points_redeemed: token.points_amount,
       new_balance: newBalance
     });
 
