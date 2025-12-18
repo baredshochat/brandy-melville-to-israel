@@ -16,7 +16,6 @@ export default function FinalPriceSummary({
     showTaxesAmountInline: false        // אם true מציגים סכום מסים בשורה
   }
 }) {
-  const [open, setOpen] = useState(false);
   const [pointsInput, setPointsInput] = useState("");
 
   const handleRedeemClick = () => {
@@ -99,39 +98,8 @@ export default function FinalPriceSummary({
             </span>
           </div>
         </div>
-      )}
-
-
-
-      {/* לינק פירוט */}
-      <button
-        type="button"
-        onClick={() => setOpen(v => !v)}
-        aria-expanded={open}
-        style={toggleBtn()}
-      >
-        {open ? "הסתר פירוט" : "הצג פירוט"}
-      </button>
-
-      {/* פירוט נפתח */}
-      {open && (
-        <div style={detailsBox()}>
-          <Row label="מוצרים" value={breakdown?.baseILS} />
-          <Row label="שילוח מחו״ל" value={breakdown?.intlShip} hint={ui?.forwarderLabel} />
-          <Row label="מסים ואגרות יבוא" value={taxesTotal} />
-          {Number(breakdown?.bufferILS ?? 0) > 0 && (
-            <Row label="באפר" value={breakdown?.bufferILS} hint="כרית ביטחון לשער/משקל" />
-          )}
-          <Row
-            label="משלוח עד הבית"
-            value={freeShip ? 0 : shipCharge}
-            hint={freeShip ? "חינם" : undefined}
-          />
-          <hr style={hr()} />
-          <Row label="סה״כ לתשלום" value={finalPriceILS} strong />
-        </div>
-      )}
-    </section>
+        )}
+        </section>
   );
 }
 
