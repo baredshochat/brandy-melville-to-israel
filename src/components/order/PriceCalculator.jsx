@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { PricingLabels } from '@/entities/PricingLabels';
 import { Code } from '@/entities/Code';
 import { User } from '@/entities/User';
+import { LoyaltySettings } from '@/entities/LoyaltySettings';
 
 const formatMoney = (amount) => {
   return `₪${Math.round(amount).toLocaleString('he-IL')}`;
@@ -30,6 +31,9 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
   const [appliedCode, setAppliedCode] = useState(null);
   const [codeError, setCodeError] = useState('');
   const [applyingCode, setApplyingCode] = useState(false);
+  const [user, setUser] = useState(null);
+  const [pointsInput, setPointsInput] = useState('');
+  const [redeemedPoints, setRedeemedPoints] = useState(0);
 
 
   useEffect(() => {
@@ -222,7 +226,33 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
   const getFinalPriceWithDiscount = () => {
     if (!priceData) return 0;
     const { amount } = calculateDiscount();
-    return Math.max(0, priceData.breakdown.finalTotal - amount);
+    return Math.max(0, priceData.breakdown.finalTotal - amount - redeemedPoints);
+  };
+
+  const handleRedeemPoints = () => {
+    const val = parseInt(pointsInput) || 0;
+    if (val <= 0) {
+      alert('אנא הזיני מספר נקודות');
+      return;
+    }
+    
+    if (!user?.points_balance || val > user.points_balance) {
+      alert(`יש לך רק ${user?.points_balance || 0} נקודות`);
+      return;
+    }
+    
+    const maxAllowed = Math.floor(priceData.breakdown.finalTotal * maxRedeemPct);
+    if (val > maxAllowed) {
+      alert(`ניתן לממש מקסימום ${maxAllowed} נקודות בהזמנה זו (${Math.round(maxRedeemPct * 100)}%)`);
+      return;
+    }
+
+    setRedeemedPoints(val);
+    setPointsInput('');
+  };
+
+  const handleRemovePoints = () => {
+    setRedeemedPoints(0);
   };
 
   const handleConfirm = async () => {
@@ -230,8 +260,8 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
       let currentFinalPrice = priceData.breakdown.finalTotal;
       const { amount: discountAmount, message: discountMessage } = calculateDiscount();
       
-      // Apply code discount only
-      currentFinalPrice = Math.max(0, currentFinalPrice - discountAmount);
+      // Apply code discount and points
+      currentFinalPrice = Math.max(0, currentFinalPrice - discountAmount - redeemedPoints);
       
       const breakdown = {
         ...priceData.breakdown,
@@ -242,6 +272,7 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
           discount: discountAmount,
           message: discountMessage
         } : null,
+        redeemedPoints: redeemedPoints,
         finalTotal: currentFinalPrice
       };
 
@@ -411,6 +442,70 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
               </div>
             )}
 
+            {/* Points Redemption Section */}
+            {user?.points_balance > 0 && (
+              <div className="py-3 border-t-2 border-stone-200">
+                {redeemedPoints === 0 ? (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-stone-700 flex items-center gap-2">
+                      ✨ יש לך {user.points_balance} נקודות מועדון
+                    </label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="number"
+                        placeholder="כמה נקודות לממש?"
+                        value={pointsInput}
+                        onChange={(e) => setPointsInput(e.target.value)}
+                        className="flex-1"
+                        min="0"
+                        max={Math.min(user.points_balance, Math.floor(priceData.breakdown.finalTotal * maxRedeemPct))}
+                      />
+                      <Button
+                        onClick={handleRedeemPoints}
+                        disabled={!pointsInput}
+                        variant="outline"
+                        className="px-6"
+                      >
+                        מימוש
+                      </Button>
+                    </div>
+                    <p className="text-xs text-stone-500">
+                      ניתן לממש עד {Math.floor(priceData.breakdown.finalTotal * maxRedeemPct)} נקודות בהזמנה זו
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-3 bg-purple-50 border border-purple-200">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">✨</span>
+                        <div>
+                          <p className="text-sm font-medium text-purple-900">מימוש {redeemedPoints} נקודות</p>
+                          <p className="text-xs text-purple-700">חיסכת {formatMoney(redeemedPoints)}!</p>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={handleRemovePoints}
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        ביטול
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {redeemedPoints > 0 && (
+              <div className="flex justify-between items-center py-2 border-t border-purple-200 bg-purple-50">
+                <span className="text-sm font-medium text-purple-900">מימוש נקודות מועדון</span>
+                <span className="text-sm font-bold text-purple-600">
+                  -{formatMoney(redeemedPoints)}
+                </span>
+              </div>
+            )}
+
             <div className="flex justify-between items-center pt-4 border-t-2 border-rose-200">
               <span className="text-lg font-bold text-stone-900">
                 {labels?.final_total_label || 'סה״כ לתשלום'}
@@ -419,7 +514,7 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
                 {formatMoney(getFinalPriceWithDiscount())}
               </span>
             </div>
-          </div>
+            </div>
 
           {/* Final Note */}
           <div className="mt-4 p-3 bg-rose-50 border border-rose-200 text-center">
