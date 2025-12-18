@@ -141,7 +141,7 @@ export default function LoyaltySignupPopup() {
                 <Calendar className="w-4 h-4 text-rose-500" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-stone-900">הטבת יום הולדת מיוחדת</p>
+                <p className="text-sm font-medium text-stone-900">{benefit2}</p>
                 {popupSettings?.popup_benefit_2 ? null : (
                   <p className="text-xs text-stone-500">20% הנחה ביום ההולדת שלך</p>
                 )}
