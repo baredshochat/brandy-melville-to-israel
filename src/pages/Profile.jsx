@@ -27,7 +27,8 @@ import {
   Mail,
   Award,
   Star,
-  TrendingUp
+  TrendingUp,
+  PiggyBank
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
@@ -53,6 +54,8 @@ export default function ProfilePage() {
   const [activeCodes, setActiveCodes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updatingMarketing, setUpdatingMarketing] = useState(false);
+  const [totalSavings, setTotalSavings] = useState(0);
+  const [benefitsReceived, setBenefitsReceived] = useState([]);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -68,6 +71,17 @@ export default function ProfilePage() {
           try {
             const ledger = await PointsLedger.filter({ user_email: currentUser.email }, '-created_date', 3);
             setRecentLedger(ledger || []);
+
+            // Compute total savings from all 'use' transactions (1 נק' = ₪1)
+            const allLedger = await PointsLedger.filter({ user_email: currentUser.email }, '-created_date');
+            const savings = (allLedger || [])
+              .filter((e) => e.type === 'use')
+              .reduce((sum, e) => sum + Math.abs(Number(e.amount || 0)), 0);
+            setTotalSavings(savings);
+
+            // Collect received benefits (signup bonus, admin additions)
+            const benefits = (allLedger || []).filter((e) => ['bonus', 'admin_add'].includes(e.type));
+            setBenefitsReceived(benefits || []);
 
             const codes = await Code.filter({
               allowed_emails: { $in: [currentUser.email] },
@@ -205,6 +219,48 @@ export default function ProfilePage() {
                   </div>
                 </CardContent>
               </Card>
+
+              <Card className="bg-white/95 backdrop-blur-sm border border-white/50 shadow-xl">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <PiggyBank className="w-5 h-5 text-rose-500" />
+                    החיסכון שלך עד היום
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center">
+                    <p className="text-3xl font-bold text-stone-800">₪{totalSavings || 0}</p>
+                    <p className="text-xs text-stone-500 mt-1">מבוסס על נקודות שמומשו (1 נקודה = ₪1)</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {benefitsReceived.length > 0 && (
+                <Card className="bg-white/95 backdrop-blur-sm border border-white/50 shadow-xl">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Gift className="w-5 h-5 text-rose-500" />
+                      הטבות שכבר קיבלת
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {benefitsReceived.map((b) => (
+                        <div key={b.id} className="flex items-center justify-between p-2 bg-stone-50 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <Gift className="w-4 h-4 text-rose-500" />
+                            <div>
+                              <p className="text-xs font-medium">{b.description || 'הטבת מועדון'}</p>
+                              <p className="text-[10px] text-stone-500">{new Date(b.created_date).toLocaleDateString('he-IL')}</p>
+                            </div>
+                          </div>
+                          <p className="text-xs font-bold text-rose-600">+{b.amount} נק'</p>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Active Benefits */}
               {activeCodes.length > 0 && (
