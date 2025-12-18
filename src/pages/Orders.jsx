@@ -1540,7 +1540,34 @@ export default function Orders() {
           <TabsContent value="trash">
             <Card>
               <CardHeader>
-                <CardTitle className="text-red-600">אשפה - הזמנות שנמחקו ({deletedOrders.length})</CardTitle>
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-red-600">אשפה - הזמנות שנמחקו ({deletedOrders.length})</CardTitle>
+                  {selectedOrderIds.size > 0 && activeTab === 'trash' && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => {
+                        const ordersToDeletePermanently = deletedOrders.filter(o => selectedOrderIds.has(o.id));
+                        if (confirm(`האם את בטוחה שברצונך למחוק לצמיתות ${ordersToDeletePermanently.length} הזמנות? פעולה זו בלתי הפיכה!`)) {
+                          Promise.all(ordersToDeletePermanently.map(order => Order.delete(order.id)))
+                            .then(() => {
+                              setSelectedOrderIds(new Set());
+                              loadOrders();
+                              alert('ההזמנות נמחקו לצמיתות');
+                            })
+                            .catch(error => {
+                              console.error('Error permanently deleting orders:', error);
+                              alert('שגיאה במחיקה סופית');
+                            });
+                        }
+                      }}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      <AlertTriangle className="w-4 h-4 ml-2" />
+                      מחק לצמיתות ({selectedOrderIds.size})
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 {deletedOrders.length === 0 ? (
@@ -1552,6 +1579,18 @@ export default function Orders() {
                     <table className="w-full">
                       <thead className="bg-stone-50 border-b border-stone-200">
                         <tr>
+                          <th className="p-3 w-10">
+                            <Checkbox
+                              checked={deletedOrders.length > 0 && selectedOrderIds.size === deletedOrders.length}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedOrderIds(new Set(deletedOrders.map(o => o.id)));
+                                } else {
+                                  setSelectedOrderIds(new Set());
+                                }
+                              }}
+                            />
+                          </th>
                           <th className="text-right p-3 font-medium">מספר הזמנה</th>
                           <th className="text-right p-3 font-medium">לקוח</th>
                           <th className="text-right p-3 font-medium">תאריך מחיקה</th>
@@ -1562,6 +1601,22 @@ export default function Orders() {
                       <tbody>
                         {deletedOrders.map((order) => (
                           <tr key={order.id} className="border-b border-stone-100 hover:bg-stone-50">
+                            <td className="p-3">
+                              <Checkbox
+                                checked={selectedOrderIds.has(order.id)}
+                                onCheckedChange={(checked) => {
+                                  setSelectedOrderIds(prev => {
+                                    const next = new Set(prev);
+                                    if (checked) {
+                                      next.add(order.id);
+                                    } else {
+                                      next.delete(order.id);
+                                    }
+                                    return next;
+                                  });
+                                }}
+                              />
+                            </td>
                             <td className="p-3">
                               <div className="flex items-center gap-2">
                                 <span className="text-lg">{order.site === 'us' ? '🇺🇸' : order.site === 'eu' ? '🇪🇺' : order.site === 'uk' ? '🇬🇧' : order.site === 'local' ? '🇮🇱' : ''}</span>
