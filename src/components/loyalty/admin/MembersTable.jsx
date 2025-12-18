@@ -21,11 +21,14 @@ export default function MembersTable({ users = [], onAdjust, onOpenHistory, onRe
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
-    if (!s) return users;
-    return users.filter(u =>
-      (u.full_name || '').toLowerCase().includes(s) ||
-      (u.email || '').toLowerCase().includes(s)
-    );
+    return users.filter(u => {
+      if (!u?.club_member) return false; // show only club members
+      if (!s) return true;
+      return (
+        (u.full_name || '').toLowerCase().includes(s) ||
+        (u.email || '').toLowerCase().includes(s)
+      );
+    });
   }, [q, users]);
 
   const startAdjust = (u, sign) => {
