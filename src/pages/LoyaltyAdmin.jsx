@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User } from '@/entities/User';
 import { PointsLedger } from '@/entities/PointsLedger';
 import { LoyaltySettings } from '@/entities/LoyaltySettings';
+import { LoyaltyLog } from '@/entities/LoyaltyLog';
 import { adminPointsManager } from '@/functions/adminPointsManager';
 import { processBirthdays } from '@/functions/processBirthdays';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +18,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Loader2, Plus, Minus, Ban, Gift, Settings, Users, ArrowUpDown } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import MembersTable from '@/components/loyalty/admin/MembersTable';
 import UserHistoryDialog from '@/components/loyalty/admin/UserHistoryDialog';
 import NewsletterList from '@/components/loyalty/admin/NewsletterList';
@@ -28,9 +30,10 @@ export default function LoyaltyAdmin() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [ledger, setLedger] = useState([]);
-  const [users, setUsers] = useState([]); // New state for all users
-  const [loadingUsers, setLoadingUsers] = useState(true); // New state for loading users
-  const [historyOpen, setHistoryOpen] = useState(false); // New state for history dialog
+  const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [tierFilter, setTierFilter] = useState('All');
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [historyUser, setHistoryUser] = useState(null); // New state for user in history dialog
   const [historyLedger, setHistoryLedger] = useState([]); // New state for ledger in history dialog
   const [settings, setSettings] = useState({});
@@ -185,12 +188,45 @@ export default function LoyaltyAdmin() {
     if (!u) return;
     if (!confirm(`להסיר את ${u.full_name || u.email} מהמועדון?`)) return;
     try {
+      const oldStatus = u.club_member;
       await User.update(u.id, { club_member: false });
+      await LoyaltyLog.create({
+        user_id: u.id,
+        user_email: u.email,
+        change_type: 'club_member_status_change',
+        old_value: oldStatus.toString(),
+        new_value: 'false',
+        changed_by: user.email,
+        reason: 'הוסר מהמועדון ע"י אדמין'
+      });
       setUsers(prev => prev.map(x => x.id === u.id ? { ...x, club_member: false } : x));
       alert('המשתמש הוסר מהמועדון');
     } catch (e) {
       console.error('Remove from club failed', e);
       alert('שגיאה בהסרה מהמועדון');
+    }
+  };
+
+  // Update user tier
+  const handleUpdateTier = async (u, newTier) => {
+    if (!u || !newTier) return;
+    try {
+      const oldTier = u.tier || 'member';
+      await User.update(u.id, { tier: newTier });
+      await LoyaltyLog.create({
+        user_id: u.id,
+        user_email: u.email,
+        change_type: 'tier_change',
+        old_value: oldTier,
+        new_value: newTier,
+        changed_by: user.email,
+        reason: 'עדכון ידני של רמת מועדון'
+      });
+      setUsers(prev => prev.map(x => x.id === u.id ? { ...x, tier: newTier } : x));
+      alert('רמת המועדון עודכנה בהצלחה');
+    } catch (e) {
+      console.error('Update tier failed', e);
+      alert('שגיאה בעדכון רמת המועדון');
     }
   };
 
@@ -210,6 +246,11 @@ export default function LoyaltyAdmin() {
       </div>
     );
   }
+
+  const filteredUsers = React.useMemo(() => {
+    if (tierFilter === 'All') return users;
+    return users.filter(u => u.tier === tierFilter);
+  }, [tierFilter, users]);
 
   return (
     <div className="max-w-6xl mx-auto p-6">
@@ -580,7 +621,24 @@ export default function LoyaltyAdmin() {
               <p className="text-stone-600 mt-2">טוען משתמשים...</p>
             </div>
           ) : (
-            <MembersTable users={users} onAdjust={handleAdjust} onOpenHistory={openHistory} onRemoveFromClub={handleRemoveFromClub} />
+            <>
+              <div className="mb-4 flex items-center gap-3">
+                <Label>סנן לפי רמה:</Label>
+                <Select value={tierFilter} onValueChange={setTierFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="בחר רמה" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="All">כל הרמות</SelectItem>
+                    <SelectItem value="member">Member</SelectItem>
+                    <SelectItem value="silver">Silver</SelectItem>
+                    <SelectItem value="gold">Gold</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span className="text-sm text-stone-600">({filteredUsers.length} משתמשים)</span>
+              </div>
+              <MembersTable users={filteredUsers} onAdjust={handleAdjust} onOpenHistory={openHistory} onRemoveFromClub={handleRemoveFromClub} onUpdateTier={handleUpdateTier} />
+            </>
           )}
         </TabsContent>
 

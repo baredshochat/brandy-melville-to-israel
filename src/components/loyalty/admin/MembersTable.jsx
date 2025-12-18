@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Eye, Plus, Minus, Trash2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 function getTier(points) {
   const p = Number(points || 0);
@@ -13,11 +14,12 @@ function getTier(points) {
   return { name: 'Member', color: 'bg-rose-100 text-rose-800' };
 }
 
-export default function MembersTable({ users = [], onAdjust, onOpenHistory, onRemoveFromClub }) {
+export default function MembersTable({ users = [], onAdjust, onOpenHistory, onRemoveFromClub, onUpdateTier }) {
   const [q, setQ] = useState('');
   const [selected, setSelected] = useState(null);
   const [delta, setDelta] = useState('');
   const [reason, setReason] = useState('');
+  const [editTierUser, setEditTierUser] = useState(null);
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -58,7 +60,8 @@ export default function MembersTable({ users = [], onAdjust, onOpenHistory, onRe
               <TableHead>שם</TableHead>
               <TableHead>אימייל</TableHead>
               <TableHead className="text-center">נקודות</TableHead>
-              <TableHead className="text-center">סטטוס</TableHead>
+              <TableHead className="text-center">סטטוס (מחושב)</TableHead>
+              <TableHead className="text-center">רמה (ידני)</TableHead>
               <TableHead className="text-center">חברה במועדון</TableHead>
               <TableHead className="text-center">פעולות</TableHead>
             </TableRow>
@@ -73,6 +76,14 @@ export default function MembersTable({ users = [], onAdjust, onOpenHistory, onRe
                   <TableCell className="text-center font-semibold">{Number(u.points_balance || 0)}</TableCell>
                   <TableCell className="text-center">
                     <Badge className={tier.color}>{tier.name}</Badge>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Badge 
+                      className={`cursor-pointer ${u.tier === 'gold' ? 'bg-amber-100 text-amber-800' : u.tier === 'silver' ? 'bg-slate-100 text-slate-800' : 'bg-rose-100 text-rose-800'}`}
+                      onClick={() => setEditTierUser(u)}
+                    >
+                      {u.tier === 'gold' ? 'Gold' : u.tier === 'silver' ? 'Silver' : 'Member'}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-center">{u.club_member ? 'כן' : 'לא'}</TableCell>
                   <TableCell className="text-center">
@@ -109,6 +120,37 @@ export default function MembersTable({ users = [], onAdjust, onOpenHistory, onRe
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setSelected(null)}>בטל</Button>
               <Button onClick={confirmAdjust}>{selected?.sign === 'minus' ? 'הפחת' : 'הוסף'}</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editTierUser} onOpenChange={() => setEditTierUser(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>עדכון רמה ל{editTierUser?.full_name || editTierUser?.email}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm">רמה חדשה</label>
+              <Select 
+                defaultValue={editTierUser?.tier || 'member'}
+                onValueChange={(newTier) => {
+                  if (onUpdateTier && editTierUser) {
+                    onUpdateTier(editTierUser, newTier);
+                    setEditTierUser(null);
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="member">Member</SelectItem>
+                  <SelectItem value="silver">Silver</SelectItem>
+                  <SelectItem value="gold">Gold</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </DialogContent>
