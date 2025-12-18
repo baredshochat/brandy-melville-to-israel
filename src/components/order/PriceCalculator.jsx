@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowRight, ArrowLeft, Loader2, ShieldCheck, Tag, Star } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Loader2, ShieldCheck, Tag } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { PricingLabels } from '@/entities/PricingLabels';
 import { Code } from '@/entities/Code';
-import { Order } from '@/entities/Order';
-import { CalculationSettings } from '@/entities/CalculationSettings';
-import { base44 } from '@/api/base44Client';
 
 const formatMoney = (amount) => {
   return `₪${Math.round(amount).toLocaleString('he-IL')}`;
@@ -23,33 +20,20 @@ const EXCHANGE_RATES = {
 const MULTIPLIER = 2.5;
 const DOMESTIC_SHIPPING = 30;
 
-export default function PriceCalculator({ cart, site, onConfirm, onBack, parentOrderId }) {
+export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
   const [loading, setLoading] = useState(true);
   const [labels, setLabels] = useState(null);
   const [priceData, setPriceData] = useState(null);
-  const [calSettings, setCalSettings] = useState(null);
   const [error, setError] = useState('');
   const [codeInput, setCodeInput] = useState('');
   const [appliedCode, setAppliedCode] = useState(null);
   const [codeError, setCodeError] = useState('');
   const [applyingCode, setApplyingCode] = useState(false);
-  const [user, setUser] = useState(null);
-  const [redeemingPoints, setRedeemingPoints] = useState(false);
-  const [pointsRedeemed, setPointsRedeemed] = useState(0);
-  const [pointsInput, setPointsInput] = useState(0);
 
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true);
-
-        // Load current user
-        try {
-          const userData = await base44.auth.me();
-          setUser(userData);
-        } catch (e) {
-          setUser(null);
-        }
 
         // Load pricing labels
         const labelsList = await PricingLabels.list();
@@ -59,31 +43,8 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack, parentO
 
         setLabels(currentLabels);
 
-        // Load CalculationSettings
-        const calculationSettingsList = await CalculationSettings.list();
-        const currentCalSettings = calculationSettingsList && calculationSettingsList.length > 0 ? calculationSettingsList[0] : {};
-        setCalSettings(currentCalSettings);
-
         // Check if all items are local
         const isLocalOrder = cart.every((item) => item.site === 'local');
-        
-        // Calculate domestic shipping cost
-        let domesticShippingCost = 0;
-        if (site === 'local' && cart.length > 0) {
-          domesticShippingCost = currentCalSettings.domestic_ship_ils || 30;
-        }
-
-        // Apply free shipping if part of an add-on order with active free shipping
-        if (parentOrderId) {
-          try {
-            const parentOrder = await Order.get(parentOrderId);
-            if (parentOrder && parentOrder.free_shipping_until && new Date(parentOrder.free_shipping_until) > new Date()) {
-              domesticShippingCost = 0; // Apply free shipping
-            }
-          } catch (e) {
-            console.error('Error checking parent order for free shipping:', e);
-          }
-        }
 
         if (isLocalOrder) {
           // Simple calculation for local items - just item price + shipping
@@ -91,8 +52,8 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack, parentO
 
           // Check if all items have free shipping
           const allFreeShipping = cart.every((item) => item.free_shipping === true);
-          const currentDomesticShipping = allFreeShipping ? 0 : domesticShippingCost;
-          const finalTotal = itemsTotal + currentDomesticShipping;
+          const domesticShipping = allFreeShipping ? 0 : DOMESTIC_SHIPPING;
+          const finalTotal = itemsTotal + domesticShipping;
 
           setPriceData({
             finalPriceILS: Math.round(finalTotal),
@@ -102,7 +63,7 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack, parentO
                 fullPrice: item.original_price * item.quantity
               })),
               cartSubtotal: itemsTotal,
-              domesticShipping: currentDomesticShipping,
+              domesticShipping,
               finalTotal: Math.round(finalTotal),
               isLocal: true
             }
@@ -111,9 +72,8 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack, parentO
           // חישוב חדש ופשוט: מחיר מקורי * שער המרה * 2.5 + 30 משלוח
           const itemsWithPrices = cart.map((item) => {
             const currency = item.original_currency || (site === 'uk' ? 'GBP' : 'EUR');
-            const exchangeRate = EXCHANGE_RATES[currency] || currentCalSettings.fx_eur_ils || 4;
-            const multiplier = currentCalSettings.initial_display_percent ? (1 / currentCalSettings.initial_display_percent) : MULTIPLIER;
-            const itemPriceILS = item.original_price * exchangeRate * multiplier * item.quantity;
+            const exchangeRate = EXCHANGE_RATES[currency] || 4;
+            const itemPriceILS = item.original_price * exchangeRate * MULTIPLIER * item.quantity;
             return {
               ...item,
               fullPrice: Math.round(itemPriceILS)
@@ -121,14 +81,14 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack, parentO
           });
 
           const itemsTotal = itemsWithPrices.reduce((sum, item) => sum + item.fullPrice, 0);
-          const finalTotal = itemsTotal + domesticShippingCost;
+          const finalTotal = itemsTotal + DOMESTIC_SHIPPING;
 
           setPriceData({
             finalPriceILS: Math.round(finalTotal),
             breakdown: {
               items: itemsWithPrices,
               cartSubtotal: itemsTotal,
-              domesticShipping: domesticShippingCost,
+              domesticShipping: DOMESTIC_SHIPPING,
               finalTotal: Math.round(finalTotal),
               isLocal: false
             }
@@ -146,7 +106,7 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack, parentO
     if (cart && cart.length > 0) {
       loadData();
     }
-  }, [cart, site, parentOrderId]);
+  }, [cart, site]);
 
   const handleApplyCode = async () => {
     if (!codeInput.trim()) {
@@ -260,57 +220,7 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack, parentO
   const getFinalPriceWithDiscount = () => {
     if (!priceData) return 0;
     const { amount } = calculateDiscount();
-    return Math.max(0, priceData.breakdown.finalTotal - amount - pointsRedeemed);
-  };
-
-  const handleRedeemPoints = async () => {
-    if (!user || !user.club_member) {
-      alert('עליך להיות חברת מועדון כדי למממש נקודות');
-      return;
-    }
-
-    const requestedPoints = Math.floor(Number(pointsInput || 0));
-    if (requestedPoints <= 0) {
-      alert('הכניסי מספר נקודות למימוש');
-      return;
-    }
-
-    const availablePoints = user.points_balance || 0;
-    if (requestedPoints > availablePoints) {
-      alert('אין לך מספיק נקודות');
-      return;
-    }
-
-    setRedeemingPoints(true);
-    try {
-      const orderTotal = getFinalPriceWithDiscount() + pointsRedeemed; // לפני המימוש
-      const { data } = await base44.functions.invoke('redeemPoints', {
-        points_to_redeem: requestedPoints,
-        order_total: orderTotal
-      });
-
-      if (data?.success) {
-        const discountIls = Math.round(data.discount_amount || 0);
-        setPointsRedeemed(discountIls);
-        setUser({ ...user, points_balance: data.new_balance });
-        setPointsInput(0);
-        alert(`מימשת ${requestedPoints} נקודות בהצלחה! 🎉\nהנחה של ${discountIls}₪`);
-      } else {
-        alert(data?.error || data?.message || 'שגיאה במימוש נקודות');
-      }
-    } catch (error) {
-      const msg = error?.response?.data?.error || error.message || 'שגיאה במימוש נקודות';
-      alert(msg);
-    } finally {
-      setRedeemingPoints(false);
-    }
-  };
-
-  const handleCancelRedemption = () => {
-    if (confirm('לבטל את מימוש הנקודות?')) {
-      setPointsRedeemed(0);
-      // Note: Points will be restored on the backend when order is not completed
-    }
+    return Math.max(0, priceData.breakdown.finalTotal - amount);
   };
 
   const handleConfirm = async () => {
@@ -400,9 +310,7 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack, parentO
             סיכום הזמנה
           </h2>
           <p className="text-sm sm:text-base text-stone-600">
-            {parentOrderId && priceData?.breakdown?.domesticShipping === 0 
-              ? "משלוח זה יצורף להזמנה הקיימת שלך, ללא עלות נוספת! 🎉"
-              : "פירוט מלא של העלויות"}
+            פירוט מלא של העלויות
           </p>
         </div>
 
@@ -432,9 +340,7 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack, parentO
             <div className="flex justify-between items-center py-2 border-t border-stone-200">
               <span className="text-xs text-stone-600 italic">משלוח עד הבית</span>
               <span className="text-xs italic text-stone-700">
-                {priceData?.breakdown?.domesticShipping === 0 && parentOrderId
-                  ? "חינם! 🎁"
-                  : formatMoney(priceData?.breakdown?.domesticShipping || 0)}
+                {formatMoney(domesticShipping)}
               </span>
             </div>
 
@@ -488,75 +394,10 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack, parentO
                     </Button>
                   </div>
                 </div>
-                }
-                </div>
+              }
+            </div>
 
-                {/* Points Redemption Section */}
-                {user && user.club_member && (
-                <div className="py-3 border-t-2 border-stone-200">
-                {pointsRedeemed === 0 ? (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-stone-700 flex items-center gap-2">
-                      <Star className="w-4 h-4 text-rose-500" />
-                      יש לך {user.points_balance || 0} נקודות
-                    </label>
-                    {(user.points_balance || 0) > 0 ? (
-                      <div className="flex items-end gap-2">
-                        <div className="flex-1">
-                          <Input
-                            type="number"
-                            min={0}
-                            max={user.points_balance || 0}
-                            value={pointsInput}
-                            onChange={(e) => setPointsInput(Math.max(0, Math.min(Number(e.target.value || 0), user.points_balance || 0)))}
-                            placeholder="כמה נקודות תרצי לממש?"
-                          />
-                          <p className="text-xs text-stone-600 mt-1">
-                            שווה ל-₪{Math.round((pointsInput || 0) * 0.5)}
-                          </p>
-                        </div>
-                        <Button
-                          onClick={handleRedeemPoints}
-                          disabled={redeemingPoints || (pointsInput || 0) <= 0}
-                          variant="outline"
-                          className="border-rose-300 text-rose-600 hover:bg-rose-50"
-                        >
-                          {redeemingPoints ? (
-                            <><Loader2 className="w-4 h-4 animate-spin ml-2" /> ממממשת...</>
-                          ) : (
-                            <>מימוש</>
-                          )}
-                        </Button>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-stone-500">אין לך נקודות זמינות למימוש</p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200">
-                      <div className="flex items-center gap-2">
-                        <Star className="w-4 h-4 text-green-600" />
-                        <div>
-                          <p className="text-sm font-medium text-green-900">נקודות מומשו</p>
-                          <p className="text-xs text-green-700">הנחה של {pointsRedeemed}₪</p>
-                        </div>
-                      </div>
-                      <Button
-                        onClick={handleCancelRedemption}
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        ביטול
-                      </Button>
-                    </div>
-                  </div>
-                )}
-                </div>
-                )}
-
-                {appliedCode && calculateDiscount().amount > 0 &&
+            {appliedCode && calculateDiscount().amount > 0 &&
             <div className="flex justify-between items-center py-2 border-t border-green-200 bg-green-50">
                 <span className="text-sm font-medium text-green-900">הנחה</span>
                 <span className="text-sm font-bold text-green-600">
@@ -564,15 +405,6 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack, parentO
                 </span>
               </div>
             }
-
-            {pointsRedeemed > 0 && (
-              <div className="flex justify-between items-center py-2 border-t border-green-200 bg-green-50">
-                <span className="text-sm font-medium text-green-900">מימוש נקודות</span>
-                <span className="text-sm font-bold text-green-600">
-                  -{formatMoney(pointsRedeemed)}
-                </span>
-              </div>
-            )}
 
             <div className="flex justify-between items-center pt-4 border-t-2 border-rose-200">
               <span className="text-lg font-bold text-stone-900">

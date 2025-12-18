@@ -363,7 +363,6 @@ export default function Home() {
   const [user, setUser] = useState(null);
   const [currentOrder, setCurrentOrder] = useState(null);
   const [confirmingItem, setConfirmingItem] = useState(false); // NEW: prevent double-create
-  const [parentOrderId, setParentOrderId] = useState(null);
 
   const [userLoaded, setUserLoaded] = useState(false);
   
@@ -404,11 +403,6 @@ export default function Home() {
       const stepParam = params.get('step');
       const editItemIdParam = params.get('editItemId');
       const productUrlParam = params.get('productUrl');
-      const parentOrderIdParam = params.get('parentOrderId');
-
-      if (parentOrderIdParam) {
-        setParentOrderId(parentOrderIdParam);
-      }
 
       const handleEditing = async (itemId) => {
         setLoading(true);
@@ -838,7 +832,7 @@ export default function Home() {
     setCustomerData(data);
     setLoading(true);
     try {
-      const order = await submitOrder(data, parentOrderId);
+      const order = await submitOrder(data);
       setCurrentOrder(order);
 
       // Do NOT clear cart items here - they will be cleared only after successful payment
@@ -852,12 +846,12 @@ export default function Home() {
     }
   };
 
-  // CHANGED: submitOrder accepts override customer data and parentOrderId
-  const submitOrder = async (overrideCustomerData = null, parentOrderIdParam = null) => {
+  // CHANGED: submitOrder accepts override customer data
+  const submitOrder = async (overrideCustomerData = null) => {
     setLoading(true); // Ensure loading is active here, as submitOrder might set it to false
     try {
       const orderNumber = `BM${Date.now()}`;
-            const customerPayload = overrideCustomerData || customerData || {}; // Use override if provided
+              const customerPayload = overrideCustomerData || customerData || {}; // Use override if provided
 
               // הוספת customer_price_ils לכל פריט מתוך ה-breakdown
               const itemsWithCustomerPrice = cart.map((item, idx) => {
@@ -875,7 +869,6 @@ export default function Home() {
               total_price_ils: totalPriceILS,
               total_weight_kg: totalWeight,
               price_breakdown: priceBreakdown,
-              ...(parentOrderIdParam && { parent_order_id: parentOrderIdParam }),
               ...customerPayload, // Use the customerPayload
               status: 'awaiting_payment',
               payment_status: 'pending'
@@ -1008,9 +1001,9 @@ export default function Home() {
       case 4: return <CartSummary cart={safeCart} onRemove={handleRemoveFromCart} onUpdateQuantity={handleUpdateCartQuantity} onEdit={handleEditItem} onAddAnother={() => setStep(2)} onCheckout={() => setStep(5)} onBack={() => setStep(1)} />;
       case 5: {
         const siteForCalculation = selectedSite || (safeCart.length > 0 ? safeCart[0].site : '');
-        return <PriceCalculator cart={safeCart} site={siteForCalculation} parentOrderId={parentOrderId} onConfirm={handlePriceConfirm} onBack={() => setStep(4)} />;
+        return <PriceCalculator cart={safeCart} site={siteForCalculation} onConfirm={handlePriceConfirm} onBack={() => setStep(4)} />;
       }
-      case 6: return <CustomerForm onSubmit={handleCustomerSubmit} onBack={() => setStep(5)} parentOrderId={parentOrderId} />;
+      case 6: return <CustomerForm onSubmit={handleCustomerSubmit} onBack={() => setStep(5)} />;
       case 7: // Tranzila Payment
         return (
           <TranzilaPayment

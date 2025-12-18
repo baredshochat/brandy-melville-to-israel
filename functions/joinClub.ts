@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { birthday, phone, marketing_opt_in } = await req.json();
+    const { birthday, phone } = await req.json();
 
     // Get current user data
     const users = await base44.asServiceRole.entities.User.filter({
@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
     }
 
     // Get signup bonus setting
-    let signupBonus = 50; // default 50 points
+    let signupBonus = 30; // default 30 points
     try {
       const settings = await base44.asServiceRole.entities.LoyaltySettings.filter({
         setting_key: 'signup_bonus'
@@ -49,12 +49,9 @@ Deno.serve(async (req) => {
     // Update user - join club and add bonus
     await base44.asServiceRole.entities.User.update(userData.id, {
       club_member: true,
-      tier: 'member',
       birthday: birthday || userData.birthday,
       phone: phone || userData.phone,
-      points_balance: newBalance,
-      marketing_opt_in: marketing_opt_in || false,
-      marketing_opt_in_at: marketing_opt_in ? new Date().toISOString() : null
+      points_balance: newBalance
     });
 
     // Create ledger entry for bonus
@@ -62,7 +59,7 @@ Deno.serve(async (req) => {
       user_email: user.email,
       type: 'bonus',
       amount: signupBonus,
-      source: 'club_signup',
+      source: 'signup',
       description: `בונוס הצטרפות למועדון`,
       balance_after: newBalance
     });
@@ -78,7 +75,7 @@ Deno.serve(async (req) => {
             <h1 style="color: #F43F5E;">ברוכה הבאה למועדון! 💖</h1>
             <p>היי ${user.full_name || 'יקרה'},</p>
             <p>קיבלת <strong>${signupBonus} נקודות בונוס</strong> להצטרפות למועדון הלקוחות שלנו!</p>
-            <p>מעכשיו את צוברת נקודות על כל הזמנה, ומקבלת הטבות מיוחדות ביום ההולדת שלך 🎂</p>
+            <p>מעכשיו את צוברת <strong>10% נקודות</strong> על כל הזמנה, ומקבלת הטבות מיוחדות ביום ההולדת שלך 🎂</p>
             <p>היתרה הנוכחית שלך: <strong>${newBalance} נקודות</strong></p>
             <p style="margin-top: 20px;">בברנדי שלך,<br>צוות Brandy Melville to Israel</p>
           </div>

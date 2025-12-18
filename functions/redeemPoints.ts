@@ -28,9 +28,8 @@ Deno.serve(async (req) => {
       console.log('Using default max redeem percentage:', e.message);
     }
 
-    // Check if points exceed max allowed (convert ILS cap to points)
-    const POINT_VALUE_ILS = 0.5;
-    const maxAllowedPoints = Math.floor((order_total * maxRedeemPercentage) / POINT_VALUE_ILS);
+    // Check if points exceed max allowed
+    const maxAllowedPoints = Math.floor(order_total * maxRedeemPercentage);
     if (points_to_redeem > maxAllowedPoints) {
       return Response.json({ 
         error: `ניתן לממש עד ${maxAllowedPoints} נקודות (${Math.round(maxRedeemPercentage * 100)}% מסכום ההזמנה)`,
@@ -95,7 +94,7 @@ Deno.serve(async (req) => {
     return Response.json({ 
       success: true, 
       points_redeemed: points_to_redeem,
-      discount_amount: points_to_redeem * 0.5, // 1 נק׳ = 0.5 ₪
+      discount_amount: points_to_redeem, // 1 point = 1 ILS
       new_balance: newBalance
     });
 

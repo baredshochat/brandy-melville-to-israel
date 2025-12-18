@@ -184,100 +184,24 @@ export default function ProfilePage() {
           {/* Loyalty Club Section */}
           {user.club_member ? (
             <>
-              {/* Tier Status */}
+              {/* Points Balance */}
               <Card className="bg-gradient-to-br from-rose-100 via-pink-50 to-white border-2 border-rose-200 shadow-xl">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Award className="w-5 h-5 text-rose-500" />
-                    דרגת המועדון שלך
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center mb-4">
-                    <div className="text-4xl font-bold mb-2">
-                      {user.tier === 'gold' ? '⭐ Gold' : user.tier === 'silver' ? '✨ Silver' : '💖 Member'}
-                    </div>
-                    <p className="text-sm text-stone-600">
-                      {user.tier === 'gold' ? 'צבירת 10% נקודות • משלוח חינם חודשי' : 
-                       user.tier === 'silver' ? 'צבירת 7% נקודות • משלוח חינם חד-פעמי' : 
-                       'צבירת 5% נקודות'}
-                    </p>
-                  </div>
-
-                  {/* Progress Bar */}
-                  {user.tier !== 'gold' && (
-                    <div className="mt-4">
-                      <div className="flex justify-between text-xs text-stone-600 mb-2">
-                        <span>{user.orders_last_6_months || 0} הזמנות</span>
-                        <span>{user.tier === 'silver' ? '10 לדרגת Gold' : '5 לדרגת Silver'}</span>
-                      </div>
-                      <div className="w-full bg-stone-200 rounded-full h-2">
-                        <div 
-                          className="bg-rose-500 h-2 rounded-full transition-all"
-                          style={{ 
-                            width: `${Math.min(100, ((user.orders_last_6_months || 0) / (user.tier === 'silver' ? 10 : 5)) * 100)}%` 
-                          }}
-                        />
-                      </div>
-                      <p className="text-xs text-stone-500 mt-2 text-center">
-                                                    עוד {(user.tier === 'silver' ? 10 : 5) - (user.orders_last_6_months || 0)} הזמנות לדרגה הבאה — {user.tier === 'silver' ? 'משלוח חינם כל חודש' : 'משלוח חינם חד-פעמי והטבות נוספות'}
-                                                  </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Points Balance */}
-              <Card className="bg-white/95 backdrop-blur-sm border border-white/50 shadow-xl">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Star className="w-5 h-5 text-rose-500" />
-                    הנקודות שלך
+                    מועדון הלקוחות שלך
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-center">
-                    <p className="text-4xl font-bold text-stone-900">{user.points_balance || 0}</p>
-                                              <p className="text-stone-600 mt-1 font-medium">נקודות זמינות</p>
-                                              <p className="text-sm text-stone-600 mt-1">
-                                                שווה ל-₪{(((user.points_balance || 0) * 0.5) || 0).toFixed(0)}
-                                              </p>
-
-                    {user.points_balance >= 100 ? (
-                      <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                        <p className="text-sm text-green-800 font-medium">
-                          🎉 יש לך מספיק נקודות להטבה!
-                        </p>
-                        <p className="text-xs text-green-600 mt-1">
-                          100 נקודות = הנחה של 50₪
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="mt-4">
-                        <p className="text-sm text-stone-500">
-                          עוד {100 - (user.points_balance || 0)} נקודות להטבה הבאה
-                        </p>
-                        <div className="w-full bg-stone-200 rounded-full h-2 mt-2">
-                          <div 
-                            className="bg-rose-400 h-2 rounded-full transition-all"
-                            style={{ width: `${Math.min(100, (user.points_balance || 0))}%` }}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="flex justify-center gap-2 mt-4">
-                                                <Link to={createPageUrl('Home?redeem=1')}>
-                                                  <Button size="sm" className="bg-rose-500 hover:bg-rose-600 text-white">
-                                                    ממשי נקודות עכשיו
-                                                  </Button>
-                                                </Link>
-                                                <Link to={createPageUrl('LoyaltyClub')}>
-                                                  <Button variant="outline" size="sm">
-                                                    לדף המועדון
-                                                  </Button>
-                                                </Link>
-                                              </div>
+                    <p className="text-5xl font-bold text-rose-600">{user.points_balance || 0}</p>
+                    <p className="text-stone-700 mt-2 font-medium">נקודות זמינות</p>
+                    <p className="text-sm text-stone-500 mt-1">שווי: ₪{user.points_balance || 0}</p>
+                    <Link to={createPageUrl('LoyaltyClub')}>
+                      <Button variant="outline" size="sm" className="mt-4">
+                        צפייה בהטבות
+                      </Button>
+                    </Link>
                   </div>
                 </CardContent>
               </Card>
@@ -360,11 +284,11 @@ export default function ProfilePage() {
                 </div>
                 <h3 className="font-semibold text-xl mb-2">הצטרפי למועדון!</h3>
                 <p className="text-sm text-stone-600 mb-4 max-w-sm mx-auto">
-                  צברי נקודות בכל הזמנה, קבלי הטבות מיוחדות ביום ההולדת והטבות שמתקדמות איתך
+                  צברי 10% נקודות על כל הזמנה וקבלי הטבות מיוחדות ביום ההולדת
                 </p>
                 <Link to={createPageUrl('LoyaltyClub')}>
                   <Button className="bg-stone-900 hover:bg-stone-800">
-                    הצטרפי עכשיו וקבלי 50 נקודות! 🎁
+                    הצטרפי עכשיו וקבלי 30 נקודות! 🎁
                   </Button>
                 </Link>
               </CardContent>

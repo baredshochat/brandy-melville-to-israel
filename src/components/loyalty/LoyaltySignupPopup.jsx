@@ -8,12 +8,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { motion } from 'framer-motion';
 import { User } from '@/entities/User';
 import { joinClub } from '@/functions/joinClub';
-import { base44 } from '@/api/base44Client';
 
 export default function LoyaltySignupPopup() {
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState(null);
-  const [formData, setFormData] = useState({ birthday: '', marketing_opt_in: false });
+  const [formData, setFormData] = useState({ birthday: '', phone: '', marketing_opt_in: false });
   const [joining, setJoining] = useState(false);
 
   useEffect(() => {
@@ -29,14 +28,13 @@ export default function LoyaltySignupPopup() {
       const userData = await User.me();
       setUser(userData);
       
-      // Show popup if user is not a club member
-      if (!userData.club_member) {
-        setTimeout(() => setOpen(true), 500);
+      // Show popup only if user is logged in and not a club member
+      if (userData && !userData.club_member) {
+        // Delay popup slightly for better UX
+        setTimeout(() => setOpen(true), 1500);
       }
     } catch (e) {
-      // User not logged in - show popup anyway
-      setUser(null);
-      setTimeout(() => setOpen(true), 500);
+      // User not logged in, don't show popup
     }
   };
 
@@ -46,20 +44,8 @@ export default function LoyaltySignupPopup() {
   };
 
   const handleJoin = async () => {
-    // If user is not logged in, redirect to login
-    if (!user) {
-      localStorage.removeItem('loyalty_popup_dismissed');
-      base44.auth.redirectToLogin();
-      return;
-    }
-
     if (!formData.birthday) {
       alert('אנא הזיני תאריך יום הולדת');
-      return;
-    }
-
-    if (!formData.marketing_opt_in) {
-      alert('נדרשת הסכמה לקבלת עדכונים כדי להצטרף למועדון');
       return;
     }
 
@@ -67,6 +53,7 @@ export default function LoyaltySignupPopup() {
     try {
       const { data } = await joinClub(formData);
       if (data.success) {
+        alert(`🎉 הצטרפת בהצלחה למועדון!\nקיבלת ${data.bonus_points} נקודות בונוס!`);
         setOpen(false);
         localStorage.setItem('loyalty_popup_dismissed', 'true');
         window.location.reload();
@@ -81,20 +68,9 @@ export default function LoyaltySignupPopup() {
     }
   };
 
-  // Check if button should be enabled
-  const canJoin = !user?.club_member && formData.birthday && formData.marketing_opt_in;
-  
-  // Get disabled reason
-  const getDisabledReason = () => {
-    if (user?.club_member) return 'כבר חברה במועדון';
-    if (!formData.birthday) return 'נדרש תאריך יום הולדת';
-    if (!formData.marketing_opt_in) return 'נדרשת הסכמה לקבלת עדכונים';
-    return '';
-  };
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-md p-0 gap-0 overflow-hidden border-0 [&>button]:hidden">
+      <DialogContent className="max-w-md p-0 gap-0 overflow-hidden border-0">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -103,7 +79,7 @@ export default function LoyaltySignupPopup() {
           {/* Close button */}
           <button
             onClick={handleClose}
-            className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white/80 hover:bg-white transition-colors"
+            className="absolute top-3 left-3 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white/80 hover:bg-white transition-colors"
           >
             <X className="w-4 h-4 text-stone-600" />
           </button>
@@ -114,10 +90,10 @@ export default function LoyaltySignupPopup() {
               <Gift className="w-8 h-8 text-rose-500" />
             </div>
             <h2 className="text-2xl font-semibold text-stone-900 mb-2">
-              ✨ הצטרפי למועדון
+              הצטרפי למועדון! ✨
             </h2>
             <p className="text-sm text-stone-600">
-              צברי נקודות, קבלי הטבות, ותיהני מהטבות בלעדיות
+              צברי נקודות וקבלי הטבות מיוחדות
             </p>
           </div>
 
@@ -128,7 +104,8 @@ export default function LoyaltySignupPopup() {
                 <Star className="w-4 h-4 text-rose-500" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-stone-900">צבירת נקודות בכל הזמנה</p>
+                <p className="text-sm font-medium text-stone-900">10% נקודות על כל הזמנה</p>
+                <p className="text-xs text-stone-500">כל נקודה = 1 ₪ הנחה</p>
               </div>
             </div>
 
@@ -138,6 +115,7 @@ export default function LoyaltySignupPopup() {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-stone-900">הטבת יום הולדת מיוחדת</p>
+                <p className="text-xs text-stone-500">20% הנחה ביום ההולדת שלך</p>
               </div>
             </div>
 
@@ -146,7 +124,8 @@ export default function LoyaltySignupPopup() {
                 <Gift className="w-4 h-4 text-rose-500" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-stone-900">הטבות שמתקדמות איתך עם הזמן</p>
+                <p className="text-sm font-medium text-stone-900">30 נקודות בונוס עכשיו!</p>
+                <p className="text-xs text-stone-500">מתנה בהצטרפות</p>
               </div>
             </div>
           </div>
@@ -166,6 +145,20 @@ export default function LoyaltySignupPopup() {
               />
             </div>
 
+            <div>
+              <Label htmlFor="phone" className="text-xs text-stone-600">
+                מספר טלפון (אופציונלי)
+              </Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="05X-XXXXXXX"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                className="mt-1 h-10"
+              />
+            </div>
+
             <div className="flex items-start gap-2 pt-2">
               <Checkbox
                 id="marketing"
@@ -173,27 +166,21 @@ export default function LoyaltySignupPopup() {
                 onCheckedChange={(checked) => setFormData({ ...formData, marketing_opt_in: checked })}
               />
               <Label htmlFor="marketing" className="text-xs text-stone-600 leading-relaxed cursor-pointer">
-                אני מאשרת קבלת עדכונים, הטבות והנחות במייל
+                אני מעוניינת לקבל עדכונים, הטבות והנחות בלעדיות למייל
               </Label>
             </div>
 
             <Button
               onClick={handleJoin}
-              disabled={!canJoin || joining}
-              className="w-full bg-stone-900 hover:bg-stone-800 h-11 text-sm font-medium disabled:opacity-50"
+              disabled={!formData.birthday || joining}
+              className="w-full bg-stone-900 hover:bg-stone-800 h-11 text-sm font-medium"
             >
               {joining ? (
                 <><Loader2 className="w-4 h-4 animate-spin ml-2" /> מצטרפת...</>
               ) : (
-                '🎁 הצטרפי וקבלי 50 נקודות'
+                'הצטרפי וקבלי 30 נקודות 🎁'
               )}
             </Button>
-
-            {!canJoin && !joining && (
-              <p className="text-xs text-center text-red-600 mt-2">
-                {getDisabledReason()}
-              </p>
-            )}
 
             <button
               onClick={handleClose}

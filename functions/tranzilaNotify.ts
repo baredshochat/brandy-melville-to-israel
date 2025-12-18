@@ -313,22 +313,12 @@ Deno.serve(async (req) => {
       // Update order status
       if (order) {
         try {
-          const freeShippingUntil = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
           await base44.asServiceRole.entities.Order.update(order.id, {
             payment_status: 'completed',
             status: 'pending',
-            email_sent_to_customer: true,
-            free_shipping_until: freeShippingUntil
+            email_sent_to_customer: true
           });
-          console.log('Order updated to completed and pending with free shipping until:', freeShippingUntil);
-          
-          // Send free shipping reminder email immediately
-          try {
-            await base44.asServiceRole.functions.invoke('sendFreeShippingReminder', { order_id: order.id });
-            console.log(`Free shipping reminder sent immediately for order ${order.id}`);
-          } catch (reminderError) {
-            console.error(`Failed to send free shipping reminder:`, reminderError);
-          }
+          console.log('Order updated to completed and pending');
           
           // Update local stock quantities for local items
           const items = order.items || [];

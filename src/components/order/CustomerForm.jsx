@@ -10,7 +10,7 @@ import { User as UserEntity } from "@/entities/User";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 
-export default function CustomerForm({ onSubmit, onBack, parentOrderId }) {
+export default function CustomerForm({ onSubmit, onBack }) {
   const [user, setUser] = useState(null);
   const [formData, setFormData] = useState({
     customer_name: '',
@@ -49,13 +49,7 @@ export default function CustomerForm({ onSubmit, onBack, parentOrderId }) {
 
   const handleSubmit = (e) => {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
-    
-    if (!termsAccepted) {
-      alert('יש לאשר את התקנון');
-      return;
-    }
-    
-    onSubmit(formData, parentOrderId);
+    onSubmit(formData);
   };
 
   // Add proper email validation
@@ -63,7 +57,7 @@ export default function CustomerForm({ onSubmit, onBack, parentOrderId }) {
 
   const isValid = formData.customer_name && formData.customer_email && 
                  formData.customer_phone && formData.shipping_address && 
-                 formData.city && emailValid;
+                 formData.city && emailValid && termsAccepted;
 
   const inputFields = [
       { id: 'customer_name', label: 'שם מלא', placeholder: 'הזיני את שמך המלא', width: 'full', icon: User, component: 'input', required: true },
@@ -161,7 +155,7 @@ export default function CustomerForm({ onSubmit, onBack, parentOrderId }) {
           <Button
             type="submit"
             form="customer-form"
-            disabled={!isValid || !termsAccepted}
+            disabled={!isValid}
             className="order-1 sm:order-none h-10 sm:h-12 px-6 sm:px-8 bg-black hover:bg-stone-800 active:bg-stone-700 text-white font-medium transition-all duration-300 flex items-center justify-center gap-2 rounded-none text-sm sm:text-base" 
             onClick={undefined}
           >
