@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowRight, ArrowLeft, Loader2, ShieldCheck, Tag } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Loader2, ShieldCheck, Tag, Star, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { PricingLabels } from '@/entities/PricingLabels';
 import { Code } from '@/entities/Code';
+import { User } from '@/entities/User';
 
 const formatMoney = (amount) => {
   return `₪${Math.round(amount).toLocaleString('he-IL')}`;
@@ -29,11 +30,25 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
   const [appliedCode, setAppliedCode] = useState(null);
   const [codeError, setCodeError] = useState('');
   const [applyingCode, setApplyingCode] = useState(false);
+  const [userPoints, setUserPoints] = useState(0);
+  const [redeemedPoints, setRedeemedPoints] = useState(0);
+  const [pointsInput, setPointsInput] = useState('');
+  const [maxRedeemPct, setMaxRedeemPct] = useState(0.3);
 
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true);
+
+        // Load user points
+        try {
+          const userData = await User.me();
+          if (userData && userData.points_balance) {
+            setUserPoints(userData.points_balance);
+          }
+        } catch (e) {
+          console.log('No user or no points');
+        }
 
         // Load pricing labels
         const labelsList = await PricingLabels.list();
@@ -220,7 +235,31 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
   const getFinalPriceWithDiscount = () => {
     if (!priceData) return 0;
     const { amount } = calculateDiscount();
-    return Math.max(0, priceData.breakdown.finalTotal - amount);
+    return Math.max(0, priceData.breakdown.finalTotal - amount - redeemedPoints);
+  };
+
+  const handleRedeemPoints = () => {
+    const val = parseInt(pointsInput) || 0;
+    if (val <= 0) return;
+    
+    if (val > userPoints) {
+      alert(`יש לך רק ${userPoints} נקודות`);
+      return;
+    }
+    
+    const maxRedeem = Math.floor(priceData.breakdown.finalTotal * maxRedeemPct);
+    if (val > maxRedeem) {
+      alert(`ניתן לממש מקסימום ${maxRedeem} נקודות בהזמנה זו`);
+      return;
+    }
+
+    setRedeemedPoints(val);
+    setPointsInput('');
+  };
+
+  const handleRemovePoints = () => {
+    setRedeemedPoints(0);
+    setPointsInput('');
   };
 
   const handleConfirm = async () => {
@@ -237,6 +276,7 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
           discount: discountAmount,
           message: discountMessage
         } : null,
+        redeemedPoints: redeemedPoints,
         finalTotal: finalPrice
       };
 
@@ -344,6 +384,59 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
               </span>
             </div>
 
+            {/* Points Redemption Section */}
+            {userPoints > 0 && (
+              <div className="py-3 border-t-2 border-stone-200">
+                {redeemedPoints === 0 ? (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-stone-700 flex items-center gap-2">
+                      <Star className="w-4 h-4 text-rose-500 fill-rose-500" />
+                      מימוש נקודות מועדון (יש לך {userPoints})
+                    </label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="number"
+                        placeholder="כמה לממש?"
+                        value={pointsInput}
+                        onChange={(e) => setPointsInput(e.target.value)}
+                        className="flex-1"
+                      />
+                      <Button
+                        onClick={handleRedeemPoints}
+                        disabled={!pointsInput.trim()}
+                        className="bg-rose-600 hover:bg-rose-700 px-6"
+                      >
+                        ממשי
+                      </Button>
+                    </div>
+                    <p className="text-xs text-stone-500">
+                      ניתן לממש עד {Math.floor(priceData.breakdown.finalTotal * maxRedeemPct)} נקודות בהזמנה זו
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-3 bg-rose-50 border border-rose-200">
+                      <div className="flex items-center gap-2">
+                        <Star className="w-4 h-4 text-rose-600 fill-rose-600" />
+                        <div>
+                          <p className="text-sm font-medium text-rose-900">ממשת {redeemedPoints} נקודות</p>
+                          <p className="text-xs text-rose-700">חיסכת {formatMoney(redeemedPoints)}</p>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={handleRemovePoints}
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Code Section */}
             <div className="py-3 border-t-2 border-stone-200">
               {!appliedCode ?
@@ -397,14 +490,23 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
               }
             </div>
 
-            {appliedCode && calculateDiscount().amount > 0 &&
-            <div className="flex justify-between items-center py-2 border-t border-green-200 bg-green-50">
-                <span className="text-sm font-medium text-green-900">הנחה</span>
+            {appliedCode && calculateDiscount().amount > 0 && (
+              <div className="flex justify-between items-center py-2 border-t border-green-200 bg-green-50">
+                <span className="text-sm font-medium text-green-900">הנחת קוד</span>
                 <span className="text-sm font-bold text-green-600">
                   -{formatMoney(calculateDiscount().amount)}
                 </span>
               </div>
-            }
+            )}
+
+            {redeemedPoints > 0 && (
+              <div className="flex justify-between items-center py-2 border-t border-rose-200 bg-rose-50">
+                <span className="text-sm font-medium text-rose-900">הנחת נקודות</span>
+                <span className="text-sm font-bold text-rose-600">
+                  -{formatMoney(redeemedPoints)}
+                </span>
+              </div>
+            )}
 
             <div className="flex justify-between items-center pt-4 border-t-2 border-rose-200">
               <span className="text-lg font-bold text-stone-900">
