@@ -1,8 +1,15 @@
 import React, {useState, useMemo} from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Star, X } from "lucide-react";
 
 export default function FinalPriceSummary({
   finalPriceILS,
   breakdown,
+  userPoints = 0,
+  onRedeemPoints,
+  redeemedAmount = 0,
+  maxRedeemAmount = Infinity,
   ui = {
     freeShippingThresholdILS: 399,      // אפשר לשנות לפי הצורך
     forwarderLabel: "",                 // למשל: "DHL Express · 2–5 ימי עסקים"
@@ -10,6 +17,29 @@ export default function FinalPriceSummary({
   }
 }) {
   const [open, setOpen] = useState(false);
+  const [pointsInput, setPointsInput] = useState("");
+
+  const handleRedeemClick = () => {
+    const val = parseInt(pointsInput) || 0;
+    if (val <= 0) return;
+    
+    if (val > userPoints) {
+      alert(`יש לך רק ${userPoints} נקודות`);
+      return;
+    }
+    
+    if (val > maxRedeemAmount) {
+      alert(`ניתן לממש מקסימום ${maxRedeemAmount} נקודות בהזמנה זו`);
+      return;
+    }
+
+    onRedeemPoints(val);
+    setPointsInput("");
+  };
+
+  const handleRemoveRedeem = () => {
+    onRedeemPoints(0);
+  };
 
   // שמירות וסכומים
   const shipCharge = Math.max(0, Math.round(breakdown?.domestic_charge_to_customer ?? 0));
@@ -32,9 +62,14 @@ export default function FinalPriceSummary({
       <p style={subtle()}>אין תוספות בקופה</p>
 
       <div style={priceRow()}>
-        <span style={priceTag()} aria-label={`מחיר סופי ${formatILS(finalPriceILS)}`}>
-          {formatILS(finalPriceILS)}
+        <span style={priceTag()} aria-label={`מחיר סופי ${formatILS(Math.max(0, finalPriceILS - redeemedAmount))}`}>
+          {formatILS(Math.max(0, finalPriceILS - redeemedAmount))}
         </span>
+        {redeemedAmount > 0 && (
+          <span style={{fontSize: 14, textDecoration: "line-through", color: "#9ca3af"}}>
+            {formatILS(finalPriceILS)}
+          </span>
+        )}
       </div>
 
       {/* שורת משלוח בארץ */}
@@ -62,6 +97,53 @@ export default function FinalPriceSummary({
           </span>
         )}
       </div>
+
+      {/* מימוש נקודות */}
+      {userPoints > 0 && (
+        <div style={{marginTop: 12, background: "#fff1f2", padding: 10, borderRadius: 8, border: "1px dashed #fda4af"}}>
+          {redeemedAmount > 0 ? (
+            <div style={{display: "flex", justifyContent: "space-between", alignItems: "center"}}>
+              <span style={{color: "#be123c", fontWeight: 600, fontSize: 14}}>
+                ממשת {redeemedAmount} נקודות
+              </span>
+              <button onClick={handleRemoveRedeem} style={{background: "none", border: "none", cursor: "pointer", color: "#9f1239"}}>
+                <X size={16} />
+              </button>
+            </div>
+          ) : (
+            <div style={{display: "flex", gap: 8, alignItems: "center"}}>
+              <div style={{flex: 1}}>
+                <div style={{fontSize: 13, fontWeight: 600, color: "#be123c", marginBottom: 4}}>
+                  יש לך {userPoints} נקודות
+                </div>
+                <div style={{fontSize: 11, color: "#be123c"}}>
+                  ניתן לממש עד {Math.min(userPoints, maxRedeemAmount)} בהזמנה זו
+                </div>
+              </div>
+              <div style={{display: "flex", gap: 4}}>
+                <Input 
+                  type="number" 
+                  placeholder="סכום" 
+                  value={pointsInput}
+                  onChange={e => setPointsInput(e.target.value)}
+                  style={{width: 60, height: 32, fontSize: 13, padding: "0 8px"}}
+                />
+                <Button size="sm" onClick={handleRedeemClick} style={{height: 32, background: "#be123c", fontSize: 12}}>
+                  ממש
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* שורת הנחה אם יש */}
+      {redeemedAmount > 0 && (
+        <div style={{marginTop: 8, fontSize: 14, color: "#be123c", fontWeight: 700, display: "flex", justifyContent: "space-between"}}>
+          <span>הנחת נקודות:</span>
+          <span>-{formatILS(redeemedAmount)}</span>
+        </div>
+      )}
 
       {/* סרגל התקדמות לסף חינם (רק אם יש סף ולא הושג) */}
       {threshold > 0 && !freeShip && remaining > 0 && (
