@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Gift, Star, Calendar, Award, TrendingUp, Crown, CheckCircle, Mail } from 'lucide-react';
+import { Loader2, Gift, Star, Calendar, Award, TrendingUp, Crown, CheckCircle, Mail, ShoppingBag, Truck, ShieldCheck, MessageSquare, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
@@ -166,7 +166,7 @@ export default function LoyaltyClub() {
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="max-w-3xl mx-auto p-6 space-y-6">
         {/* Hero */}
         <div className="text-center space-y-3">
-          <h1 className="text-5xl font-extrabold text-stone-800">מועדון הלקוחות שלנו <span className="text-rose-400">💜</span></h1>
+          <h1 className="text-5xl font-extrabold text-stone-800">מועדון הלקוחות שלנו <span className="text-rose-400">💖</span></h1>
           <p className="text-lg text-stone-600">קונות, צוברות נקודות, ומקבלות יותר – פשוט כי אתן כאן.</p>
         </div>
 
@@ -226,6 +226,39 @@ export default function LoyaltyClub() {
             </div>
           </CardContent>
         </Card>
+
+      {/* Shop CTAs */}
+      <div className="text-center space-y-3">
+        <p className="text-stone-700">מוכנה? בואי נתחיל לקנות ✨</p>
+        <div className="flex items-center justify-center gap-3 flex-wrap">
+          <Link to={createPageUrl('Home')}>
+            <Button className="bg-stone-900 hover:bg-stone-800 h-11 px-6 flex items-center gap-2">
+              <ShoppingBag className="w-4 h-4" /> התחילי הזמנה חדשה
+            </Button>
+          </Link>
+          <Link to={createPageUrl('LocalStock')}>
+            <Button variant="outline" className="h-11 px-6 flex items-center gap-2">
+              <Truck className="w-4 h-4" /> מלאי מקומי – אספקה מהירה
+            </Button>
+          </Link>
+        </div>
+      </div>
+
+      {/* How it works */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+        <div className="bg-white/80 border border-stone-200 p-4 text-center">
+          <div className="text-sm font-medium text-stone-800 mb-1">1. בחרי אתר וקישור</div>
+          <div className="text-xs text-stone-600">הדביקי קישור למוצר של Brandy</div>
+        </div>
+        <div className="bg-white/80 border border-stone-200 p-4 text-center">
+          <div className="text-sm font-medium text-stone-800 mb-1">2. אנחנו מחשבות מחיר שקוף</div>
+          <div className="text-xs text-stone-600">ללא הפתעות בסיום</div>
+        </div>
+        <div className="bg-white/80 border border-stone-200 p-4 text-center">
+          <div className="text-sm font-medium text-stone-800 mb-1">3. תשלום ומשלוח</div>
+          <div className="text-xs text-stone-600">עד הבית במהירות</div>
+        </div>
+      </div>
       </motion.div>
     );
   }
@@ -235,11 +268,56 @@ export default function LoyaltyClub() {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto p-6 space-y-8">
       {/* 1. Hero */}
       <div className="text-center space-y-3">
-        <h1 className="text-5xl font-extrabold text-stone-800">מועדון הלקוחות שלנו <span className="text-rose-400">💜</span></h1>
+        <h1 className="text-5xl font-extrabold text-stone-800">מועדון הלקוחות שלנו <span className="text-rose-400">💖</span></h1>
         <p className="text-lg text-stone-600">קונות, צוברות נקודות, ומקבלות יותר – פשוט כי אתן כאן.</p>
         <p className="text-xl font-semibold text-rose-500 flex items-center justify-center gap-2">
           <CheckCircle className="w-6 h-6" /> היי {user.first_name || user.full_name?.split(' ')[0] || 'יקרה'}! את כבר חברה במועדון
         </p>
+        {Number(user.points_balance || 0) > 0 && (
+          <p className="text-base text-stone-700">יש לך כרגע ₪{Number(user.points_balance || 0)} לניצול ברכישה הבאה</p>
+        )}
+        <div className="flex items-center justify-center gap-3 pt-2 flex-wrap">
+          <Link to={createPageUrl('Home')}>
+            <Button className="bg-stone-900 hover:bg-stone-800 h-11 px-6 flex items-center gap-2">
+              <ShoppingBag className="w-4 h-4" /> התחילי הזמנה חדשה
+            </Button>
+          </Link>
+          <Link to={createPageUrl('LocalStock')}>
+            <Button variant="outline" className="h-11 px-6 flex items-center gap-2">
+              <Truck className="w-4 h-4" /> מלאי מקומי – אספקה מהירה
+            </Button>
+          </Link>
+          <Link to={createPageUrl('Chat')}>
+            <Button variant="ghost" className="h-11 px-6 flex items-center gap-2">
+              <MessageSquare className="w-4 h-4" /> צריך עזרה?
+            </Button>
+          </Link>
+        </div>
+      </div>
+
+      {/* Value props */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="flex items-center gap-3 bg-white/80 border border-stone-200 p-3">
+          <Truck className="w-5 h-5 text-rose-500" />
+          <div>
+            <p className="text-sm font-medium text-stone-800">אספקה מהירה מהמלאי</p>
+            <p className="text-xs text-stone-500">מוצרים מקומיים נשלחים תוך 3–7 ימי עסקים</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 bg-white/80 border border-stone-200 p-3">
+          <ShieldCheck className="w-5 h-5 text-rose-500" />
+          <div>
+            <p className="text-sm font-medium text-stone-800">מחיר סופי – ללא הפתעות</p>
+            <p className="text-xs text-stone-500">מיסים ועמלות כבר כלולים בתמחור</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 bg-white/80 border border-stone-200 p-3">
+          <MessageSquare className="w-5 h-5 text-rose-500" />
+          <div>
+            <p className="text-sm font-medium text-stone-800">שירות לקוחות אנושי</p>
+            <p className="text-xs text-stone-500">עוזרות בכל שלב בדרך</p>
+          </div>
+        </div>
       </div>
 
       {/* 2. Status */}
@@ -271,6 +349,15 @@ export default function LoyaltyClub() {
             <p className="text-sm text-orange-600 flex items-center justify-center gap-1">
               <Calendar className="w-4 h-4" /> יש לך נקודות שעומדות לפוג בתאריך {format(parseISO(expiringEntry.expires_at), 'dd/MM/yyyy', { locale: he })}
             </p>
+          )}
+          {Number(user.points_balance || 0) > 0 && (
+            <div className="pt-2">
+              <Link to={createPageUrl('Home')}>
+                <Button className="bg-stone-900 hover:bg-stone-800 h-10 px-4 flex items-center gap-2">
+                  נצלי {Number(user.points_balance || 0)} ₪ עכשיו <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
+            </div>
           )}
         </CardContent>
       </Card>
