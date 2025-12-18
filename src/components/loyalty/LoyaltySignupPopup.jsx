@@ -7,7 +7,6 @@ import { Gift, Star, Calendar, Loader2, X } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { motion } from 'framer-motion';
 import { User } from '@/entities/User';
-import { LoyaltySettings } from '@/entities/LoyaltySettings';
 import { joinClub } from '@/functions/joinClub';
 
 export default function LoyaltySignupPopup() {
@@ -15,16 +14,6 @@ export default function LoyaltySignupPopup() {
   const [user, setUser] = useState(null);
   const [formData, setFormData] = useState({ birthday: '', phone: '', marketing_opt_in: false });
   const [joining, setJoining] = useState(false);
-  const [popupSettings, setPopupSettings] = useState({});
-  const signupBonus = Number(popupSettings?.signup_bonus || 30);
-  const title = popupSettings?.popup_title || 'הצטרפי למועדון! ✨';
-  const subtitle = popupSettings?.popup_subtitle || 'צברי נקודות וקבלי הטבות מיוחדות';
-  const benefit1 = popupSettings?.popup_benefit_1 || '10% נקודות על כל הזמנה';
-  const benefit2 = popupSettings?.popup_benefit_2 || 'הטבת יום הולדת מיוחדת';
-  const benefit3 = popupSettings?.popup_benefit_3 || `${signupBonus} נקודות בונוס בהצטרפות!`;
-  const ctaText = popupSettings?.popup_cta_text || `הצטרפי וקבלי ${signupBonus} נקודות 🎁`;
-  const marketingLabel = popupSettings?.popup_marketing_label || 'אני מעוניינת לקבל עדכונים, הטבות והנחות למייל';
-  const imageUrl = popupSettings?.popup_image_url || '';
 
   useEffect(() => {
     checkAndShowPopup();
@@ -38,21 +27,11 @@ export default function LoyaltySignupPopup() {
     try {
       const userData = await User.me();
       setUser(userData);
-
-      // Load popup settings
-      let dict = {};
-      try {
-        const list = await LoyaltySettings.list();
-        (list || []).forEach((s) => { dict[s.setting_key] = s.value; });
-      } catch (_) {}
-      setPopupSettings(dict);
-
-      const enabled = (dict.popup_enabled ?? 'true') !== 'false';
-      const delayMs = parseInt(dict.popup_delay_ms || '1500', 10);
-
-      // Show popup only if user is logged in, not a club member, and popup enabled
-      if (enabled && userData && !userData.club_member) {
-        setTimeout(() => setOpen(true), isNaN(delayMs) ? 1500 : delayMs);
+      
+      // Show popup only if user is logged in and not a club member
+      if (userData && !userData.club_member) {
+        // Delay popup slightly for better UX
+        setTimeout(() => setOpen(true), 1500);
       }
     } catch (e) {
       // User not logged in, don't show popup
@@ -107,18 +86,14 @@ export default function LoyaltySignupPopup() {
 
           {/* Header with gradient */}
           <div className="bg-gradient-to-br from-rose-100 via-pink-50 to-stone-50 p-8 text-center">
-            {imageUrl ? (
-              <img src={imageUrl} alt="" className="w-16 h-16 rounded-full object-cover mx-auto mb-4 shadow-sm" />
-            ) : (
-              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-                <Gift className="w-8 h-8 text-rose-500" />
-              </div>
-            )}
+            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+              <Gift className="w-8 h-8 text-rose-500" />
+            </div>
             <h2 className="text-2xl font-semibold text-stone-900 mb-2">
-              {title}
+              הצטרפי למועדון! ✨
             </h2>
             <p className="text-sm text-stone-600">
-              {subtitle}
+              צברי נקודות וקבלי הטבות מיוחדות
             </p>
           </div>
 
@@ -129,10 +104,8 @@ export default function LoyaltySignupPopup() {
                 <Star className="w-4 h-4 text-rose-500" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-stone-900">{benefit1}</p>
-                {popupSettings?.popup_benefit_1 ? null : (
-                  <p className="text-xs text-stone-500">כל נקודה = 1 ₪ הנחה</p>
-                )}
+                <p className="text-sm font-medium text-stone-900">10% נקודות על כל הזמנה</p>
+                <p className="text-xs text-stone-500">כל נקודה = 1 ₪ הנחה</p>
               </div>
             </div>
 
@@ -141,10 +114,8 @@ export default function LoyaltySignupPopup() {
                 <Calendar className="w-4 h-4 text-rose-500" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-stone-900">{benefit2}</p>
-                {popupSettings?.popup_benefit_2 ? null : (
-                  <p className="text-xs text-stone-500">20% הנחה ביום ההולדת שלך</p>
-                )}
+                <p className="text-sm font-medium text-stone-900">הטבת יום הולדת מיוחדת</p>
+                <p className="text-xs text-stone-500">20% הנחה ביום ההולדת שלך</p>
               </div>
             </div>
 
@@ -154,9 +125,7 @@ export default function LoyaltySignupPopup() {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-stone-900">30 נקודות בונוס עכשיו!</p>
-                {popupSettings?.popup_benefit_3 ? null : (
-                  <p className="text-xs text-stone-500">מתנה בהצטרפות</p>
-                )}
+                <p className="text-xs text-stone-500">מתנה בהצטרפות</p>
               </div>
             </div>
           </div>
@@ -209,7 +178,7 @@ export default function LoyaltySignupPopup() {
               {joining ? (
                 <><Loader2 className="w-4 h-4 animate-spin ml-2" /> מצטרפת...</>
               ) : (
-                ctaText
+                'הצטרפי וקבלי 30 נקודות 🎁'
               )}
             </Button>
 
