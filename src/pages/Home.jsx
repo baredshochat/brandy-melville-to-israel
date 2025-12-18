@@ -21,10 +21,10 @@ import LottieSuccess from '../components/ui/LottieSuccess';
 import CartImport from '../components/order/CartImport';
 import TranzilaPayment from '../components/payment/TranzilaPayment';
 import { extractProductMetadata, mergeMetadataWithLLM } from '../components/order/MetadataExtractor';
-import FinalPriceSummary from '../components/order/FinalPriceSummary';
 import { createRedemptionToken } from "@/functions/createRedemptionToken";
 import { redeemPoints } from "@/functions/redeemPoints";
 import { LoyaltySettings } from "@/entities/LoyaltySettings";
+import { base44 } from '@/api/base44Client';
 
 // ---- Helpers ----
 async function normalizeLLMResult(res) {
@@ -936,11 +936,9 @@ export default function Home() {
     console.log('🔥 Redeemed points:', redeemedPoints);
     
     try {
-      // Update price breakdown with redeemed points
+      // Price breakdown already includes redeemed points from PriceCalculator
       const updatedBreakdown = {
-        ...priceBreakdown,
-        redeemedPoints: redeemedPoints,
-        finalTotal: Math.max(0, totalPriceILS - redeemedPoints)
+        ...priceBreakdown
       };
 
       // Redeem points if token exists
@@ -982,7 +980,7 @@ export default function Home() {
           payment_status: 'completed',
           status: 'pending',
           price_breakdown: updatedBreakdown,
-          total_price_ils: updatedBreakdown.finalTotal
+          total_price_ils: totalPriceILS
         });
         
         // Update local stock quantities for local items
@@ -1090,12 +1088,11 @@ export default function Home() {
       }
       case 6: return <CustomerForm onSubmit={handleCustomerSubmit} onBack={() => setStep(5)} />;
       case 7: // Tranzila Payment
-        const finalAmountAfterPoints = Math.max(0, totalPriceILS - redeemedPoints);
         return (
           <div className="max-w-2xl mx-auto">
             <TranzilaPayment
               order={currentOrder}
-              totalAmount={finalAmountAfterPoints}
+              totalAmount={totalPriceILS}
               customerData={customerData}
               cart={cart}
               onSuccess={handlePaymentSuccess}
