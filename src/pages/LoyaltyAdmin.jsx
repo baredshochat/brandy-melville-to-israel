@@ -32,6 +32,16 @@ export default function LoyaltyAdmin() {
   const [historyUser, setHistoryUser] = useState(null); // New state for user in history dialog
   const [historyLedger, setHistoryLedger] = useState([]); // New state for ledger in history dialog
   const [settings, setSettings] = useState({});
+  const defaultPopupConfig = {
+    enabled: true,
+    title: 'הצטרפי למועדון! ✨',
+    subtitle: 'צברי נקודות וקבלי הטבות מיוחדות',
+    benefits: ['10% נקודות על כל הזמנה', 'הטבת יום הולדת מיוחדת', '30 נקודות בונוס עכשיו!'],
+    cta_text: 'הצטרפי וקבלי 30 נקודות 🎁',
+    dismiss_text: 'אולי מאוחר יותר',
+    delay_ms: 1500
+  };
+  const [popupConfig, setPopupConfig] = useState(defaultPopupConfig);
   const [actionForm, setActionForm] = useState({
     user_email: '',
     amount: '',
@@ -67,6 +77,12 @@ export default function LoyaltyAdmin() {
           settingsObj[s.setting_key] = s.value;
         });
         setSettings(settingsObj);
+        const cfgStr = settingsObj.signup_popup_config;
+        let cfg = defaultPopupConfig;
+        if (cfgStr) {
+          try { cfg = { ...defaultPopupConfig, ...JSON.parse(cfgStr) }; } catch {}
+        }
+        setPopupConfig(cfg);
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -343,78 +359,67 @@ export default function LoyaltyAdmin() {
               <CardTitle>הגדרות מערכת</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+...
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>הגדרות פופ-אפ המועדון</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label>אחוז צבירה</Label>
-                  <p className="text-sm text-stone-500">אחוז הנקודות שנצברות מכל הזמנה</p>
+                  <Label>הפעלת הפופ-אפ</Label>
+                  <p className="text-sm text-stone-500">האם להציג את הפופ-אפ למשתמשות שאינן חברות</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    step="0.01"
-                    defaultValue={settings.earn_percentage || '0.1'}
-                    className="w-24"
-                    id="earn-pct"
-                  />
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      const val = document.getElementById('earn-pct').value;
-                      handleUpdateSetting('earn_percentage', val);
-                    }}
-                  >
-                    עדכן
-                  </Button>
+                <input
+                  type="checkbox"
+                  checked={!!popupConfig.enabled}
+                  onChange={(e) => setPopupConfig({ ...popupConfig, enabled: e.target.checked })}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <Label>כותרת</Label>
+                  <Input value={popupConfig.title} onChange={(e) => setPopupConfig({ ...popupConfig, title: e.target.value })} />
+                </div>
+                <div>
+                  <Label>תת-כותרת</Label>
+                  <Input value={popupConfig.subtitle} onChange={(e) => setPopupConfig({ ...popupConfig, subtitle: e.target.value })} />
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
+              <div>
+                <Label>יתרונות (שורה לכל יתרון)</Label>
+                <textarea
+                  className="w-full border rounded-md p-2 text-sm bg-white"
+                  rows={4}
+                  value={(popupConfig.benefits || []).join('\n')}
+                  onChange={(e) => setPopupConfig({ ...popupConfig, benefits: e.target.value.split('\n').filter(Boolean) })}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
-                  <Label>מקסימום מימוש</Label>
-                  <p className="text-sm text-stone-500">אחוז מקסימלי לשימוש בנקודות בהזמנה</p>
+                  <Label>טקסט כפתור</Label>
+                  <Input value={popupConfig.cta_text} onChange={(e) => setPopupConfig({ ...popupConfig, cta_text: e.target.value })} />
                 </div>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    step="0.01"
-                    defaultValue={settings.max_redeem_percentage || '0.3'}
-                    className="w-24"
-                    id="redeem-pct"
-                  />
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      const val = document.getElementById('redeem-pct').value;
-                      handleUpdateSetting('max_redeem_percentage', val);
-                    }}
-                  >
-                    עדכן
-                  </Button>
+                <div>
+                  <Label>טקסט דחייה</Label>
+                  <Input value={popupConfig.dismiss_text} onChange={(e) => setPopupConfig({ ...popupConfig, dismiss_text: e.target.value })} />
+                </div>
+                <div>
+                  <Label>השהיה (מילישניות)</Label>
+                  <Input type="number" value={popupConfig.delay_ms} onChange={(e) => setPopupConfig({ ...popupConfig, delay_ms: Number(e.target.value || 0) })} />
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>בונוס הצטרפות</Label>
-                  <p className="text-sm text-stone-500">נקודות בונוס בהצטרפות למועדון</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    defaultValue={settings.signup_bonus || '30'}
-                    className="w-24"
-                    id="signup-bonus"
-                  />
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      const val = document.getElementById('signup-bonus').value;
-                      handleUpdateSetting('signup_bonus', val);
-                    }}
-                  >
-                    עדכן
-                  </Button>
-                </div>
+              <div className="flex justify-end">
+                <Button onClick={() => handleUpdateSetting('signup_popup_config', JSON.stringify(popupConfig))}>
+                  עדכן פופ-אפ
+                </Button>
               </div>
             </CardContent>
           </Card>
