@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { User } from '@/entities/User';
 import { PointsLedger } from '@/entities/PointsLedger';
@@ -17,12 +16,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Loader2, Plus, Minus, Ban, Gift, Settings, Users, ArrowUpDown } from 'lucide-react';
+import MembersTable from '@/components/loyalty/admin/MembersTable';
+import UserHistoryDialog from '@/components/loyalty/admin/UserHistoryDialog';
+import NewsletterList from '@/components/loyalty/admin/NewsletterList';
+import { adjustUserPoints } from '@/functions/adjustUserPoints';
 
-// Dummy component for MembersTable - Replace with actual implementation
-function MembersTable({ users, onAdjust, onOpenHistory }) {
-  if (!users || users.length === 0) {
-    return <p className="text-stone-600">אין משתמשים להצגה.</p>;
-  }
+
   return (
     <div className="space-y-4">
       {users.map(user => (
@@ -43,13 +42,7 @@ function MembersTable({ users, onAdjust, onOpenHistory }) {
   );
 }
 
-// Dummy component for NewsletterList - Replace with actual implementation
-function NewsletterList({ users }) {
-  const newsletterUsers = users.filter(user => user.newsletter_opt_in); // Assuming a 'newsletter_opt_in' field
 
-  if (newsletterUsers.length === 0) {
-    return <p className="text-stone-600">אין משתמשים רשומים לרשימת הדיוור.</p>;
-  }
 
   return (
     <Card>
@@ -71,10 +64,7 @@ function NewsletterList({ users }) {
   );
 }
 
-// Dummy component for UserHistoryDialog - Replace with actual implementation
-function UserHistoryDialog({ open, onOpenChange, user, ledger }) {
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+ onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>היסטוריית נקודות עבור {user?.email}</DialogTitle>
@@ -234,21 +224,29 @@ export default function LoyaltyAdmin() {
     }
   };
 
-  // Function to pre-fill action form for a user
-  const handleAdjust = (user_email) => {
-    setActionForm(prev => ({ ...prev, user_email }));
-    // Optionally, navigate to the 'actions' tab here if using a controlled tab component
+  // Update points directly from MembersTable using backend function
+  const handleAdjust = async (user, delta, reason) => {
+    try {
+      const { data } = await adjustUserPoints({ user_email: user.email, delta: Number(delta), reason });
+      if (data?.success) {
+        setUsers(prev => prev.map(u => u.id === user.id ? { ...u, points_balance: data.new_balance } : u));
+      } else {
+        alert(data?.error || 'שגיאה בעדכון נקודות');
+      }
+    } catch (e) {
+      alert('שגיאה בעדכון נקודות');
+    }
   };
 
   // Function to open user history dialog
-  const openHistory = async (user_id, user_email) => {
-    setHistoryUser({ id: user_id, email: user_email });
+  const openHistory = async (user) => {
+    setHistoryUser(user);
     try {
-      // Fetch ledger for the specific user
-      const userLedger = await PointsLedger.filter({ user_id: user_id }, '-created_date', 100);
-      setHistoryLedger(userLedger || []);
+      // Fetch ledger for the specific user by email
+      const userLedger = await PointsLedger.filter({ user_email: user.email }, '-created_date', 100);
+      setHistoryLedger(Array.isArray(userLedger) ? userLedger : []);
     } catch (error) {
-      console.error("Error fetching user ledger:", error);
+      console.error('Error fetching user ledger:', error);
       setHistoryLedger([]);
     } finally {
       setHistoryOpen(true);
