@@ -20,10 +20,10 @@ export default function LoyaltySignupPopup() {
   const title = popupSettings?.popup_title || 'הצטרפי למועדון! ✨';
   const subtitle = popupSettings?.popup_subtitle || 'צברי נקודות וקבלי הטבות מיוחדות';
   const benefit1 = popupSettings?.popup_benefit_1 || '10% נקודות על כל הזמנה';
-  const benefit2 = popupSettings?.popup_benefit_2 || '{popupSettings.popup_benefit_2 || 'הטבת יום הולדת מיוחדת'}';
+  const benefit2 = popupSettings?.popup_benefit_2 || 'הטבת יום הולדת מיוחדת';
   const benefit3 = popupSettings?.popup_benefit_3 || `${signupBonus} נקודות בונוס בהצטרפות!`;
   const ctaText = popupSettings?.popup_cta_text || `הצטרפי וקבלי ${signupBonus} נקודות 🎁`;
-  const marketingLabel = popupSettings?.popup_marketing_label || '{marketingLabel}';
+  const marketingLabel = popupSettings?.popup_marketing_text || 'אני מעוניינת לקבל עדכונים, הטבות והנחות בלעדיות למייל';
   const imageUrl = popupSettings?.popup_image_url || '';
 
   useEffect(() => {
@@ -153,7 +153,7 @@ export default function LoyaltySignupPopup() {
                 <Gift className="w-4 h-4 text-rose-500" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-stone-900">30 נקודות בונוס עכשיו!</p>
+                <p className="text-sm font-medium text-stone-900">{benefit3}</p>
                 {popupSettings?.popup_benefit_3 ? null : (
                   <p className="text-xs text-stone-500">מתנה בהצטרפות</p>
                 )}
@@ -197,7 +197,7 @@ export default function LoyaltySignupPopup() {
                 onCheckedChange={(checked) => setFormData({ ...formData, marketing_opt_in: checked })}
               />
               <Label htmlFor="marketing" className="text-xs text-stone-600 leading-relaxed cursor-pointer">
-                אני מעוניינת לקבל עדכונים, הטבות והנחות בלעדיות למייל
+                {marketingLabel}
               </Label>
             </div>
 
