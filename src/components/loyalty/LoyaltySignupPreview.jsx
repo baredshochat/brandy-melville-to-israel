@@ -18,8 +18,12 @@ export default function LoyaltySignupPreview({ settings = {} }) {
     <div className="max-w-md border rounded-lg overflow-hidden">
       {/* Header with gradient */}
       <div className="bg-gradient-to-br from-rose-100 via-pink-50 to-stone-50 p-8 text-center">
-        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-          <Gift className="w-8 h-8 text-rose-500" />
+        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm overflow-hidden">
+          {settings.popup_image_url ? (
+            <img src={settings.popup_image_url} alt="icon" className="w-10 h-10 object-contain" />
+          ) : (
+            <Gift className="w-8 h-8 text-rose-500" />
+          )}
         </div>
         <h2 className="text-2xl font-semibold text-stone-900 mb-2">{title}</h2>
         <p className="text-sm text-stone-600">{subtitle}</p>

@@ -518,6 +518,35 @@ export default function LoyaltyAdmin() {
               </div>
             </CardContent>
           </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>תצוגה מקדימה חיה + שמירה מרוכזת</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-start gap-6 flex-col md:flex-row">
+                <div className="md:w-1/2 w-full space-y-3">
+                  <Button className="bg-stone-900 text-white" onClick={async () => {
+                    const keys = ['popup_enabled','popup_title','popup_subtitle','popup_benefit_1','popup_benefit_2','popup_benefit_3','popup_cta_text','popup_marketing_text','popup_image_url','popup_delay_ms'];
+                    for (const k of keys) {
+                      const v = (draftSettings ?? {})[k];
+                      const existing = await LoyaltySettings.filter({ setting_key: k });
+                      if (existing && existing.length > 0) {
+                        await LoyaltySettings.update(existing[0].id, { value: String(v ?? '') });
+                      } else {
+                        await LoyaltySettings.create({ setting_key: k, value: String(v ?? '') });
+                      }
+                    }
+                    alert('ההגדרות נשמרו');
+                    await loadData();
+                  }}>שמור הכל</Button>
+                  <p className="text-xs text-stone-500">השינויים למטה מוצגים בתצוגה מקדימה בלבד עד לשמירה.</p>
+                </div>
+                <div className="md:w-1/2 w-full">
+                  <LoyaltySignupPreview settings={{ ...(settings || {}), ...(draftSettings || {}) }} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="members">
