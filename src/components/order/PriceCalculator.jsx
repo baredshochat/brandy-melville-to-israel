@@ -302,7 +302,7 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
       }
 
       onConfirm(
-        finalPrice,
+        currentFinalPrice,
         cart.reduce((sum, item) => sum + (item.estimated_weight_kg || item.item_weight || 0.25) * item.quantity, 0),
         breakdown
       );
