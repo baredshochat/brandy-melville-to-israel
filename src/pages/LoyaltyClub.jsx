@@ -96,6 +96,11 @@ export default function LoyaltyClub() {
     return null;
   }, [recentLedger]);
 
+  const birthdayExpiresText = useMemo(
+    () => (birthdayBonusActive ? format(birthdayBonusActive.expires, 'MM/yyyy', { locale: he }) : null),
+    [birthdayBonusActive]
+  );
+
   const isBirthdayMonth = useMemo(() => {
     if (!user?.birthday) return false;
     const b = new Date(user.birthday);
