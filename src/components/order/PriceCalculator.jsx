@@ -34,7 +34,32 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
   const [user, setUser] = useState(null);
   const [pointsInput, setPointsInput] = useState('');
   const [redeemedPoints, setRedeemedPoints] = useState(0);
+  const [maxRedeemPct, setMaxRedeemPct] = useState(0.3);
 
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const u = await User.me();
+        setUser(u);
+      } catch (err) {
+        console.error('Failed to load user:', err);
+        setUser(null);
+      }
+    };
+    loadUser();
+
+    const loadSettings = async () => {
+      try {
+        const settings = await LoyaltySettings.filter({ setting_key: 'max_redeem_percentage' });
+        if (settings && settings.length > 0) {
+          setMaxRedeemPct(parseFloat(settings[0].value));
+        }
+      } catch (err) {
+        console.error('Failed to load loyalty settings:', err);
+      }
+    };
+    loadSettings();
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {
