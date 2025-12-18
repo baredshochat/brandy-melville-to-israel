@@ -74,15 +74,9 @@ export default function FinalPriceSummary({
 
       {/* שורת משלוח בארץ */}
       <div style={line()}>
-        {freeShip ? (
-          <span style={pill("success")} aria-live="polite">
-            משלוח חינם {shipAbsorb ? <> (חסכת {formatILS(shipAbsorb)})</> : null}
-          </span>
-        ) : (
-          <span>
-            משלוח עד הבית: <strong>{formatILS(shipCharge)}</strong>
-          </span>
-        )}
+        <span>
+          משלוח עד הבית: <strong>{formatILS(shipCharge)}</strong>
+        </span>
       </div>
 
       {/* שורת מסים ואגרות */}
@@ -117,15 +111,7 @@ export default function FinalPriceSummary({
         </div>
       )}
 
-      {/* סרגל התקדמות לסף חינם (רק אם יש סף ולא הושג) */}
-      {threshold > 0 && !freeShip && remaining > 0 && (
-        <div style={{marginTop: 8}}>
-          <div style={progressWrap()} aria-label="התקדמות למשלוח חינם">
-            <div style={progressBar(progress)} />
-          </div>
-          <div style={progressText()}>עוד {formatILS(remaining)} למשלוח חינם</div>
-        </div>
-      )}
+
 
       {/* לינק פירוט */}
       <button
