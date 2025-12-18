@@ -166,7 +166,7 @@ export default function LoyaltyClub() {
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="max-w-3xl mx-auto p-6 space-y-6">
         {/* Hero */}
         <div className="text-center space-y-3">
-          <h1 className="text-5xl font-extrabold text-stone-800">מועדון הלקוחות שלנו <span className="text-rose-400">💜</span></h1>
+          <h1 className="text-5xl font-extrabold text-stone-800">מועדון הלקוחות שלנו <span className="text-rose-400">💖</span></h1>
           <p className="text-lg text-stone-600">קונות, צוברות נקודות, ומקבלות יותר – פשוט כי אתן כאן.</p>
         </div>
 
@@ -235,7 +235,7 @@ export default function LoyaltyClub() {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto p-6 space-y-8">
       {/* 1. Hero */}
       <div className="text-center space-y-3">
-        <h1 className="text-5xl font-extrabold text-stone-800">מועדון הלקוחות שלנו <span className="text-rose-400">💜</span></h1>
+        <h1 className="text-5xl font-extrabold text-stone-800">מועדון הלקוחות שלנו <span className="text-rose-400">💖</span></h1>
         <p className="text-lg text-stone-600">קונות, צוברות נקודות, ומקבלות יותר – פשוט כי אתן כאן.</p>
         <p className="text-xl font-semibold text-rose-500 flex items-center justify-center gap-2">
           <CheckCircle className="w-6 h-6" /> היי {user.first_name || user.full_name?.split(' ')[0] || 'יקרה'}! את כבר חברה במועדון
