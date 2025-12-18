@@ -21,9 +21,6 @@ import LottieSuccess from '../components/ui/LottieSuccess';
 import CartImport from '../components/order/CartImport';
 import TranzilaPayment from '../components/payment/TranzilaPayment';
 import { extractProductMetadata, mergeMetadataWithLLM } from '../components/order/MetadataExtractor';
-import { createRedemptionToken } from "@/functions/createRedemptionToken";
-import { redeemPoints } from "@/functions/redeemPoints";
-import { LoyaltySettings } from "@/entities/LoyaltySettings";
 import { base44 } from '@/api/base44Client';
 
 // ---- Helpers ----
