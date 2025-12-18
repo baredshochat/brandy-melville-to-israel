@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 
 export default function NewsletterList({ users = [] }) {
   const [q, setQ] = useState('');
-  const subs = useMemo(() => users.filter(u => !!u.marketing_opt_in), [users]);
+  const subs = useMemo(() => users.filter(u => !!u.marketing_opt_in && !!u.club_member), [users]);
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
     if (!s) return subs;
