@@ -62,14 +62,9 @@ export default function FinalPriceSummary({
       <p style={subtle()}>אין תוספות בקופה</p>
 
       <div style={priceRow()}>
-        <span style={priceTag()} aria-label={`מחיר סופי ${formatILS(Math.max(0, finalPriceILS - redeemedAmount))}`}>
-          {formatILS(Math.max(0, finalPriceILS - redeemedAmount))}
+        <span style={priceTag()} aria-label={`מחיר סופי ${formatILS(finalPriceILS)}`}>
+          {formatILS(finalPriceILS)}
         </span>
-        {redeemedAmount > 0 && (
-          <span style={{fontSize: 14, textDecoration: "line-through", color: "#9ca3af"}}>
-            {formatILS(finalPriceILS)}
-          </span>
-        )}
       </div>
 
       {/* שורת משלוח בארץ */}
@@ -92,22 +87,17 @@ export default function FinalPriceSummary({
         )}
       </div>
 
-      {/* הצגת נקודות שמומשו בלבד */}
+      {/* הצגת נקודות שמומשו */}
       {redeemedAmount > 0 && (
         <div style={{marginTop: 12, background: "#fff1f2", padding: 10, borderRadius: 8, border: "1px dashed #fda4af"}}>
           <div style={{display: "flex", justifyContent: "space-between", alignItems: "center"}}>
             <span style={{color: "#be123c", fontWeight: 600, fontSize: 14}}>
-              מומשו {redeemedAmount} נקודות הנחה ✨
+              ✨ מימוש {redeemedAmount} נקודות מועדון
+            </span>
+            <span style={{color: "#be123c", fontWeight: 700, fontSize: 14}}>
+              -{formatILS(redeemedAmount)}
             </span>
           </div>
-        </div>
-      )}
-
-      {/* שורת הנחה אם יש */}
-      {redeemedAmount > 0 && (
-        <div style={{marginTop: 8, fontSize: 14, color: "#be123c", fontWeight: 700, display: "flex", justifyContent: "space-between"}}>
-          <span>הנחת נקודות:</span>
-          <span>-{formatILS(redeemedAmount)}</span>
         </div>
       )}
 

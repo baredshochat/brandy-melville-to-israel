@@ -1051,7 +1051,7 @@ export default function Home() {
             <div className="mt-6">
               <TranzilaPayment
                 order={currentOrder}
-                totalAmount={Math.max(0, totalPriceILS - redeemedPoints)}
+                totalAmount={totalPriceILS}
                 customerData={customerData}
                 cart={cart}
                 onSuccess={handlePaymentSuccess}
