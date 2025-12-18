@@ -64,18 +64,9 @@ Deno.serve(async (req) => {
     }
 
     const userData = users[0];
-    
-    // CRITICAL CHECK 1: Verify club membership is active
-    if (!userData.club_member) {
-      return Response.json({ 
-        error: 'חברות המועדון אינה פעילה',
-        club_member: false
-      }, { status: 403 });
-    }
-
     const currentBalance = userData.points_balance || 0;
 
-    // CRITICAL CHECK 2: Verify sufficient points
+    // Check if user has enough points
     if (currentBalance < points_to_redeem) {
       return Response.json({ 
         error: `אין מספיק נקודות. יתרה נוכחית: ${currentBalance}`,
@@ -83,15 +74,14 @@ Deno.serve(async (req) => {
       }, { status: 400 });
     }
 
-    // ATOMIC TRANSACTION START
     const newBalance = currentBalance - points_to_redeem;
 
-    // Update user balance atomically
+    // Update user balance
     await base44.asServiceRole.entities.User.update(userData.id, {
       points_balance: newBalance
     });
 
-    // Create ledger entry for audit trail
+    // Create ledger entry
     await base44.asServiceRole.entities.PointsLedger.create({
       user_email: user.email,
       type: 'use',
@@ -100,7 +90,6 @@ Deno.serve(async (req) => {
       description: `מימוש ${points_to_redeem} נקודות בקופה`,
       balance_after: newBalance
     });
-    // ATOMIC TRANSACTION END
 
     return Response.json({ 
       success: true, 
