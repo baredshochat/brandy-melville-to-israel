@@ -22,6 +22,7 @@ import CartImport from '../components/order/CartImport';
 import TranzilaPayment from '../components/payment/TranzilaPayment';
 import { extractProductMetadata, mergeMetadataWithLLM } from '../components/order/MetadataExtractor';
 import FinalPriceSummary from '../components/order/FinalPriceSummary';
+import { createRedemptionToken } from "@/functions/createRedemptionToken";
 import { redeemPoints } from "@/functions/redeemPoints";
 import { LoyaltySettings } from "@/entities/LoyaltySettings";
 
@@ -368,6 +369,7 @@ export default function Home() {
   const [confirmingItem, setConfirmingItem] = useState(false); // NEW: prevent double-create
   const [redeemedPoints, setRedeemedPoints] = useState(0);
   const [maxRedeemPct, setMaxRedeemPct] = useState(0.3);
+  const [redemptionTokenId, setRedemptionTokenId] = useState(null); // NEW: Store token ID
 
   const [userLoaded, setUserLoaded] = useState(false);
   
@@ -837,11 +839,32 @@ export default function Home() {
 
   const handleEditItem = (item) => { setEditingItem(item); setCurrentItem(item); setStep(3); };
 
-  const handlePriceConfirm = (price, weight, breakdown) => { 
+  const handlePriceConfirm = async (price, weight, breakdown) => { 
     setTotalPriceILS(price); 
     setTotalWeight(weight); 
     setPriceBreakdown(breakdown);
-    setRedeemedPoints(0); // Reset points - will be set in FinalPriceSummary
+    setRedeemedPoints(0); // Reset points
+    setRedemptionTokenId(null); // Reset token
+    
+    // If user wants to redeem points, create token now
+    if (breakdown?.redeemedPoints && breakdown.redeemedPoints > 0) {
+      try {
+        const { data } = await createRedemptionToken({ 
+          points_amount: breakdown.redeemedPoints 
+        });
+        
+        if (data?.token_id) {
+          setRedemptionTokenId(data.token_id);
+          setRedeemedPoints(breakdown.redeemedPoints);
+          console.log('✅ Redemption token created:', data.token_id);
+        }
+      } catch (error) {
+        console.error('Failed to create redemption token:', error);
+        alert('שגיאה ביצירת אסימון מימוש. אנא נסי שוב.');
+        return; // Stop flow if token creation fails
+      }
+    }
+    
     setStep(6); 
   };
 
@@ -920,12 +943,11 @@ export default function Home() {
         finalTotal: Math.max(0, totalPriceILS - redeemedPoints)
       };
 
-      // Redeem points if used
-      if (redeemedPoints > 0 && currentOrder?.id) {
+      // Redeem points if token exists
+      if (redemptionTokenId && currentOrder?.id) {
         try {
           const result = await redeemPoints({
-            points_to_redeem: redeemedPoints,
-            order_total: totalPriceILS,
+            redemption_token_id: redemptionTokenId,
             order_id: currentOrder.id
           });
           
@@ -936,7 +958,13 @@ export default function Home() {
           console.log('✅ Points redeemed successfully - New balance:', freshUser?.points_balance);
         } catch (e) {
           console.error("Failed to redeem points:", e);
-          alert('שגיאה במימוש הנקודות. אנא פני לשירות לקוחות.');
+          
+          // Check if it's a "token already used" error
+          if (e?.response?.data?.code === 'TOKEN_ALREADY_USED') {
+            console.log('Token already used - skipping alert');
+          } else {
+            alert('שגיאה במימוש הנקודות. אנא פני לשירות לקוחות.');
+          }
           
           // ✅ Refresh user data even on error
           try {
