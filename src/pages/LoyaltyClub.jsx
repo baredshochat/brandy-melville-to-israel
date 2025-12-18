@@ -343,10 +343,10 @@ export default function LoyaltyClub() {
       <PointsSummary points={Number(user.points_balance || 0)} expiringDateString={expiringDateStr} />
 
 
-      {/* Gift + Tiers split layout */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <BirthdayGiftCard amount={birthdayBonusActive?.amount || null} expiresText={birthdayExpiresText} />
+      {/* Tiers first, birthday gift below */}
+      <div className="space-y-6">
         <TiersGrid tiers={TIERS} userTier={userTier} />
+        <BirthdayGiftCard amount={birthdayBonusActive?.amount || null} expiresText={birthdayExpiresText} tiers={TIERS} currentTierName={userTier.name} />
       </div>
 
       {/* 6. Newsletter */}
