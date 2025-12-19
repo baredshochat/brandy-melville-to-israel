@@ -124,7 +124,7 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
     setCodeError('');
 
     try {
-      const codeToCheck = codeInput.trim().toUpperCase();
+      const codeToCheck = codeInput.trim();
       
       // Try UserCoupon first (personal coupons)
       const userCoupons = await UserCoupon.filter({ coupon_code: codeToCheck });
@@ -404,7 +404,7 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
                     type="text"
                     placeholder="הכניסי קוד"
                     value={codeInput}
-                    onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
+                    onChange={(e) => setCodeInput(e.target.value)}
                     className="flex-1"
                     disabled={applyingCode} />
 

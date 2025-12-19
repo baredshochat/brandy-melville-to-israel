@@ -61,11 +61,15 @@ Deno.serve(async (req) => {
         if (template.code_suffix_template) {
           const suffix = template.code_suffix_template
             .replace('{first_name}', firstName)
-            .replace('{user_id}', userId.substring(0, 6));
-          couponCode += suffix + '-' + randomSuffix;
+            .replace('{user_id}', userId.substring(0, 6))
+            .replace('{random}', randomSuffix);
+          couponCode += suffix;
         } else {
-          couponCode += firstName + '-' + randomSuffix;
+          couponCode += randomSuffix;
         }
+        
+        // Convert to uppercase for consistency
+        couponCode = couponCode.toUpperCase();
 
         // Calculate expiry date
         let validUntil;
