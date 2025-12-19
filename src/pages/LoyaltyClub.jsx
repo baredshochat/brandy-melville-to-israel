@@ -219,7 +219,7 @@ export default function LoyaltyClub() {
                   <Gift className="w-5 h-5 text-rose-500" />
                 </div>
                 <div>
-                  <p className="font-medium">20 נקודות בונוס</p>
+                  <p className="font-medium">10% הנחה בקניה הבאה</p>
                   <p className="text-sm text-stone-600">בהצטרפות + ניוזלטר (בתוקף 7 ימים)</p>
                 </div>
               </div>
