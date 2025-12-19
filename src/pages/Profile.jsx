@@ -288,7 +288,7 @@ export default function ProfilePage() {
                 </p>
                 <Link to={createPageUrl('LoyaltyClub')}>
                   <Button className="bg-stone-900 hover:bg-stone-800">
-                    הצטרפי עכשיו וקבלי 30 נקודות! 🎁
+                    הצטרפי עכשיו וקבלי 10%! 🎁
                   </Button>
                 </Link>
               </CardContent>
