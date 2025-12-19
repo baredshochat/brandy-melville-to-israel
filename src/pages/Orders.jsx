@@ -467,7 +467,7 @@ export default function Orders() {
   // State for status update email dialog
   const [statusUpdateDialog, setStatusUpdateDialog] = useState({ open: false, order: null, sending: false });
 
-  // NEW: active view mode - 'received' (all confirmed orders) or 'awaiting_payment'
+  // NEW: active view mode - 'received' (all confirmed orders), 'awaiting_payment', or 'delivered'
   const [activeView, setActiveView] = useState('received');
 
   // helpers for email preview
@@ -748,10 +748,12 @@ export default function Orders() {
       if (!isCompleteOrder(order)) return false;
       
       // Filter based on activeView
-      // 'received' = all orders EXCEPT awaiting_payment (i.e. paid/confirmed orders)
+      // 'received' = all orders EXCEPT awaiting_payment and delivered
       // 'awaiting_payment' = only orders waiting for payment
-      if (activeView === 'received' && order.status === 'awaiting_payment') return false;
+      // 'delivered' = only delivered orders
+      if (activeView === 'received' && (order.status === 'awaiting_payment' || order.status === 'delivered')) return false;
       if (activeView === 'awaiting_payment' && order.status !== 'awaiting_payment') return false;
+      if (activeView === 'delivered' && order.status !== 'delivered') return false;
 
       // Search filter
       if (searchQuery) {
@@ -791,6 +793,11 @@ export default function Orders() {
     return orders.filter(order => !order.is_deleted && isCompleteOrder(order) && order.status === 'awaiting_payment');
   }, [orders]);
 
+  // Delivered orders
+  const deliveredOrders = useMemo(() => {
+    return orders.filter(order => !order.is_deleted && isCompleteOrder(order) && order.status === 'delivered');
+  }, [orders]);
+
   // Deleted orders (trash)
   const deletedOrders = useMemo(() => {
     return orders.filter(order => order.is_deleted && isCompleteOrder(order));
@@ -801,13 +808,13 @@ export default function Orders() {
     const totalOrders = filteredOrders.length;
     const totalRevenue = filteredOrders.reduce((sum, order) => sum + (order.total_price_ils || 0), 0);
     // Count received orders = all complete orders that are NOT awaiting_payment and not deleted
-    const receivedOrders = orders.filter(order => !order.is_deleted && isCompleteOrder(order) && order.status !== 'awaiting_payment').length;
-    const completedOrders = filteredOrders.filter(order => order.status === 'delivered').length;
+    const receivedOrders = orders.filter(order => !order.is_deleted && isCompleteOrder(order) && order.status !== 'awaiting_payment' && order.status !== 'delivered').length;
+    const deliveredCount = deliveredOrders.length;
     const awaitingPayment = awaitingPaymentOrders.length;
     const inTrash = deletedOrders.length;
 
-    return { totalOrders, totalRevenue, receivedOrders, completedOrders, awaitingPayment, inTrash };
-  }, [orders, filteredOrders, awaitingPaymentOrders, deletedOrders]);
+    return { totalOrders, totalRevenue, receivedOrders, deliveredCount, awaitingPayment, inTrash };
+  }, [orders, filteredOrders, awaitingPaymentOrders, deliveredOrders, deletedOrders]);
 
   const handleRowClick = (order) => {
     setSelectedOrder(order);
@@ -1019,7 +1026,7 @@ export default function Orders() {
             </div>
 
             {/* KPI Cards - Click to switch view */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               {/* Awaiting Payment - prominent warning */}
               <Card
                 className={`cursor-pointer hover:shadow-md transition-shadow border-red-200 bg-red-50 ${activeView === 'awaiting_payment' ? 'ring-2 ring-red-400' : ''}`}
@@ -1047,6 +1054,21 @@ export default function Orders() {
                       <p className="text-2xl font-bold text-stone-900">{kpis.receivedOrders}</p>
                     </div>
                     <Clock className="w-8 h-8 text-stone-400" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card
+                className={`cursor-pointer hover:shadow-md transition-shadow border-green-200 bg-green-50 ${activeView === 'delivered' ? 'ring-2 ring-green-400' : ''}`}
+                onClick={() => setActiveView('delivered')}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-green-700 mb-1">הזמנות שנמסרו</p>
+                      <p className="text-2xl font-bold text-green-800">{kpis.deliveredCount}</p>
+                    </div>
+                    <CheckCircle className="w-8 h-8 text-green-500" />
                   </div>
                 </CardContent>
               </Card>
@@ -1178,7 +1200,9 @@ export default function Orders() {
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <CardTitle>
-                    {activeView === 'awaiting_payment' ? 'ממתינות לתשלום' : 'הזמנות שהתקבלו ושולמו'} ({filteredOrders.length})
+                    {activeView === 'awaiting_payment' ? 'ממתינות לתשלום' : 
+                     activeView === 'delivered' ? 'הזמנות שנמסרו' : 
+                     'הזמנות שהתקבלו ושולמו'} ({filteredOrders.length})
                   </CardTitle>
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm">
