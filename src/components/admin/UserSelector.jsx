@@ -26,7 +26,7 @@ export default function UserSelector({ onSelectionChange, initialSelection = [] 
 
     // Filter by tier
     if (tierFilter !== 'all') {
-      filtered = filtered.filter(u => u.user_tier === tierFilter);
+      filtered = filtered.filter(u => u.tier === tierFilter);
     }
 
     // Filter by opt-in status
@@ -195,9 +195,9 @@ export default function UserSelector({ onSelectionChange, initialSelection = [] 
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <div className="font-medium text-stone-900">{user.full_name || 'ללא שם'}</div>
-                    {user.user_tier && (
-                      <Badge className={getTierColor(user.user_tier)}>
-                        {getTierLabel(user.user_tier)}
+                    {user.tier && (
+                      <Badge className={getTierColor(user.tier)}>
+                        {getTierLabel(user.tier)}
                       </Badge>
                     )}
                     {user.marketing_opt_in && (
