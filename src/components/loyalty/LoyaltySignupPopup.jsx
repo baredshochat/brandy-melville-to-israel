@@ -13,7 +13,7 @@ import { joinClub } from '@/functions/joinClub';
 export default function LoyaltySignupPopup() {
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState(null);
-  const [formData, setFormData] = useState({ birthday: '', phone: '', marketing_opt_in: false });
+  const [formData, setFormData] = useState({ birthday: '', phone: '', marketing_opt_in: true });
   const [joining, setJoining] = useState(false);
   const [popupSettings, setPopupSettings] = useState({});
   const signupBonus = Number(popupSettings?.signup_bonus || 30);

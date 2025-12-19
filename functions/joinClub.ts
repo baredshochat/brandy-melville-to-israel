@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { birthday, phone } = await req.json();
+    const { birthday, phone, marketing_opt_in } = await req.json();
 
     // Get current user data
     const users = await base44.asServiceRole.entities.User.filter({
@@ -30,12 +30,21 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Update user - join club (no bonus points)
-    await base44.asServiceRole.entities.User.update(userData.id, {
+    // Update user - join club with automatic marketing opt-in
+    const updateData = {
       club_member: true,
       birthday: birthday || userData.birthday,
-      phone: phone || userData.phone
-    });
+      phone: phone || userData.phone,
+      marketing_opt_in: marketing_opt_in !== false, // Default to true
+      marketing_source: 'loyalty_signup'
+    };
+
+    // Add timestamp if opting in
+    if (updateData.marketing_opt_in) {
+      updateData.marketing_opt_in_at = new Date().toISOString();
+    }
+
+    await base44.asServiceRole.entities.User.update(userData.id, updateData);
 
     // Trigger signup coupon creation
     try {
