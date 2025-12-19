@@ -4,7 +4,6 @@ import { Input } from '@/components/ui/input';
 import { ArrowRight, ArrowLeft, Loader2, ShieldCheck, Tag } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { PricingLabels } from '@/entities/PricingLabels';
-import { Code } from '@/entities/Code';
 import { UserCoupon } from '@/entities/UserCoupon';
 import { User } from '@/entities/User';
 
@@ -165,8 +164,10 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
         const mappedCode = {
           ...userCoupon,
           code: userCoupon.coupon_code,
-          reward_type: userCoupon.discount_type === 'percentage' ? 'percent' : 'fixed',
+          reward_type: userCoupon.discount_type === 'percentage' ? 'percent' : userCoupon.discount_type === 'fixed' ? 'fixed' : 'buy_x_get_y',
           value: userCoupon.discount_value,
+          buy_quantity: userCoupon.buy_quantity,
+          get_quantity: userCoupon.get_quantity,
           is_active: true,
           _isUserCoupon: true
         };
@@ -177,38 +178,10 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
         return;
       }
       
-      // Try regular Code entity
-      const codes = await Code.filter({ code: codeToCheck });
-
-      if (!codes || codes.length === 0) {
-        setCodeError('קוד לא תקף');
-        setApplyingCode(false);
-        return;
-      }
-
-      const code = codes[0];
-
-      // Validations
-      if (!code.is_active) {
-        setCodeError('הקוד אינו פעיל');
-        setApplyingCode(false);
-        return;
-      }
-
-      if (code.expires_at && new Date(code.expires_at) < new Date()) {
-        setCodeError('תוקף הקוד פג');
-        setApplyingCode(false);
-        return;
-      }
-
-      if (code.usage_limit_total && code.used_count >= code.usage_limit_total) {
-        setCodeError('הקוד הגיע למגבלת השימוש');
-        setApplyingCode(false);
-        return;
-      }
-
-      setAppliedCode(code);
-      setCodeError('');
+      // No regular Code found
+      setCodeError('קוד לא תקף');
+      setApplyingCode(false);
+      return;
     } catch (err) {
       console.error('Error applying code:', err);
       setCodeError('שגיאה בבדיקת הקוד');
@@ -240,16 +213,27 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
     }
 
     if (appliedCode.reward_type === 'buy_x_get_y') {
+      const buyQty = appliedCode.buy_quantity;
+      const getQty = appliedCode.get_quantity;
+      
+      if (!buyQty || !getQty) {
+        return { amount: 0, message: 'הגדרות קופון שגויות' };
+      }
+
       const totalQty = eligibleItems.reduce((sum, item) => sum + item.quantity, 0);
 
-      if (totalQty >= appliedCode.buy_quantity) {
-        const sortedItems = [...eligibleItems].sort((a, b) => 
-          (a.original_price || 0) - (b.original_price || 0)
-        );
+      if (totalQty >= buyQty) {
+        // Sort items by price (cheapest first for free items)
+        const sortedItems = [...eligibleItems].sort((a, b) => {
+          const priceA = a.fullPrice ? (a.fullPrice / a.quantity) : (a.original_price || 0);
+          const priceB = b.fullPrice ? (b.fullPrice / b.quantity) : (b.original_price || 0);
+          return priceA - priceB;
+        });
 
+        // Calculate how many free items
         const freeQty = Math.min(
-          appliedCode.get_quantity,
-          Math.floor(totalQty / appliedCode.buy_quantity) * appliedCode.get_quantity
+          getQty,
+          Math.floor(totalQty / buyQty) * getQty
         );
 
         let remainingFree = freeQty;
@@ -258,18 +242,19 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
         for (const item of sortedItems) {
           if (remainingFree <= 0) break;
           const itemsToDiscount = Math.min(remainingFree, item.quantity);
-          discount += itemsToDiscount * (item.original_price || 0);
+          const itemPrice = item.fullPrice ? (item.fullPrice / item.quantity) : (item.original_price || 0);
+          discount += itemsToDiscount * itemPrice;
           remainingFree -= itemsToDiscount;
         }
 
         return { 
           amount: Math.round(discount), 
-          message: `קנה ${appliedCode.buy_quantity} קבל ${appliedCode.get_quantity} - ${freeQty} פריטים בחינם!`
+          message: `קנה ${buyQty} קבל ${getQty} - ${freeQty} פריטים בחינם!`
         };
       } else {
         return { 
           amount: 0, 
-          message: `קנה עוד ${appliedCode.buy_quantity - totalQty} פריטים לקבלת ההנחה`
+          message: `קנה עוד ${buyQty - totalQty} פריטים לקבלת ההנחה`
         };
       }
     }
@@ -304,30 +289,16 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
       };
 
       // Increment code usage if applied
-      if (appliedCode) {
+      if (appliedCode && appliedCode._isUserCoupon) {
         try {
-          if (appliedCode._isUserCoupon) {
-            // Update UserCoupon
-            const newTimesUsed = (appliedCode.times_used || 0) + 1;
-            const shouldMarkUsed = newTimesUsed >= appliedCode.usage_limit_per_user;
-            
-            await UserCoupon.update(appliedCode.id, { 
-              times_used: newTimesUsed,
-              status: shouldMarkUsed ? 'used' : 'active',
-              used_at: shouldMarkUsed ? new Date().toISOString() : appliedCode.used_at
-            });
-          } else {
-            // Update regular Code
-            await Code.update(appliedCode.id, { 
-              used_count: (appliedCode.used_count || 0) + 1 
-            });
-            
-            // Check if should disable due to limits
-            if (appliedCode.usage_limit_total && 
-                (appliedCode.used_count + 1) >= appliedCode.usage_limit_total) {
-              await Code.update(appliedCode.id, { is_active: false });
-            }
-          }
+          const newTimesUsed = (appliedCode.times_used || 0) + 1;
+          const shouldMarkUsed = newTimesUsed >= appliedCode.usage_limit_per_user;
+          
+          await UserCoupon.update(appliedCode.id, { 
+            times_used: newTimesUsed,
+            status: shouldMarkUsed ? 'used' : 'active',
+            used_at: shouldMarkUsed ? new Date().toISOString() : appliedCode.used_at
+          });
         } catch (err) {
           console.error('Error updating code usage:', err);
         }

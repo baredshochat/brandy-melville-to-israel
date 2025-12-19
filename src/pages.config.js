@@ -21,7 +21,6 @@ import ChatLogs from './pages/ChatLogs';
 import ProfitReports from './pages/ProfitReports';
 import CompletePayment from './pages/CompletePayment';
 import BackInStockNotifications from './pages/BackInStockNotifications';
-import ManageCodes from './pages/ManageCodes';
 import LoyaltyClub from './pages/LoyaltyClub';
 import LoyaltyAdmin from './pages/LoyaltyAdmin';
 import ManageCouponTemplates from './pages/ManageCouponTemplates';
@@ -52,7 +51,6 @@ export const PAGES = {
     "ProfitReports": ProfitReports,
     "CompletePayment": CompletePayment,
     "BackInStockNotifications": BackInStockNotifications,
-    "ManageCodes": ManageCodes,
     "LoyaltyClub": LoyaltyClub,
     "LoyaltyAdmin": LoyaltyAdmin,
     "ManageCouponTemplates": ManageCouponTemplates,

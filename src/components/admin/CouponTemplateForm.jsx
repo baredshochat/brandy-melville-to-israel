@@ -13,6 +13,8 @@ export default function CouponTemplateForm({ template, onSave, onCancel }) {
     event_type: 'admin_manual',
     discount_type: 'percentage',
     discount_value: 10,
+    buy_quantity: '',
+    get_quantity: '',
     valid_days: 30,
     valid_until: '',
     usage_limit_per_user: 1,
