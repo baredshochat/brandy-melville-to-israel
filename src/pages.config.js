@@ -24,6 +24,7 @@ import BackInStockNotifications from './pages/BackInStockNotifications';
 import ManageCodes from './pages/ManageCodes';
 import LoyaltyClub from './pages/LoyaltyClub';
 import LoyaltyAdmin from './pages/LoyaltyAdmin';
+import ManageCouponTemplates from './pages/ManageCouponTemplates';
 import __Layout from './Layout.jsx';
 
 
@@ -54,6 +55,7 @@ export const PAGES = {
     "ManageCodes": ManageCodes,
     "LoyaltyClub": LoyaltyClub,
     "LoyaltyAdmin": LoyaltyAdmin,
+    "ManageCouponTemplates": ManageCouponTemplates,
 }
 
 export const pagesConfig = {
