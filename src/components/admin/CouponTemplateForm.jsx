@@ -76,20 +76,48 @@ export default function CouponTemplateForm({ template, onSave, onCancel }) {
               <SelectContent>
                 <SelectItem value="percentage">אחוז (%)</SelectItem>
                 <SelectItem value="fixed">סכום קבוע (₪)</SelectItem>
+                <SelectItem value="buy_x_get_y">קנה X קבל Y</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          <div>
-            <Label htmlFor="discount_value">ערך ההנחה *</Label>
-            <Input
-              id="discount_value"
-              type="number"
-              value={formData.discount_value}
-              onChange={(e) => handleChange('discount_value', parseFloat(e.target.value))}
-              placeholder={formData.discount_type === 'percentage' ? '10' : '50'}
-              required
-            />
-          </div>
+          {formData.discount_type !== 'buy_x_get_y' ? (
+            <div>
+              <Label htmlFor="discount_value">ערך ההנחה *</Label>
+              <Input
+                id="discount_value"
+                type="number"
+                value={formData.discount_value}
+                onChange={(e) => handleChange('discount_value', parseFloat(e.target.value))}
+                placeholder={formData.discount_type === 'percentage' ? '10' : '50'}
+                required={formData.discount_type !== 'buy_x_get_y'}
+              />
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="buy_quantity">כמות לקנייה *</Label>
+                <Input
+                  id="buy_quantity"
+                  type="number"
+                  value={formData.buy_quantity}
+                  onChange={(e) => handleChange('buy_quantity', parseInt(e.target.value))}
+                  placeholder="2"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="get_quantity">כמות במתנה *</Label>
+                <Input
+                  id="get_quantity"
+                  type="number"
+                  value={formData.get_quantity}
+                  onChange={(e) => handleChange('get_quantity', parseInt(e.target.value))}
+                  placeholder="1"
+                  required
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
