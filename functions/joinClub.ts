@@ -30,60 +30,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get signup bonus setting
-    let signupBonus = 30; // default 30 points
-    try {
-      const settings = await base44.asServiceRole.entities.LoyaltySettings.filter({
-        setting_key: 'signup_bonus'
-      });
-      if (settings && settings.length > 0) {
-        signupBonus = parseInt(settings[0].value);
-      }
-    } catch (e) {
-      console.log('Using default signup bonus:', e.message);
-    }
-
-    const currentBalance = userData.points_balance || 0;
-    const newBalance = currentBalance + signupBonus;
-
-    // Update user - join club and add bonus
+    // Update user - join club (no bonus points)
     await base44.asServiceRole.entities.User.update(userData.id, {
       club_member: true,
       birthday: birthday || userData.birthday,
-      phone: phone || userData.phone,
-      points_balance: newBalance
+      phone: phone || userData.phone
     });
-
-    // Create ledger entry for bonus
-    await base44.asServiceRole.entities.PointsLedger.create({
-      user_email: user.email,
-      type: 'bonus',
-      amount: signupBonus,
-      source: 'signup',
-      description: `בונוס הצטרפות למועדון`,
-      balance_after: newBalance
-    });
-
-    // Send welcome email
-    try {
-      await base44.asServiceRole.integrations.Core.SendEmail({
-        from_name: "Brandy Melville to Israel",
-        to: user.email,
-        subject: "ברוכה הבאה למועדון הלקוחות! 🎉",
-        body: `
-          <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h1 style="color: #F43F5E;">ברוכה הבאה למועדון! 💖</h1>
-            <p>היי ${user.full_name || 'יקרה'},</p>
-            <p>קיבלת <strong>${signupBonus} נקודות בונוס</strong> להצטרפות למועדון הלקוחות שלנו!</p>
-            <p>מעכשיו את צוברת <strong>10% נקודות</strong> על כל הזמנה, ומקבלת הטבות מיוחדות ביום ההולדת שלך 🎂</p>
-            <p>היתרה הנוכחית שלך: <strong>${newBalance} נקודות</strong></p>
-            <p style="margin-top: 20px;">בברנדי שלך,<br>צוות Brandy Melville to Israel</p>
-          </div>
-        `
-      });
-    } catch (e) {
-      console.error('Failed to send welcome email:', e.message);
-    }
 
     // Trigger signup coupon creation
     try {
@@ -95,9 +47,7 @@ Deno.serve(async (req) => {
     }
 
     return Response.json({ 
-      success: true, 
-      bonus_points: signupBonus,
-      new_balance: newBalance,
+      success: true,
       message: 'הצטרפת בהצלחה למועדון!'
     });
 
