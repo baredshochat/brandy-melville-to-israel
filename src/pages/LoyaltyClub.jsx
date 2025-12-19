@@ -243,7 +243,7 @@ export default function LoyaltyClub() {
 
             <div className="pt-2">
               <Button onClick={handleJoin} disabled={!joinForm.birthday || joining} className="w-full bg-rose-500 hover:bg-rose-600 h-12 text-lg">
-                {joining ? (<><Loader2 className="w-4 h-4 animate-spin ml-2" /> מצטרפת...</>) : (<>הצטרפי למועדון וקבלי 20 נקודות מתנה</>)}
+                {joining ? (<><Loader2 className="w-4 h-4 animate-spin ml-2" /> מצטרפת...</>) : (<>הצטרפי למועדון וקבלי 10% הנחה מתנה</>)}
               </Button>
             </div>
           </CardContent>
