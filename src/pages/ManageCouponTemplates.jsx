@@ -138,9 +138,13 @@ export default function ManageCouponTemplates() {
 
   const getDiscountDisplay = (template) => {
     if (template.discount_type === 'percentage') {
-      return `${template.discount_value}% הנחה`;
+      return `${template.discount_value}%`;
+    } else if (template.discount_type === 'fixed') {
+      return `₪${template.discount_value}`;
+    } else if (template.discount_type === 'buy_x_get_y') {
+      return `קנה ${template.buy_quantity} קבל ${template.get_quantity}`;
     }
-    return `₪${template.discount_value} הנחה`;
+    return 'לא הוגדר';
   };
 
   if (loading) {
