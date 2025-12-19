@@ -5,6 +5,8 @@ import { ArrowRight, ArrowLeft, Loader2, ShieldCheck, Tag } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { PricingLabels } from '@/entities/PricingLabels';
 import { Code } from '@/entities/Code';
+import { UserCoupon } from '@/entities/UserCoupon';
+import { User } from '@/entities/User';
 
 const formatMoney = (amount) => {
   return `₪${Math.round(amount).toLocaleString('he-IL')}`;
@@ -30,6 +32,10 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
   const [codeError, setCodeError] = useState('');
   const [applyingCode, setApplyingCode] = useState(false);
   const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    User.me().then(u => setUser(u)).catch(() => setUser(null));
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {
@@ -119,7 +125,60 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
     setCodeError('');
 
     try {
-      const codes = await Code.filter({ code: codeInput.trim().toUpperCase() });
+      const codeToCheck = codeInput.trim().toUpperCase();
+      
+      // Try UserCoupon first (personal coupons)
+      const userCoupons = await UserCoupon.filter({ coupon_code: codeToCheck });
+      
+      if (userCoupons && userCoupons.length > 0) {
+        const userCoupon = userCoupons[0];
+        
+        // Check if coupon belongs to logged-in user
+        if (user && userCoupon.user_id !== user.id) {
+          setCodeError('קוד זה אינו שייך לך');
+          setApplyingCode(false);
+          return;
+        }
+        
+        // Check status
+        if (userCoupon.status !== 'active') {
+          setCodeError(userCoupon.status === 'used' ? 'הקוד כבר נוצל' : 'הקוד אינו פעיל');
+          setApplyingCode(false);
+          return;
+        }
+        
+        // Check expiry
+        if (userCoupon.valid_until && new Date(userCoupon.valid_until) < new Date()) {
+          setCodeError('תוקף הקוד פג');
+          setApplyingCode(false);
+          return;
+        }
+        
+        // Check usage limit
+        if (userCoupon.times_used >= userCoupon.usage_limit_per_user) {
+          setCodeError('הגעת למגבלת השימוש בקוד');
+          setApplyingCode(false);
+          return;
+        }
+        
+        // Convert UserCoupon to Code format for discount calculation
+        const mappedCode = {
+          ...userCoupon,
+          code: userCoupon.coupon_code,
+          reward_type: userCoupon.discount_type === 'percentage' ? 'percent' : 'fixed',
+          value: userCoupon.discount_value,
+          is_active: true,
+          _isUserCoupon: true
+        };
+        
+        setAppliedCode(mappedCode);
+        setCodeError('');
+        setApplyingCode(false);
+        return;
+      }
+      
+      // Try regular Code entity
+      const codes = await Code.filter({ code: codeToCheck });
 
       if (!codes || codes.length === 0) {
         setCodeError('קוד לא תקף');
@@ -247,14 +306,27 @@ export default function PriceCalculator({ cart, site, onConfirm, onBack }) {
       // Increment code usage if applied
       if (appliedCode) {
         try {
-          await Code.update(appliedCode.id, { 
-            used_count: (appliedCode.used_count || 0) + 1 
-          });
-          
-          // Check if should disable due to limits
-          if (appliedCode.usage_limit_total && 
-              (appliedCode.used_count + 1) >= appliedCode.usage_limit_total) {
-            await Code.update(appliedCode.id, { is_active: false });
+          if (appliedCode._isUserCoupon) {
+            // Update UserCoupon
+            const newTimesUsed = (appliedCode.times_used || 0) + 1;
+            const shouldMarkUsed = newTimesUsed >= appliedCode.usage_limit_per_user;
+            
+            await UserCoupon.update(appliedCode.id, { 
+              times_used: newTimesUsed,
+              status: shouldMarkUsed ? 'used' : 'active',
+              used_at: shouldMarkUsed ? new Date().toISOString() : appliedCode.used_at
+            });
+          } else {
+            // Update regular Code
+            await Code.update(appliedCode.id, { 
+              used_count: (appliedCode.used_count || 0) + 1 
+            });
+            
+            // Check if should disable due to limits
+            if (appliedCode.usage_limit_total && 
+                (appliedCode.used_count + 1) >= appliedCode.usage_limit_total) {
+              await Code.update(appliedCode.id, { is_active: false });
+            }
           }
         } catch (err) {
           console.error('Error updating code usage:', err);
