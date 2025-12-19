@@ -61,43 +61,18 @@ export default function ProfilePage() {
         const currentUser = await User.me();
         setUser(currentUser);
 
-       onst [activeCodes, setActiveCodes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [updatingMarketing, setUpdatingMarketing] = useState(false);
-
-  useEffect(() => {
-    const loadUserData = async () => {
-      setLoading(true);
-      try {
-        const currentUser = await User.me();
-        setUser(currentUser);
-
         const orders = await Order.filter(
-  { customer_email: currentUser.email },
-  '-created_date',
-  3
-);
+          { customer_email: currentUser.email },
+          '-created_date',
+          3
+        );
 
-// סינון הזמנות שלא שולמו / נכשלו
-const visibleOrders = (orders || []).filter(order =>
-  !['awaiting_payment', 'payment_failed'].includes(order.status)
-);
+        // סינון הזמנות שלא שולמו / נכשלו
+        const visibleOrders = (orders || []).filter(order =>
+          !['awaiting_payment', 'payment_failed'].includes(order.status)
+        );
 
-setRecentOrders(visibleOrders);
-
-        
-        if (currentUser.club_member) {
-          try {
-            const ledger = await PointsLedger.filter({ user_email: currentUser.email }, '-created_date', 3);
-            setRecentLedger(ledger || []);
-
-            const codes = await Code.filter({
-              allowed_emails: { $in: [currentUser.email] },
-              is_active: true
-            });
-            setActiveCodes(codes || []);
-          } catch (error) {
-            console.log('No loyalty data yet');
+        setRecentOrders(visibleOrders);
         
         if (currentUser.club_member) {
           try {
