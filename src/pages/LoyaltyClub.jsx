@@ -202,7 +202,7 @@ export default function LoyaltyClub() {
                 </div>
                 <div>
                   <p className="font-medium">צבירת נקודות</p>
-                  <p className="text-sm text-stone-600">כל נקודה = 1 ₪ בקנייה הבאה</p>
+                  <p className="text-sm text-stone-600">כל נקודה מקרבת אותך להטבות שוות</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
