@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Home, Package, Truck, Settings, Heart, FileText, Calculator, MessageSquare, BarChart3, User as UserIcon, DollarSign, TrendingUp } from "lucide-react";
+import { Home, Package, Truck, Settings, Heart, FileText, MessageSquare, BarChart3, User as UserIcon, TrendingUp } from "lucide-react";
 import { User } from "@/entities/User";
 import SheetNav from './components/layout/SheetNav';
 import CartPopover from './components/layout/CartPopover';
@@ -64,8 +64,6 @@ export default function Layout({ children }) {
   { name: "BackInStockNotifications", label: "התראות חזרה למלאי", icon: MessageSquare, roles: ['admin'] },
   { name: "Reports", label: "דוחות ואנליטיקה", icon: BarChart3, roles: ['admin'] },
   { name: "ProfitReports", label: "דוחות רווח נקי", icon: TrendingUp, roles: ['admin'] },
-  { name: "CalculationSettings", label: "הגדרות חישוב מחיר", icon: Calculator, roles: ['admin'] },
-  { name: "ExchangeRates", label: "שערי חליפין", icon: DollarSign, roles: ['admin'] },
   { name: "ManageCouponTemplates", label: "ניהול קופונים אישיים", icon: FileText, roles: ['admin'] },
 
   { name: "LoyaltyAdmin", label: "ניהול מועדון לקוחות", icon: Heart, roles: ['admin'] },
