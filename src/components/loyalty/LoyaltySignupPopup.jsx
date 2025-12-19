@@ -77,7 +77,7 @@ export default function LoyaltySignupPopup() {
     try {
       const { data } = await joinClub(formData);
       if (data.success) {
-        alert(`🎉 הצטרפת בהצלחה למועדון!\nקיבלת ${data.bonus_points} נקודות בונוס!`);
+        alert(`🎉 הצטרפת בהצלחה למועדון!\nקיבלת 10% הנחה לקניה הבאה!`);
         setOpen(false);
         localStorage.setItem('loyalty_popup_dismissed', 'true');
         window.location.reload();

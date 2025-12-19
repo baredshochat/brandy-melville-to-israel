@@ -118,7 +118,7 @@ export default function LoyaltyClub() {
     try {
       const { data } = await joinClub(joinForm);
       if (data?.success) {
-        alert(`${data.message || 'הצטרפת בהצלחה!'}\nקיבלת 20 נקודות בונוס 🎉`);
+        alert(`${data.message || 'הצטרפת בהצלחה!'}\nקיבלת 10% הנחה לקניה הבאה! 🎉`);
         // Refresh
         const u = await User.me();
         setUser(u);
