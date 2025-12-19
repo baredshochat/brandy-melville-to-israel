@@ -85,6 +85,15 @@ Deno.serve(async (req) => {
       console.error('Failed to send welcome email:', e.message);
     }
 
+    // Trigger signup coupon creation
+    try {
+      await base44.asServiceRole.functions.invoke('createSignupCoupon', {
+        user_id: userData.id
+      });
+    } catch (e) {
+      console.error('Failed to create signup coupon:', e.message);
+    }
+
     return Response.json({ 
       success: true, 
       bonus_points: signupBonus,
