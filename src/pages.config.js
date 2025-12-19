@@ -3,7 +3,6 @@ import Orders from './pages/Orders';
 import TrackOrder from './pages/TrackOrder';
 import PricingLabelsSettings from './pages/PricingLabelsSettings';
 import Terms from './pages/Terms';
-import CalculationSettings from './pages/CalculationSettings';
 import StatusSettings from './pages/StatusSettings';
 import Chat from './pages/Chat';
 import Reports from './pages/Reports';
@@ -14,7 +13,6 @@ import Referral from './pages/Referral';
 import LocalStock from './pages/LocalStock';
 import ManageLocalStock from './pages/ManageLocalStock';
 import LocalStockItemDetail from './pages/LocalStockItemDetail';
-import ExchangeRates from './pages/ExchangeRates';
 import ManageCoupons from './pages/ManageCoupons';
 import ReturnsPolicy from './pages/ReturnsPolicy';
 import ChatLogs from './pages/ChatLogs';
@@ -33,7 +31,6 @@ export const PAGES = {
     "TrackOrder": TrackOrder,
     "PricingLabelsSettings": PricingLabelsSettings,
     "Terms": Terms,
-    "CalculationSettings": CalculationSettings,
     "StatusSettings": StatusSettings,
     "Chat": Chat,
     "Reports": Reports,
@@ -44,7 +41,6 @@ export const PAGES = {
     "LocalStock": LocalStock,
     "ManageLocalStock": ManageLocalStock,
     "LocalStockItemDetail": LocalStockItemDetail,
-    "ExchangeRates": ExchangeRates,
     "ManageCoupons": ManageCoupons,
     "ReturnsPolicy": ReturnsPolicy,
     "ChatLogs": ChatLogs,
