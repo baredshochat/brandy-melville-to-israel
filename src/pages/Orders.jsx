@@ -567,7 +567,39 @@ export default function Orders() {
   // UPDATE: send status/payment emails — if הלקוחה לא רשומה לאפליקציה → פותחים חלון תצוגה למייל ידני
   const handleUpdateOrder = async (orderId, data) => {
     try {
-      await Order.update(orderId, data);
+      // If status is being updated, also update purchase_status of all items
+      if (data.status) {
+        const order = orders.find(o => o.id === orderId);
+        
+        // Map order status to supplier purchase_status
+        const statusToPurchaseStatus = {
+          'pending': 'needs_order',
+          'ordered': 'ordered',
+          'warehouse': 'warehouse',
+          'shipping_to_israel': 'in_transit',
+          'in_israel': 'warehouse',
+          'shipping_to_customer': 'shipped_to_customer',
+          'delivered': 'delivered'
+        };
+        
+        const newPurchaseStatus = statusToPurchaseStatus[data.status];
+        
+        if (newPurchaseStatus && order?.items) {
+          // Update all items with the new purchase_status
+          const updatedItems = order.items.map(item => ({
+            ...item,
+            purchase_status: newPurchaseStatus,
+            last_purchase_status_date: new Date().toISOString()
+          }));
+          
+          // Update order with new items
+          await Order.update(orderId, { ...data, items: updatedItems });
+        } else {
+          await Order.update(orderId, data);
+        }
+      } else {
+        await Order.update(orderId, data);
+      }
 
       // Send status update email if status changed (existing)
       if (data.status) {
