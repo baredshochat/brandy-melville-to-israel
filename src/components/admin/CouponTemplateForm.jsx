@@ -13,14 +13,14 @@ export default function CouponTemplateForm({ template, onSave, onCancel }) {
     event_type: 'admin_manual',
     discount_type: 'percentage',
     discount_value: 10,
-    buy_quantity: '',
-    get_quantity: '',
+    buy_quantity: null,
+    get_quantity: null,
     valid_days: 30,
     valid_until: '',
     usage_limit_per_user: 1,
     usage_limit_total: null,
     code_prefix: 'COUPON-',
-    code_suffix_template: '{first_name}',
+    code_suffix_template: '{first_name}{random}',
     email_subject: 'קופון הנחה מיוחד עבורך! 🎁',
     email_body_template: '',
     is_active: true,
@@ -34,6 +34,15 @@ export default function CouponTemplateForm({ template, onSave, onCancel }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Validate buy_x_get_y fields
+    if (formData.discount_type === 'buy_x_get_y') {
+      if (!formData.buy_quantity || !formData.get_quantity) {
+        alert('יש למלא כמות לקנייה וכמות במתנה');
+        return;
+      }
+    }
+    
     onSave(formData);
   };
 
@@ -99,10 +108,10 @@ export default function CouponTemplateForm({ template, onSave, onCancel }) {
                 <Input
                   id="buy_quantity"
                   type="number"
-                  value={formData.buy_quantity}
-                  onChange={(e) => handleChange('buy_quantity', parseInt(e.target.value))}
+                  value={formData.buy_quantity || ''}
+                  onChange={(e) => handleChange('buy_quantity', e.target.value ? parseInt(e.target.value) : null)}
                   placeholder="2"
-                  required
+                  min="1"
                 />
               </div>
               <div>
@@ -110,10 +119,10 @@ export default function CouponTemplateForm({ template, onSave, onCancel }) {
                 <Input
                   id="get_quantity"
                   type="number"
-                  value={formData.get_quantity}
-                  onChange={(e) => handleChange('get_quantity', parseInt(e.target.value))}
+                  value={formData.get_quantity || ''}
+                  onChange={(e) => handleChange('get_quantity', e.target.value ? parseInt(e.target.value) : null)}
                   placeholder="1"
-                  required
+                  min="1"
                 />
               </div>
             </div>
