@@ -21,6 +21,7 @@ import PointsSummary from '@/components/loyalty/PointsSummary';
 import BirthdayGiftCard from '@/components/loyalty/BirthdayGiftCard';
 import TiersGrid from '@/components/loyalty/TiersGrid';
 import StickyCTA from '@/components/loyalty/StickyCTA';
+import UserCouponsList from '@/components/loyalty/UserCouponsList';
 
 export default function LoyaltyClub() {
   const [user, setUser] = useState(null);
@@ -341,6 +342,16 @@ export default function LoyaltyClub() {
 
       {/* 3. Points */}
       <PointsSummary points={Number(user.points_balance || 0)} expiringDateString={expiringDateStr} />
+
+      {/* User Coupons */}
+      <Card className="bg-white/80 backdrop-blur-sm shadow-lg border border-stone-100">
+        <CardHeader>
+          <CardTitle className="text-stone-800">הקופונים שלי</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <UserCouponsList />
+        </CardContent>
+      </Card>
 
 
       {/* Tiers first, birthday gift below */}
