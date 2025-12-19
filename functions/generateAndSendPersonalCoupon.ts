@@ -110,21 +110,33 @@ Deno.serve(async (req) => {
           .replace('{user_name}', targetUser.full_name || 'לקוחה יקרה')
           .replace('{coupon_code}', couponCode);
 
-        const emailBody = (template.email_body_template || `
-          <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2>שלום {user_name}!</h2>
-            <p>שמחים לשלוח לך קופון הנחה מיוחד:</p>
-            <div style="background: #f0f0f0; padding: 20px; text-align: center; margin: 20px 0;">
-              <h1 style="margin: 0; color: #e91e63;">{coupon_code}</h1>
+        let emailBody;
+        
+        // If template has an image, use it instead of text template
+        if (template.email_image_url) {
+          emailBody = `
+            <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; text-align: center;">
+              <img src="${template.email_image_url}" alt="קופון הנחה" style="max-width: 100%; height: auto; display: block; margin: 0 auto;" />
             </div>
-            <p><strong>ההנחה שלך:</strong> ${template.discount_type === 'percentage' ? template.discount_value + '%' : '₪' + template.discount_value}</p>
-            <p><strong>תוקף:</strong> עד {valid_until_date}</p>
-            <p>להזמנה חדשה, הזיני את הקוד בקופה ותיהני מההנחה!</p>
-          </div>
-        `)
-          .replace(/{user_name}/g, targetUser.full_name || 'לקוחה יקרה')
-          .replace(/{coupon_code}/g, couponCode)
-          .replace(/{valid_until_date}/g, validUntilDate);
+          `;
+        } else {
+          // Use text template or default
+          emailBody = (template.email_body_template || `
+            <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2>שלום {user_name}!</h2>
+              <p>שמחים לשלוח לך קופון הנחה מיוחד:</p>
+              <div style="background: #f0f0f0; padding: 20px; text-align: center; margin: 20px 0;">
+                <h1 style="margin: 0; color: #e91e63;">{coupon_code}</h1>
+              </div>
+              <p><strong>ההנחה שלך:</strong> ${template.discount_type === 'percentage' ? template.discount_value + '%' : '₪' + template.discount_value}</p>
+              <p><strong>תוקף:</strong> עד {valid_until_date}</p>
+              <p>להזמנה חדשה, הזיני את הקוד בקופה ותיהני מההנחה!</p>
+            </div>
+          `)
+            .replace(/{user_name}/g, targetUser.full_name || 'לקוחה יקרה')
+            .replace(/{coupon_code}/g, couponCode)
+            .replace(/{valid_until_date}/g, validUntilDate);
+        }
 
         // Send email
         await base44.asServiceRole.integrations.Core.SendEmail({

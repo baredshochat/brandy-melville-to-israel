@@ -5,7 +5,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { ArrowRight, Info } from 'lucide-react';
+import { ArrowRight, Info, Upload, X, Eye } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { base44 } from '@/api/base44Client';
 
 export default function CouponTemplateForm({ template, onSave, onCancel }) {
   const [formData, setFormData] = useState({
@@ -23,13 +25,43 @@ export default function CouponTemplateForm({ template, onSave, onCancel }) {
     code_suffix_template: '{first_name}{random}',
     email_subject: 'קופון הנחה מיוחד עבורך! 🎁',
     email_body_template: '',
+    email_image_url: '',
     is_active: true,
     send_to_opted_in_only: true,
     ...template
   });
 
+  const [uploading, setUploading] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('אנא העלה קובץ תמונה בלבד');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      handleChange('email_image_url', file_url);
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      alert('שגיאה בהעלאת הקובץ');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    handleChange('email_image_url', '');
   };
 
   const handleSubmit = (e) => {
@@ -215,18 +247,104 @@ export default function CouponTemplateForm({ template, onSave, onCancel }) {
           />
         </div>
 
-        <div>
-          <Label htmlFor="email_body_template">תוכן המייל (HTML)</Label>
-          <Textarea
-            id="email_body_template"
-            value={formData.email_body_template}
-            onChange={(e) => handleChange('email_body_template', e.target.value)}
-            rows={8}
-            placeholder="השתמש בתגיות: {user_name}, {coupon_code}, {valid_until_date}"
-          />
-          <p className="text-xs text-stone-500 mt-1">
-            אם ריק, יישלח תבנית ברירת מחדל
-          </p>
+        <div className="space-y-3">
+          <Label>תוכן המייל</Label>
+          
+          {/* Image Upload Section */}
+          <div className="border-2 border-dashed border-stone-200 rounded-lg p-4">
+            <Label className="text-sm font-medium mb-2 block">העלאת פלייר (אופציונלי)</Label>
+            
+            {!formData.email_image_url ? (
+              <div className="flex flex-col items-center gap-3">
+                <label htmlFor="flyer-upload" className="cursor-pointer">
+                  <div className="flex flex-col items-center gap-2 p-6 bg-stone-50 hover:bg-stone-100 rounded-lg transition-colors">
+                    <Upload className="w-8 h-8 text-stone-400" />
+                    <span className="text-sm text-stone-600">לחץ להעלאת פלייר</span>
+                    <span className="text-xs text-stone-400">אם תעלה פלייר, הוא יישלח במקום תוכן HTML</span>
+                  </div>
+                  <Input
+                    id="flyer-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                    disabled={uploading}
+                  />
+                </label>
+                {uploading && (
+                  <p className="text-sm text-stone-500">מעלה קובץ...</p>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="relative">
+                  <img
+                    src={formData.email_image_url}
+                    alt="Email flyer preview"
+                    className="w-full h-auto rounded-lg border border-stone-200"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="absolute top-2 right-2"
+                    onClick={handleRemoveImage}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowPreview(true)}
+                    className="flex-1"
+                  >
+                    <Eye className="w-4 h-4 ml-2" />
+                    תצוגה מקדימה של המייל
+                  </Button>
+                  <label htmlFor="flyer-upload" className="flex-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      disabled={uploading}
+                    >
+                      <Upload className="w-4 h-4 ml-2" />
+                      החלף תמונה
+                    </Button>
+                    <Input
+                      id="flyer-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleFileUpload}
+                      disabled={uploading}
+                    />
+                  </label>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Text Template Section - Only show if no image */}
+          {!formData.email_image_url && (
+            <div>
+              <Label htmlFor="email_body_template">תוכן המייל (HTML)</Label>
+              <Textarea
+                id="email_body_template"
+                value={formData.email_body_template}
+                onChange={(e) => handleChange('email_body_template', e.target.value)}
+                rows={8}
+                placeholder="השתמש בתגיות: {user_name}, {coupon_code}, {valid_until_date}"
+              />
+              <p className="text-xs text-stone-500 mt-1">
+                אם ריק, יישלח תבנית ברירת מחדל
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center justify-between border-t pt-4">
@@ -258,6 +376,32 @@ export default function CouponTemplateForm({ template, onSave, onCancel }) {
           {template ? 'עדכן תבנית' : 'צור תבנית'}
         </Button>
       </div>
+
+      {/* Email Preview Dialog */}
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>תצוגה מקדימה של המייל</DialogTitle>
+          </DialogHeader>
+          <div className="border border-stone-200 rounded-lg p-4 bg-white" dir="rtl">
+            <div className="mb-4 pb-4 border-b">
+              <p className="text-sm text-stone-500">נושא:</p>
+              <p className="font-medium">{formData.email_subject || 'קופון הנחה מיוחד עבורך! 🎁'}</p>
+            </div>
+            <div className="text-center">
+              {formData.email_image_url ? (
+                <img
+                  src={formData.email_image_url}
+                  alt="Email content"
+                  className="w-full h-auto"
+                />
+              ) : (
+                <p className="text-stone-400">לא הועלתה תמונה</p>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </form>
   );
 }
