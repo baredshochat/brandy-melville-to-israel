@@ -254,9 +254,9 @@ export default function LocalStock() {
                             <img
                         src={item.image_url}
                         alt={item.product_name}
-                        className={`w-full h-auto object-contain transition-transform duration-300 ${(item.quantity_available > 0 && item.is_available) ? 'group-hover:scale-105' : ''}`}
+                        className={`w-full h-auto object-contain transition-transform duration-300 ${item.quantity_available > 0 ? 'group-hover:scale-105' : ''}`}
                         style={{ maxHeight: '320px' }} />
-                            {(item.quantity_available === 0 || !item.is_available) ? null : (
+                            {item.quantity_available === 0 ? null : (
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -279,7 +279,7 @@ export default function LocalStock() {
                             {item.product_name}
                           </h3>
                           <div className="flex items-center gap-1 flex-wrap">
-                            {(item.quantity_available === 0 || !item.is_available) ? (
+                            {item.quantity_available === 0 ? (
                               <>
                                 <span className="text-[10px] text-stone-600 font-medium">Sold Out</span>
                                 <button
