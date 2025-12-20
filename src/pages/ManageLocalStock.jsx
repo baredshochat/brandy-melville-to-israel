@@ -122,51 +122,56 @@ export default function ManageLocalStock() {
     }
   };
 
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    setUploadingImage(true);
-    try {
-      const result = await UploadFile({ file });
-      setFormData({ ...formData, image_url: result.file_url });
-    } catch (error) {
-      alert("שגיאה בהעלאת תמונה");
-    } finally {
-      setUploadingImage(false);
-      e.target.value = ''; // Clear the input field
-    }
-  };
-
-  const handleAdditionalImageUpload = async (e) => {
+  const handleImagesUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
     setUploadingImage(true);
     try {
-      const currentImages = formData.additional_images || [];
       const uploadPromises = files.map(file => UploadFile({ file }));
       const results = await Promise.all(uploadPromises);
       const newImageUrls = results.map(result => result.file_url);
       
-      setFormData({
-        ...formData,
-        additional_images: [...currentImages, ...newImageUrls]
-      });
+      // If no main image yet, first uploaded becomes main
+      if (!formData.image_url) {
+        setFormData({
+          ...formData,
+          image_url: newImageUrls[0],
+          additional_images: [...(formData.additional_images || []), ...newImageUrls.slice(1)]
+        });
+      } else {
+        // Otherwise add all to additional
+        setFormData({
+          ...formData,
+          additional_images: [...(formData.additional_images || []), ...newImageUrls]
+        });
+      }
     } catch (error) {
-      alert("שגיאה בהעלאת תמונות נוספות");
+      alert("שגיאה בהעלאת תמונות");
     } finally {
       setUploadingImage(false);
-      e.target.value = ''; // Clear the input field
+      e.target.value = '';
     }
   };
 
-  const handleRemoveAdditionalImage = (index) => {
-    const currentImages = formData.additional_images || [];
-    setFormData({
-      ...formData,
-      additional_images: currentImages.filter((_, i) => i !== index)
-    });
+  const handleRemoveImage = (index) => {
+    // index 0 = main image, index 1+ = additional images
+    if (index === 0) {
+      // Remove main image, promote first additional to main
+      const additionalImages = formData.additional_images || [];
+      setFormData({
+        ...formData,
+        image_url: additionalImages[0] || '',
+        additional_images: additionalImages.slice(1)
+      });
+    } else {
+      // Remove from additional images
+      const additionalImages = formData.additional_images || [];
+      setFormData({
+        ...formData,
+        additional_images: additionalImages.filter((_, i) => i !== index - 1)
+      });
+    }
   };
 
   const handleExtractFromUrl = async () => {
@@ -453,37 +458,35 @@ export default function ManageLocalStock() {
                   </div>
                 </div>
 
-                {/* Main Image Upload */}
+                {/* Images Upload */}
                 <div className="space-y-2">
-                  <Label>תמונה ראשית</Label>
-                  {formData.image_url && (
-                    <div className="mb-2">
-                      <img src={formData.image_url} alt="Preview" className="w-32 h-32 object-cover rounded" />
-                    </div>
-                  )}
-                  <div className="flex gap-2">
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      disabled={uploadingImage}
-                      className="flex-1"
-                    />
-                    {uploadingImage && <Loader2 className="w-6 h-6 animate-spin" />}
-                  </div>
-                </div>
-
-                {/* Additional Images Upload */}
-                <div className="space-y-2">
-                  <Label>תמונות נוספות</Label>
-                  {formData.additional_images && formData.additional_images.length > 0 && (
+                  <Label>תמונות מוצר</Label>
+                  <p className="text-xs text-stone-500 mb-2">התמונה הראשונה תהיה התמונה הראשית</p>
+                  
+                  {/* Display all images */}
+                  {(formData.image_url || (formData.additional_images && formData.additional_images.length > 0)) && (
                     <div className="grid grid-cols-4 gap-2 mb-2">
-                      {formData.additional_images.map((img, index) => (
-                        <div key={index} className="relative">
-                          <img src={img} alt={`Additional ${index + 1}`} className="w-full h-24 object-cover rounded" />
+                      {/* Main image first */}
+                      {formData.image_url && (
+                        <div className="relative">
+                          <img src={formData.image_url} alt="Main" className="w-full h-24 object-cover rounded" />
+                          <div className="absolute top-1 left-1 bg-blue-500 text-white text-[10px] px-1.5 py-0.5 rounded">ראשית</div>
                           <button
                             type="button"
-                            onClick={() => handleRemoveAdditionalImage(index)}
+                            onClick={() => handleRemoveImage(0)}
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      )}
+                      {/* Additional images */}
+                      {(formData.additional_images || []).map((img, index) => (
+                        <div key={index} className="relative">
+                          <img src={img} alt={`Image ${index + 2}`} className="w-full h-24 object-cover rounded" />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveImage(index + 1)}
                             className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
                           >
                             ×
@@ -492,13 +495,18 @@ export default function ManageLocalStock() {
                       ))}
                     </div>
                   )}
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleAdditionalImageUpload}
-                    disabled={uploadingImage}
-                  />
+                  
+                  <div className="flex gap-2">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImagesUpload}
+                      disabled={uploadingImage}
+                      className="flex-1"
+                    />
+                    {uploadingImage && <Loader2 className="w-6 h-6 animate-spin" />}
+                  </div>
                   <p className="text-xs text-stone-500">ניתן לבחור מספר תמונות בו זמנית</p>
                 </div>
 
