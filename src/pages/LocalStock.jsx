@@ -57,32 +57,21 @@ export default function LocalStock() {
       
       const now = new Date();
       
-      // Filter: available, not hidden and available_from has passed (show both in-stock and out-of-stock items)
+      // Filter: not hidden and available_from has passed (show both in-stock and out-of-stock items)
       const visibleItems = data.filter(item => {
         const isVisibleToCustomer = (user && user.role === 'admin') || !item.is_hidden;
         
         // Check if scheduled availability has passed
         const isScheduledAvailable = !item.available_from || new Date(item.available_from) <= now;
         
-        return item.is_available && isVisibleToCustomer && isScheduledAvailable;
+        return isVisibleToCustomer && isScheduledAvailable;
       });
       
-      // Sort: in stock first (by quantity descending), then out of stock items
+      // Sort: in stock first, out of stock last
       visibleItems.sort((a, b) => {
-        const aInStock = a.quantity_available > 0;
-        const bInStock = b.quantity_available > 0;
-        
-        // First priority: items in stock come before out of stock
-        if (aInStock && !bInStock) return -1;
-        if (!aInStock && bInStock) return 1;
-        
-        // Within each group, sort by quantity (higher quantity first for in-stock)
-        if (aInStock && bInStock) {
-          return b.quantity_available - a.quantity_available;
-        }
-        
-        // Out of stock items by creation date (newest first)
-        return new Date(b.created_date) - new Date(a.created_date);
+        const aInStock = a.quantity_available > 0 ? 1 : 0;
+        const bInStock = b.quantity_available > 0 ? 1 : 0;
+        return bInStock - aInStock;
       });
       
       setItems(visibleItems);
