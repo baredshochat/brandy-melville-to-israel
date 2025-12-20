@@ -55,11 +55,17 @@ export default function LocalStock() {
       const data = await LocalStockItem.list();
       setAllItems(data);
       
-      // Filter: only in-stock, available, and not hidden (unless admin)
+      const now = new Date();
+      
+      // Filter: only in-stock, available, not hidden, and available_from has passed
       const inStockItems = data.filter(item => {
         const hasStock = item.quantity_available > 0 && item.is_available;
         const isVisibleToCustomer = (user && user.role === 'admin') || !item.is_hidden;
-        return hasStock && isVisibleToCustomer;
+        
+        // Check if scheduled availability has passed
+        const isScheduledAvailable = !item.available_from || new Date(item.available_from) <= now;
+        
+        return hasStock && isVisibleToCustomer && isScheduledAvailable;
       });
       setItems(inStockItems);
     } catch (error) {

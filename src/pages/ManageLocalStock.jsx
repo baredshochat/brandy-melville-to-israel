@@ -16,6 +16,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Package, Plus, Edit, Trash2, Loader2, Link as LinkIcon, Image as ImageIcon, AlertTriangle, Eye, Copy, Bell, MoreHorizontal, History } from "lucide-react";
 import { motion } from "framer-motion";
 import StockHistoryDialog from '../components/admin/StockHistoryDialog';
+import BulkActionsToolbar from '../components/admin/BulkActionsToolbar';
+import { AnimatePresence } from 'framer-motion';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const categoryNames = {
   tops: "חולצות וטופים",
@@ -36,6 +39,7 @@ const emptyItem = {
   quantity_available: 0,
   is_available: true,
   is_hidden: false,
+  available_from: '',
   free_shipping: false,
   category: 'other',
   internal_sku: '',
@@ -67,6 +71,7 @@ export default function ManageLocalStock() {
   const [editingQuantity, setEditingQuantity] = useState(null);
   const [reorderSuggestions, setReorderSuggestions] = useState([]);
   const [historyDialog, setHistoryDialog] = useState({ open: false, itemId: null, itemName: '' });
+  const [selectedItems, setSelectedItems] = useState(new Set());
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -312,6 +317,48 @@ export default function ManageLocalStock() {
     });
     setSuggestedPriceInfo(null);
     setDialogOpen(true);
+  };
+
+  const toggleSelectItem = (itemId) => {
+    setSelectedItems(prev => {
+      const next = new Set(prev);
+      if (next.has(itemId)) {
+        next.delete(itemId);
+      } else {
+        next.add(itemId);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedItems.size === items.length) {
+      setSelectedItems(new Set());
+    } else {
+      setSelectedItems(new Set(items.map(item => item.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!confirm(`למחוק ${selectedItems.size} פריטים?`)) return;
+    
+    try {
+      await Promise.all(Array.from(selectedItems).map(id => LocalStockItem.delete(id)));
+      setSelectedItems(new Set());
+      loadItems();
+    } catch (error) {
+      alert('שגיאה במחיקת פריטים');
+    }
+  };
+
+  const handleBulkUpdate = async (updates) => {
+    try {
+      await Promise.all(Array.from(selectedItems).map(id => LocalStockItem.update(id, updates)));
+      setSelectedItems(new Set());
+      loadItems();
+    } catch (error) {
+      alert('שגיאה בעדכון פריטים');
+    }
   };
 
   const handleQuickQuantityUpdate = async (itemId, newQuantity) => {
@@ -582,6 +629,21 @@ export default function ManageLocalStock() {
                   </div>
                 </div>
 
+                {/* Scheduled Availability */}
+                <div className="space-y-2 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                  <h3 className="font-semibold text-stone-900">תזמון זמינות</h3>
+                  <div>
+                    <Label>זמין מתאריך (אופציונלי)</Label>
+                    <Input
+                      type="datetime-local"
+                      value={formData.available_from || ''}
+                      onChange={(e) => setFormData({ ...formData, available_from: e.target.value })}
+                    />
+                    <p className="text-xs text-stone-500 mt-1">אם מוגדר, הפריט יופיע ללקוחות רק מתאריך זה</p>
+                  </div>
+                </div>
+              </div>
+
                 {/* Supplier Details Section */}
                 <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <h3 className="font-semibold text-stone-900 flex items-center gap-2">
@@ -751,6 +813,12 @@ export default function ManageLocalStock() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b">
+                    <th className="text-center p-2 w-12">
+                      <Checkbox
+                        checked={selectedItems.size === items.length && items.length > 0}
+                        onCheckedChange={toggleSelectAll}
+                      />
+                    </th>
                     <th className="text-right p-2">תמונה</th>
                     <th className="text-right p-2">שם</th>
                     <th className="text-right p-2">מחיר</th>
@@ -765,6 +833,12 @@ export default function ManageLocalStock() {
                 <tbody>
                   {items.map(item => (
                     <tr key={item.id} className="border-b hover:bg-stone-50">
+                      <td className="text-center p-2">
+                        <Checkbox
+                          checked={selectedItems.has(item.id)}
+                          onCheckedChange={() => toggleSelectItem(item.id)}
+                        />
+                      </td>
                       <td className="p-2">
                         {item.image_url ? (
                           <img src={item.image_url} alt={item.product_name} className="w-12 h-12 object-cover rounded" />
@@ -881,6 +955,21 @@ export default function ManageLocalStock() {
           )}
         </CardContent>
       </Card>
+
+      {/* Bulk Actions Toolbar */}
+      <AnimatePresence>
+        {selectedItems.size > 0 && (
+          <BulkActionsToolbar
+            selectedCount={selectedItems.size}
+            onDelete={handleBulkDelete}
+            onHide={() => handleBulkUpdate({ is_hidden: true })}
+            onUnhide={() => handleBulkUpdate({ is_hidden: false })}
+            onMakeAvailable={() => handleBulkUpdate({ is_available: true })}
+            onMakeUnavailable={() => handleBulkUpdate({ is_available: false })}
+            onClear={() => setSelectedItems(new Set())}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Stock History Dialog */}
       <StockHistoryDialog
