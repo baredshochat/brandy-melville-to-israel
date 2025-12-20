@@ -619,14 +619,6 @@ export default function ManageLocalStock() {
                     />
                     <Label>ללא עלות משלוח (מוצר ניסיון)</Label>
                   </div>
-
-                  <div className="flex items-center space-x-2 space-x-reverse">
-                    <Switch
-                      checked={formData.is_hidden}
-                      onCheckedChange={(checked) => setFormData({ ...formData, is_hidden: checked })}
-                    />
-                    <Label>הסתר מלקוחות (יופיע רק למנהלים)</Label>
-                  </div>
                 </div>
 
                 {/* Scheduled Availability */}
@@ -934,6 +926,10 @@ export default function ManageLocalStock() {
                             <DropdownMenuItem onClick={() => setHistoryDialog({ open: true, itemId: item.id, itemName: item.product_name })}>
                               <History className="w-4 h-4 ml-2" />
                               היסטוריית מלאי
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => LocalStockItem.update(item.id, { is_hidden: !item.is_hidden }).then(() => loadItems())}>
+                              <Eye className="w-4 h-4 ml-2" />
+                              {item.is_hidden ? 'הצג ללקוחות' : 'הסתר מלקוחות'}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleDuplicate(item)}>
                               <Copy className="w-4 h-4 ml-2" />
