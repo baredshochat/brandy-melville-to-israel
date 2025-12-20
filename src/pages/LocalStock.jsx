@@ -278,19 +278,16 @@ export default function LocalStock() {
                         </h3>
                         <div className="flex items-center gap-1 flex-wrap">
                           {(item.quantity_available === 0 || !item.is_available) ? (
-                            <>
-                              <span className="text-[10px] text-stone-600 font-medium">Sold Out</span>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleNotifyRequest(item);
-                                }}
-                                className="flex items-center gap-1 text-[10px] text-rose-600 hover:text-rose-700 underline"
-                              >
-                                <Bell className="w-3 h-3" />
-                                NOTIFY ME WHEN AVAILABLE
-                              </button>
-                            </>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleNotifyRequest(item);
+                              }}
+                              className="flex items-center gap-1 text-[10px] text-rose-600 hover:text-rose-700 underline"
+                            >
+                              <Bell className="w-3 h-3" />
+                              NOTIFY ME WHEN AVAILABLE
+                            </button>
                           ) : (
                             <p className="text-stone-800 text-sm font-semibold">
                               ₪{item.price_ils}
