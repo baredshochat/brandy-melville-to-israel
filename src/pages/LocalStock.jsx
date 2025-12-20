@@ -57,15 +57,14 @@ export default function LocalStock() {
       
       const now = new Date();
       
-      // Filter: is_available, not hidden and available_from has passed
+      // Filter: not hidden and available_from has passed (show both in-stock and out-of-stock items)
       const visibleItems = data.filter(item => {
         const isVisibleToCustomer = (user && user.role === 'admin') || !item.is_hidden;
         
         // Check if scheduled availability has passed
         const isScheduledAvailable = !item.available_from || new Date(item.available_from) <= now;
         
-        // Show only items marked as available (quantity doesn't matter here)
-        return item.is_available && isVisibleToCustomer && isScheduledAvailable;
+        return isVisibleToCustomer && isScheduledAvailable;
       });
       
       // Sort: in stock first (by quantity descending), then out of stock items
@@ -254,9 +253,9 @@ export default function LocalStock() {
                             <img
                         src={item.image_url}
                         alt={item.product_name}
-                        className={`w-full h-auto object-contain transition-transform duration-300 ${item.quantity_available > 0 ? 'group-hover:scale-105' : ''}`}
+                        className={`w-full h-auto object-contain transition-transform duration-300 ${(item.quantity_available > 0 && item.is_available) ? 'group-hover:scale-105' : ''}`}
                         style={{ maxHeight: '320px' }} />
-                            {item.quantity_available === 0 ? null : (
+                            {(item.quantity_available === 0 || !item.is_available) ? null : (
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -279,7 +278,7 @@ export default function LocalStock() {
                             {item.product_name}
                           </h3>
                           <div className="flex items-center gap-1 flex-wrap">
-                            {item.quantity_available === 0 ? (
+                            {(item.quantity_available === 0 || !item.is_available) ? (
                               <>
                                 <span className="text-[10px] text-stone-600 font-medium">Sold Out</span>
                                 <button
