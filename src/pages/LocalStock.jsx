@@ -109,7 +109,7 @@ export default function LocalStock() {
     }
   };
 
-  const filteredItems = allItems.filter((item) => {
+  const filteredItems = items.filter((item) => {
     const matchesSearch = !searchQuery ||
     item.product_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.product_description && item.product_description.toLowerCase().includes(searchQuery.toLowerCase());
