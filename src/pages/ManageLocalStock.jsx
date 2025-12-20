@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Package, Plus, Edit, Trash2, Loader2, Link as LinkIcon, Image as ImageIcon, AlertTriangle, Eye, Copy, Bell, MoreHorizontal, History } from "lucide-react";
+import { Package, Plus, Edit, Trash2, Loader2, Link as LinkIcon, Image as ImageIcon, AlertTriangle, Eye, Copy, Bell, MoreHorizontal, History, EyeOff } from "lucide-react";
 import { motion } from "framer-motion";
 import StockHistoryDialog from '../components/admin/StockHistoryDialog';
 import BulkActionsToolbar from '../components/admin/BulkActionsToolbar';
@@ -903,7 +903,9 @@ export default function ManageLocalStock() {
                             <span className="text-red-600 text-xs">✗ לא זמין</span>
                           )}
                           {item.is_hidden && (
-                            <Badge variant="outline" className="text-xs bg-stone-100">מוסתר</Badge>
+                            <Badge variant="outline" className="text-xs bg-stone-100 flex items-center gap-1">
+                              <EyeOff className="w-3 h-3" />
+                            </Badge>
                           )}
                           {item.quantity_available <= (item.reorder_point || 0) && item.reorder_point > 0 && (
                             <Badge variant="outline" className="text-xs bg-amber-100 text-amber-700 border-amber-300">
