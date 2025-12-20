@@ -57,15 +57,15 @@ export default function LocalStock() {
       
       const now = new Date();
       
-      // Filter: not hidden and available_from has passed (show both in-stock and out-of-stock items)
+      // Filter: is_available, not hidden and available_from has passed
       const visibleItems = data.filter(item => {
         const isVisibleToCustomer = (user && user.role === 'admin') || !item.is_hidden;
         
         // Check if scheduled availability has passed
         const isScheduledAvailable = !item.available_from || new Date(item.available_from) <= now;
         
-        // Show all items regardless of is_available flag, but quantity will determine display
-        return isVisibleToCustomer && isScheduledAvailable;
+        // Show only items marked as available (quantity doesn't matter here)
+        return item.is_available && isVisibleToCustomer && isScheduledAvailable;
       });
       
       // Sort: in stock first (by quantity descending), then out of stock items
