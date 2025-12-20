@@ -64,6 +64,7 @@ export default function LocalStock() {
         // Check if scheduled availability has passed
         const isScheduledAvailable = !item.available_from || new Date(item.available_from) <= now;
         
+        // Show all items regardless of is_available flag, but quantity will determine display
         return isVisibleToCustomer && isScheduledAvailable;
       });
       
