@@ -57,17 +57,24 @@ export default function LocalStock() {
       
       const now = new Date();
       
-      // Filter: only in-stock, available, not hidden, and available_from has passed
-      const inStockItems = data.filter(item => {
-        const hasStock = item.quantity_available > 0 && item.is_available;
+      // Filter: available, not hidden, and available_from has passed
+      const visibleItems = data.filter(item => {
         const isVisibleToCustomer = (user && user.role === 'admin') || !item.is_hidden;
         
         // Check if scheduled availability has passed
         const isScheduledAvailable = !item.available_from || new Date(item.available_from) <= now;
         
-        return hasStock && isVisibleToCustomer && isScheduledAvailable;
+        return item.is_available && isVisibleToCustomer && isScheduledAvailable;
       });
-      setItems(inStockItems);
+      
+      // Sort: in stock first, out of stock last
+      visibleItems.sort((a, b) => {
+        const aInStock = a.quantity_available > 0 ? 1 : 0;
+        const bInStock = b.quantity_available > 0 ? 1 : 0;
+        return bInStock - aInStock;
+      });
+      
+      setItems(visibleItems);
     } catch (error) {
       console.error("Error loading local stock items:", error);
     } finally {
