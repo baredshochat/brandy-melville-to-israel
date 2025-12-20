@@ -142,10 +142,6 @@ export default function LocalStock() {
     return matchesSearch && matchesCategory;
   });
 
-  // Group items by availability
-  const availableItems = filteredItems.filter(item => item.is_available && item.quantity_available > 0);
-  const unavailableItems = filteredItems.filter(item => !item.is_available || item.quantity_available === 0);
-
   const handleNotifyRequest = (item) => {
     setSelectedItemForNotify(item);
     setNotifyDialogOpen(true);
@@ -233,127 +229,81 @@ export default function LocalStock() {
             <p className="text-stone-500 text-lg">לא נמצאו פריטים במלאי</p>
           </div>
         ) : (
-          <>
-            {/* Available Items Section */}
-            {availableItems.length > 0 && (
-              <div className="mb-12">
-                <h2 className="text-xl font-semibold text-stone-800 mb-6 px-2">זמין למכירה</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                  <AnimatePresence>
-                    {availableItems.map((item, index) => (
-                      <motion.div
-                        key={item.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ delay: index * 0.05 }}
-                      >
-                        <Card
-                          className="h-full overflow-hidden hover:shadow-lg transition-all duration-300 bg-white cursor-pointer group border-0 shadow-none"
-                          onClick={() => window.location.href = createPageUrl('LocalStockItemDetail') + '?id=' + item.id}
-                        >
-                          <CardContent className="p-0 relative">
-                            {item.image_url && (
-                              <div className="w-full bg-stone-50 overflow-hidden relative flex items-center justify-center" style={{ minHeight: '280px' }}>
-                                <img
-                                  src={item.image_url}
-                                  alt={item.product_name}
-                                  className="w-full h-auto object-contain transition-transform duration-300 group-hover:scale-105"
-                                  style={{ maxHeight: '320px' }}
-                                />
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleAddToCart(item);
-                                  }}
-                                  disabled={addingToCart[item.id] || addedItems.has(item.id)}
-                                  className="absolute bottom-1 left-1 w-6 h-6 bg-white/80 hover:bg-white flex items-center justify-center rounded-full shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  {addingToCart[item.id] ? (
-                                    <Loader2 className="w-3 h-3 animate-spin text-stone-800" />
-                                  ) : addedItems.has(item.id) ? (
-                                    <CheckCircle className="w-3 h-3 text-green-600" />
-                                  ) : (
-                                    <Plus className="w-3 h-3 text-stone-800" />
-                                  )}
-                                </button>
-                              </div>
-                            )}
-                            <div className="px-1 py-1">
-                              <h3 className="font-medium text-xs text-stone-800 truncate">
-                                {item.product_name}
-                              </h3>
-                              <div className="flex items-center gap-1 flex-wrap">
-                                <p className="text-stone-800 text-sm font-semibold">
-                                  ₪{item.price_ils}
-                                </p>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </div>
-              </div>
-            )}
-
-            {/* Unavailable Items Section */}
-            {unavailableItems.length > 0 && (
-              <div>
-                <h2 className="text-xl font-semibold text-stone-500 mb-6 px-2">לא זמין למכירה</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 opacity-75">
-                  <AnimatePresence>
-                    {unavailableItems.map((item, index) => (
-                      <motion.div
-                        key={item.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ delay: index * 0.05 }}
-                      >
-                        <Card
-                          className="h-full overflow-hidden hover:shadow-lg transition-all duration-300 bg-white cursor-pointer group border-0 shadow-none"
-                          onClick={() => window.location.href = createPageUrl('LocalStockItemDetail') + '?id=' + item.id}
-                        >
-                          <CardContent className="p-0 relative">
-                            {item.image_url && (
-                              <div className="w-full bg-stone-50 overflow-hidden relative flex items-center justify-center" style={{ minHeight: '280px' }}>
-                                <img
-                                  src={item.image_url}
-                                  alt={item.product_name}
-                                  className="w-full h-auto object-contain"
-                                  style={{ maxHeight: '320px' }}
-                                />
-                              </div>
-                            )}
-                            <div className="px-1 py-1">
-                              <h3 className="font-medium text-xs text-stone-800 truncate">
-                                {item.product_name}
-                              </h3>
-                              <div className="flex items-center gap-1 flex-wrap">
-                                <span className="text-[10px] text-stone-600 font-medium">Sold Out</span>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleNotifyRequest(item);
-                                  }}
-                                  className="flex items-center gap-1 text-[10px] text-rose-600 hover:text-rose-700 underline"
-                                >
-                                  <Bell className="w-3 h-3" />
-                                  NOTIFY ME WHEN AVAILABLE
-                                </button>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </div>
-              </div>
-            )}
-          </>
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+            <AnimatePresence>
+              {filteredItems.map((item, index) => (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <Card
+                    className="h-full overflow-hidden hover:shadow-lg transition-all duration-300 bg-white cursor-pointer group border-0 shadow-none"
+                    onClick={() => window.location.href = createPageUrl('LocalStockItemDetail') + '?id=' + item.id}
+                  >
+                    <CardContent className="p-0 relative">
+                      {item.image_url && (
+                        <div className="w-full bg-stone-50 overflow-hidden relative flex items-center justify-center" style={{ minHeight: '280px' }}>
+                          <img
+                            src={item.image_url}
+                            alt={item.product_name}
+                            className={`w-full h-auto object-contain transition-transform duration-300 ${(item.quantity_available > 0 && item.is_available) ? 'group-hover:scale-105' : ''}`}
+                            style={{ maxHeight: '320px' }}
+                          />
+                          {(item.quantity_available === 0 || !item.is_available) ? null : (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAddToCart(item);
+                              }}
+                              disabled={addingToCart[item.id] || addedItems.has(item.id)}
+                              className="absolute bottom-1 left-1 w-6 h-6 bg-white/80 hover:bg-white flex items-center justify-center rounded-full shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {addingToCart[item.id] ? (
+                                <Loader2 className="w-3 h-3 animate-spin text-stone-800" />
+                              ) : addedItems.has(item.id) ? (
+                                <CheckCircle className="w-3 h-3 text-green-600" />
+                              ) : (
+                                <Plus className="w-3 h-3 text-stone-800" />
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      )}
+                      <div className="px-1 py-1">
+                        <h3 className="font-medium text-xs text-stone-800 truncate">
+                          {item.product_name}
+                        </h3>
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {(item.quantity_available === 0 || !item.is_available) ? (
+                            <>
+                              <span className="text-[10px] text-stone-600 font-medium">Sold Out</span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleNotifyRequest(item);
+                                }}
+                                className="flex items-center gap-1 text-[10px] text-rose-600 hover:text-rose-700 underline"
+                              >
+                                <Bell className="w-3 h-3" />
+                                NOTIFY ME WHEN AVAILABLE
+                              </button>
+                            </>
+                          ) : (
+                            <p className="text-stone-800 text-sm font-semibold">
+                              ₪{item.price_ils}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
         )}
 
         <div className="mt-12 text-center">
