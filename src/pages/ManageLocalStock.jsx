@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 import { Package, Plus, Edit, Trash2, Loader2, Link as LinkIcon, Image as ImageIcon, AlertTriangle, Eye, Copy, Bell, MoreHorizontal, History } from "lucide-react";
 import { motion } from "framer-motion";
 import StockHistoryDialog from '../components/admin/StockHistoryDialog';
