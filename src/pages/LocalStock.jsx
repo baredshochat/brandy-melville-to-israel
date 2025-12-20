@@ -54,7 +54,13 @@ export default function LocalStock() {
     try {
       const data = await LocalStockItem.list();
       setAllItems(data);
-      const inStockItems = data.filter(item => item.quantity_available > 0 && item.is_available);
+      
+      // Filter: only in-stock, available, and not hidden (unless admin)
+      const inStockItems = data.filter(item => {
+        const hasStock = item.quantity_available > 0 && item.is_available;
+        const isVisibleToCustomer = (user && user.role === 'admin') || !item.is_hidden;
+        return hasStock && isVisibleToCustomer;
+      });
       setItems(inStockItems);
     } catch (error) {
       console.error("Error loading local stock items:", error);
