@@ -211,23 +211,17 @@ export default function ManageLocalStock() {
       });
 
       if (result) {
-        // Calculate suggested price
+        // Calculate suggested price using the same formula as import pricing
+        // Formula: original_price * exchange_rate * 2.5 (same as what customers see)
         let suggestedPrice = null;
         if (result.original_price && result.currency) {
-          const fxRates = { USD: 3.8, EUR: 4.0, GBP: 4.5 };
-          const rate = fxRates[result.currency] || 4.0;
-          const priceILS = result.original_price * rate;
-          
-          // Strategic pricing: 40-55% margin, round to attractive number
-          let margin = 0.45;
-          if (priceILS < 80) margin = 0.55;
-          else if (priceILS < 150) margin = 0.45;
-          else margin = 0.35;
-          
-          const rawPrice = priceILS * (1 + margin);
-          // Round to nearest 5 or 9 for attractive pricing
-          suggestedPrice = Math.round(rawPrice / 5) * 5 - 1; // e.g., 149, 199, 249
-          if (suggestedPrice < 50) suggestedPrice = Math.ceil(rawPrice / 10) * 10 - 1;
+          const EXCHANGE_RATES = { EUR: 4, GBP: 4.5, USD: 3.7 };
+          const MULTIPLIER = 2.5;
+
+          const exchangeRate = EXCHANGE_RATES[result.currency] || 4.0;
+          // This is the price per item that customers would pay for import
+          const pricePerItem = result.original_price * exchangeRate * MULTIPLIER;
+          suggestedPrice = Math.round(pricePerItem);
         }
 
         setFormData(prev => ({
