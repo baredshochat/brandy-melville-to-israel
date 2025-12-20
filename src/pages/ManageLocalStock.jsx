@@ -642,7 +642,6 @@ export default function ManageLocalStock() {
                     <p className="text-xs text-stone-500 mt-1">אם מוגדר, הפריט יופיע ללקוחות רק מתאריך זה</p>
                   </div>
                 </div>
-              </div>
 
                 {/* Supplier Details Section */}
                 <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
