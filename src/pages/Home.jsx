@@ -914,27 +914,43 @@ export default function Home() {
         // Update local stock quantities for local items
         const localItems = cart.filter(item => item.site === 'local' || item.product_type === 'local');
         console.log('🔥 Local items found:', localItems);
-        
+
         if (localItems.length > 0) {
+          // Import StockTransaction
+          const { StockTransaction } = await import('@/entities/StockTransaction');
+
           for (const item of localItems) {
             console.log('🔥 Processing item:', item.product_name, 'SKU:', item.product_sku, 'internal_sku:', item.internal_sku);
-            
+
             // Find the stock item by matching SKU or name
             const stockItems = await LocalStockItem.filter({
               internal_sku: item.product_sku || item.internal_sku
             });
-            
+
             console.log('🔥 Stock items found:', stockItems);
-            
+
             if (stockItems && stockItems.length > 0) {
               const stockItem = stockItems[0];
               const newQuantity = Math.max(0, stockItem.quantity_available - item.quantity);
               console.log('🔥 Updating stock:', stockItem.id, 'from', stockItem.quantity_available, 'to', newQuantity);
-              
+
+              // Log the transaction
+              await StockTransaction.create({
+                local_stock_item_id: stockItem.id,
+                product_name: stockItem.product_name,
+                transaction_type: 'outbound',
+                quantity_change: -item.quantity,
+                quantity_before: stockItem.quantity_available,
+                quantity_after: newQuantity,
+                order_id: currentOrder.order_number,
+                notes: `מכירה - הזמנה #${currentOrder.order_number}`,
+                performed_by: user?.email || 'system'
+              });
+
               await LocalStockItem.update(stockItem.id, {
                 quantity_available: newQuantity
               });
-              
+
               console.log('🔥 Stock updated successfully');
             } else {
               console.log('🔥 ERROR: No stock item found for SKU:', item.product_sku || item.internal_sku);

@@ -13,8 +13,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Package, Plus, Edit, Trash2, Loader2, Link as LinkIcon, Image as ImageIcon, AlertTriangle, Eye, Copy, Bell, MoreHorizontal } from "lucide-react";
+import { Package, Plus, Edit, Trash2, Loader2, Link as LinkIcon, Image as ImageIcon, AlertTriangle, Eye, Copy, Bell, MoreHorizontal, History } from "lucide-react";
 import { motion } from "framer-motion";
+import StockHistoryDialog from '../components/admin/StockHistoryDialog';
 
 const categoryNames = {
   tops: "חולצות וטופים",
@@ -34,12 +35,21 @@ const emptyItem = {
   size: '',
   quantity_available: 0,
   is_available: true,
+  is_hidden: false,
   free_shipping: false,
   category: 'other',
   internal_sku: '',
   source_url: '',
   weight_kg: 0.3,
-  additional_images: []
+  additional_images: [],
+  supplier_name: '',
+  supplier_contact_email: '',
+  supplier_contact_phone: '',
+  cost_price: 0,
+  cost_currency: 'ILS',
+  supplier_lead_time_days: 7,
+  reorder_point: 5,
+  reorder_quantity: 10
 };
 
 export default function ManageLocalStock() {
@@ -55,6 +65,8 @@ export default function ManageLocalStock() {
   const [suggestedPriceInfo, setSuggestedPriceInfo] = useState(null);
   const [waitingCounts, setWaitingCounts] = useState({});
   const [editingQuantity, setEditingQuantity] = useState(null);
+  const [reorderSuggestions, setReorderSuggestions] = useState([]);
+  const [historyDialog, setHistoryDialog] = useState({ open: false, itemId: null, itemName: '' });
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -86,6 +98,17 @@ export default function ManageLocalStock() {
         counts[notif.local_stock_item_id] = (counts[notif.local_stock_item_id] || 0) + 1;
       });
       setWaitingCounts(counts);
+      
+      // Calculate reorder suggestions
+      const suggestions = data.filter(item => {
+        const reorderPoint = item.reorder_point || 0;
+        return reorderPoint > 0 && item.quantity_available <= reorderPoint;
+      }).map(item => ({
+        ...item,
+        suggested_order_qty: item.reorder_quantity || 10,
+        days_until_stockout: Math.max(0, Math.floor(item.quantity_available / 2)) // Simple estimation
+      }));
+      setReorderSuggestions(suggestions);
     } catch (error) {
       console.error("Error loading items:", error);
     } finally {
@@ -295,6 +318,27 @@ export default function ManageLocalStock() {
     if (newQuantity < 0) return;
     
     try {
+      // Get current item to log the transaction
+      const currentItem = items.find(i => i.id === itemId);
+      if (currentItem) {
+        const quantityChange = newQuantity - currentItem.quantity_available;
+        
+        // Import StockTransaction entity
+        const { StockTransaction } = await import('@/entities/StockTransaction');
+        
+        // Log the transaction
+        await StockTransaction.create({
+          local_stock_item_id: itemId,
+          product_name: currentItem.product_name,
+          transaction_type: quantityChange > 0 ? 'inbound' : quantityChange < 0 ? 'outbound' : 'adjustment',
+          quantity_change: quantityChange,
+          quantity_before: currentItem.quantity_available,
+          quantity_after: newQuantity,
+          notes: 'עדכון ידני מממשק הניהול',
+          performed_by: userRole || 'admin'
+        });
+      }
+      
       await LocalStockItem.update(itemId, { quantity_available: newQuantity });
       loadItems();
     } catch (error) {
@@ -528,8 +572,112 @@ export default function ManageLocalStock() {
                     />
                     <Label>ללא עלות משלוח (מוצר ניסיון)</Label>
                   </div>
+
+                  <div className="flex items-center space-x-2 space-x-reverse">
+                    <Switch
+                      checked={formData.is_hidden}
+                      onCheckedChange={(checked) => setFormData({ ...formData, is_hidden: checked })}
+                    />
+                    <Label>הסתר מלקוחות (יופיע רק למנהלים)</Label>
                   </div>
+                </div>
+
+                {/* Supplier Details Section */}
+                <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <h3 className="font-semibold text-stone-900 flex items-center gap-2">
+                    <Package className="w-4 h-4" />
+                    פרטי ספק
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                      <Label>שם הספק</Label>
+                      <Input
+                        value={formData.supplier_name}
+                        onChange={(e) => setFormData({ ...formData, supplier_name: e.target.value })}
+                        placeholder="לדוגמה: Brandy Melville Italy"
+                      />
+                    </div>
+                    <div>
+                      <Label>אימייל ספק</Label>
+                      <Input
+                        type="email"
+                        value={formData.supplier_contact_email}
+                        onChange={(e) => setFormData({ ...formData, supplier_contact_email: e.target.value })}
+                        placeholder="supplier@example.com"
+                      />
+                    </div>
+                    <div>
+                      <Label>טלפון ספק</Label>
+                      <Input
+                        value={formData.supplier_contact_phone}
+                        onChange={(e) => setFormData({ ...formData, supplier_contact_phone: e.target.value })}
+                        placeholder="+39-xxx-xxx-xxxx"
+                      />
+                    </div>
+                    <div>
+                      <Label>עלות רכישה</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={formData.cost_price}
+                        onChange={(e) => setFormData({ ...formData, cost_price: parseFloat(e.target.value) || 0 })}
+                      />
+                    </div>
+                    <div>
+                      <Label>מטבע עלות</Label>
+                      <Select value={formData.cost_currency} onValueChange={(val) => setFormData({ ...formData, cost_currency: val })}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ILS">₪ שקל</SelectItem>
+                          <SelectItem value="USD">$ דולר</SelectItem>
+                          <SelectItem value="EUR">€ יורו</SelectItem>
+                          <SelectItem value="GBP">£ פאונד</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="col-span-2">
+                      <Label>זמן אספקה מספק (ימים)</Label>
+                      <Input
+                        type="number"
+                        value={formData.supplier_lead_time_days}
+                        onChange={(e) => setFormData({ ...formData, supplier_lead_time_days: parseInt(e.target.value) || 7 })}
+                      />
+                    </div>
                   </div>
+                </div>
+
+                {/* Reorder Settings Section */}
+                <div className="space-y-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
+                  <h3 className="font-semibold text-stone-900 flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4" />
+                    הגדרות הזמנה מחדש
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>נקודת הזמנה מחדש</Label>
+                      <Input
+                        type="number"
+                        value={formData.reorder_point}
+                        onChange={(e) => setFormData({ ...formData, reorder_point: parseInt(e.target.value) || 0 })}
+                        placeholder="5"
+                      />
+                      <p className="text-xs text-stone-500 mt-1">כמות שמפעילה התראה להזמנה</p>
+                    </div>
+                    <div>
+                      <Label>כמות להזמנה מחדש</Label>
+                      <Input
+                        type="number"
+                        value={formData.reorder_quantity}
+                        onChange={(e) => setFormData({ ...formData, reorder_quantity: parseInt(e.target.value) || 10 })}
+                        placeholder="10"
+                      />
+                      <p className="text-xs text-stone-500 mt-1">כמות מומלצת להזמנה</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setDialogOpen(false)}>
                   ביטול
@@ -543,6 +691,45 @@ export default function ManageLocalStock() {
           </Dialog>
         </div>
       </div>
+
+      {/* Reorder Suggestions Alert */}
+      {reorderSuggestions.length > 0 && (
+        <Card className="border-amber-300 bg-amber-50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-amber-800">
+              <AlertTriangle className="w-5 h-5" />
+              המלצות להזמנה מחדש ({reorderSuggestions.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {reorderSuggestions.map(item => (
+                <div key={item.id} className="flex items-center justify-between p-3 bg-white rounded border border-amber-200">
+                  <div className="flex items-center gap-3">
+                    {item.image_url && (
+                      <img src={item.image_url} alt={item.product_name} className="w-12 h-12 object-cover rounded" />
+                    )}
+                    <div>
+                      <div className="font-medium text-stone-900">{item.product_name}</div>
+                      <div className="text-sm text-stone-600">
+                        כמות נוכחית: {item.quantity_available} • מומלץ להזמין: {item.suggested_order_qty}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-left">
+                    {item.supplier_name && (
+                      <div className="text-sm text-stone-600">ספק: {item.supplier_name}</div>
+                    )}
+                    {item.supplier_lead_time_days && (
+                      <div className="text-xs text-stone-500">זמן אספקה: {item.supplier_lead_time_days} ימים</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Items Table */}
       <Card>
@@ -567,10 +754,11 @@ export default function ManageLocalStock() {
                     <th className="text-right p-2">תמונה</th>
                     <th className="text-right p-2">שם</th>
                     <th className="text-right p-2">מחיר</th>
+                    <th className="text-right p-2">עלות</th>
                     <th className="text-right p-2">כמות</th>
                     <th className="text-right p-2">ממתינים</th>
                     <th className="text-right p-2">צבע/מידה</th>
-                    <th className="text-right p-2">זמין</th>
+                    <th className="text-right p-2">סטטוס</th>
                     <th className="text-right p-2">פעולות</th>
                   </tr>
                 </thead>
@@ -588,6 +776,18 @@ export default function ManageLocalStock() {
                       </td>
                       <td className="p-2 font-medium">{item.product_name}</td>
                       <td className="p-2">₪{item.price_ils}</td>
+                      <td className="p-2 text-xs">
+                        {item.cost_price > 0 ? (
+                          <div>
+                            <div className="font-medium">{item.cost_price} {item.cost_currency}</div>
+                            {item.supplier_name && (
+                              <div className="text-stone-500">{item.supplier_name}</div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-stone-400">—</span>
+                        )}
+                      </td>
                       <td className="p-2">
                         {editingQuantity === item.id ? (
                           <div className="flex items-center gap-1">
@@ -630,11 +830,21 @@ export default function ManageLocalStock() {
                         {[item.color, item.size].filter(Boolean).join(' / ') || '—'}
                       </td>
                       <td className="p-2">
-                        {item.is_available ? (
-                          <span className="text-green-600">✓</span>
-                        ) : (
-                          <span className="text-red-600">✗</span>
-                        )}
+                        <div className="flex flex-col gap-1">
+                          {item.is_available ? (
+                            <span className="text-green-600 text-xs">✓ זמין</span>
+                          ) : (
+                            <span className="text-red-600 text-xs">✗ לא זמין</span>
+                          )}
+                          {item.is_hidden && (
+                            <Badge variant="outline" className="text-xs bg-stone-100">מוסתר</Badge>
+                          )}
+                          {item.quantity_available <= (item.reorder_point || 0) && item.reorder_point > 0 && (
+                            <Badge variant="outline" className="text-xs bg-amber-100 text-amber-700 border-amber-300">
+                              נמוך
+                            </Badge>
+                          )}
+                        </div>
                       </td>
                       <td className="p-2">
                         <DropdownMenu>
@@ -647,6 +857,10 @@ export default function ManageLocalStock() {
                             <DropdownMenuItem onClick={() => handleEdit(item)}>
                               <Edit className="w-4 h-4 ml-2" />
                               עריכה
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setHistoryDialog({ open: true, itemId: item.id, itemName: item.product_name })}>
+                              <History className="w-4 h-4 ml-2" />
+                              היסטוריית מלאי
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleDuplicate(item)}>
                               <Copy className="w-4 h-4 ml-2" />
@@ -667,6 +881,14 @@ export default function ManageLocalStock() {
           )}
         </CardContent>
       </Card>
+
+      {/* Stock History Dialog */}
+      <StockHistoryDialog
+        itemId={historyDialog.itemId}
+        itemName={historyDialog.itemName}
+        open={historyDialog.open}
+        onOpenChange={(open) => setHistoryDialog({ ...historyDialog, open })}
+      />
     </motion.div>
   );
 }
