@@ -26,6 +26,10 @@ export default function CouponTemplateForm({ template, onSave, onCancel }) {
     email_subject: 'קופון הנחה מיוחד עבורך! 🎁',
     email_body_template: '',
     email_image_url: '',
+    coupon_code_font_size: '32px',
+    coupon_code_color: '#e91e63',
+    coupon_code_bg_color: '#f0f0f0',
+    coupon_code_font_family: 'Arial, sans-serif',
     is_active: true,
     send_to_opted_in_only: true,
     ...template
@@ -396,6 +400,30 @@ export default function CouponTemplateForm({ template, onSave, onCancel }) {
                 </div>
               )}
               <div className="text-center">
+                {/* Coupon Code Preview */}
+                <div 
+                  style={{
+                    background: formData.coupon_code_bg_color,
+                    padding: '20px',
+                    textAlign: 'center',
+                    margin: '20px 0',
+                    borderRadius: '8px'
+                  }}
+                >
+                  <p style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#666' }}>הקוד שלך:</p>
+                  <h1 
+                    style={{
+                      margin: 0,
+                      color: formData.coupon_code_color,
+                      fontSize: formData.coupon_code_font_size,
+                      fontFamily: formData.coupon_code_font_family,
+                      letterSpacing: '2px'
+                    }}
+                  >
+                    DEMO-CODE
+                  </h1>
+                </div>
+
                 {formData.email_image_url ? (
                   <img
                     src={formData.email_image_url}

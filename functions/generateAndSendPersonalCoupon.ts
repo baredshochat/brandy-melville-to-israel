@@ -110,11 +110,11 @@ Deno.serve(async (req) => {
           .replace('{user_name}', targetUser.full_name || 'לקוחה יקרה')
           .replace('{coupon_code}', couponCode);
 
-        // Build email body with coupon code display
+        // Build email body with coupon code display (using template styling)
         const couponCodeDisplay = `
-          <div style="background: #f0f0f0; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;">
+          <div style="background: ${template.coupon_code_bg_color || '#f0f0f0'}; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;">
             <p style="margin: 0 0 10px 0; font-size: 14px; color: #666;">הקוד שלך:</p>
-            <h1 style="margin: 0; color: #e91e63; font-size: 32px; letter-spacing: 2px;">{coupon_code}</h1>
+            <h1 style="margin: 0; color: ${template.coupon_code_color || '#e91e63'}; font-size: ${template.coupon_code_font_size || '32px'}; font-family: ${template.coupon_code_font_family || 'Arial, sans-serif'}; letter-spacing: 2px;">{coupon_code}</h1>
           </div>
         `;
 
