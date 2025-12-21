@@ -260,7 +260,7 @@ export default function CouponTemplateForm({ template, onSave, onCancel }) {
                   <div className="flex flex-col items-center gap-2 p-6 bg-stone-50 hover:bg-stone-100 rounded-lg transition-colors">
                     <Upload className="w-8 h-8 text-stone-400" />
                     <span className="text-sm text-stone-600">לחץ להעלאת פלייר</span>
-                    <span className="text-xs text-stone-400">אם תעלה פלייר, הוא יישלח במקום תוכן HTML</span>
+                    <span className="text-xs text-stone-400">התמונה תופיע במייל מתחת לטקסט</span>
                   </div>
                   <Input
                     id="flyer-upload"
@@ -329,22 +329,23 @@ export default function CouponTemplateForm({ template, onSave, onCancel }) {
             )}
           </div>
 
-          {/* Text Template Section - Only show if no image */}
-          {!formData.email_image_url && (
-            <div>
-              <Label htmlFor="email_body_template">תוכן המייל (HTML)</Label>
-              <Textarea
-                id="email_body_template"
-                value={formData.email_body_template}
-                onChange={(e) => handleChange('email_body_template', e.target.value)}
-                rows={8}
-                placeholder="השתמש בתגיות: {user_name}, {coupon_code}, {valid_until_date}"
-              />
-              <p className="text-xs text-stone-500 mt-1">
-                אם ריק, יישלח תבנית ברירת מחדל
-              </p>
-            </div>
-          )}
+          {/* Text Template Section - Always show */}
+          <div>
+            <Label htmlFor="email_body_template">תוכן המייל (HTML)</Label>
+            <Textarea
+              id="email_body_template"
+              value={formData.email_body_template}
+              onChange={(e) => handleChange('email_body_template', e.target.value)}
+              rows={8}
+              placeholder="השתמש בתגיות: {user_name}, {coupon_code}, {valid_until_date}"
+            />
+            <p className="text-xs text-stone-500 mt-1">
+              {formData.email_image_url 
+                ? 'הטקסט יופיע מעל התמונה במייל. אם ריק, רק התמונה תישלח.'
+                : 'אם ריק, יישלח תבנית ברירת מחדל'
+              }
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center justify-between border-t pt-4">
@@ -388,16 +389,23 @@ export default function CouponTemplateForm({ template, onSave, onCancel }) {
               <p className="text-sm text-stone-500">נושא:</p>
               <p className="font-medium">{formData.email_subject || 'קופון הנחה מיוחד עבורך! 🎁'}</p>
             </div>
-            <div className="text-center">
-              {formData.email_image_url ? (
-                <img
-                  src={formData.email_image_url}
-                  alt="Email content"
-                  className="w-full h-auto"
-                />
-              ) : (
-                <p className="text-stone-400">לא הועלתה תמונה</p>
+            <div>
+              {formData.email_body_template && (
+                <div className="mb-4 p-4 bg-stone-50 rounded text-right" dir="rtl">
+                  <div dangerouslySetInnerHTML={{ __html: formData.email_body_template.replace('{user_name}', 'שם הלקוחה').replace('{coupon_code}', 'DEMO-CODE').replace('{valid_until_date}', '31/12/2024') }} />
+                </div>
               )}
+              <div className="text-center">
+                {formData.email_image_url ? (
+                  <img
+                    src={formData.email_image_url}
+                    alt="Email content"
+                    className="w-full h-auto"
+                  />
+                ) : (
+                  <p className="text-stone-400">לא הועלתה תמונה</p>
+                )}
+              </div>
             </div>
           </div>
         </DialogContent>
