@@ -242,6 +242,82 @@ export default function CouponTemplateForm({ template, onSave, onCancel }) {
         </div>
 
         <div className="border-t pt-4">
+          <Label className="mb-3 block">עיצוב קוד הקופון במייל</Label>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="coupon_code_color">צבע הטקסט</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="coupon_code_color"
+                  type="color"
+                  value={formData.coupon_code_color}
+                  onChange={(e) => handleChange('coupon_code_color', e.target.value)}
+                  className="w-16 h-10 p-1 cursor-pointer"
+                />
+                <Input
+                  type="text"
+                  value={formData.coupon_code_color}
+                  onChange={(e) => handleChange('coupon_code_color', e.target.value)}
+                  placeholder="#e91e63"
+                  className="flex-1"
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="coupon_code_bg_color">צבע רקע</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="coupon_code_bg_color"
+                  type="color"
+                  value={formData.coupon_code_bg_color}
+                  onChange={(e) => handleChange('coupon_code_bg_color', e.target.value)}
+                  className="w-16 h-10 p-1 cursor-pointer"
+                />
+                <Input
+                  type="text"
+                  value={formData.coupon_code_bg_color}
+                  onChange={(e) => handleChange('coupon_code_bg_color', e.target.value)}
+                  placeholder="#f0f0f0"
+                  className="flex-1"
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="coupon_code_font_size">גודל גופן</Label>
+              <Select value={formData.coupon_code_font_size} onValueChange={(val) => handleChange('coupon_code_font_size', val)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="20px">קטן (20px)</SelectItem>
+                  <SelectItem value="24px">בינוני-קטן (24px)</SelectItem>
+                  <SelectItem value="28px">בינוני (28px)</SelectItem>
+                  <SelectItem value="32px">גדול (32px)</SelectItem>
+                  <SelectItem value="36px">גדול מאוד (36px)</SelectItem>
+                  <SelectItem value="40px">ענק (40px)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="coupon_code_font_family">משפחת גופנים</Label>
+              <Select value={formData.coupon_code_font_family} onValueChange={(val) => handleChange('coupon_code_font_family', val)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Arial, sans-serif">Arial</SelectItem>
+                  <SelectItem value="Georgia, serif">Georgia</SelectItem>
+                  <SelectItem value="'Courier New', monospace">Courier New</SelectItem>
+                  <SelectItem value="'Times New Roman', serif">Times New Roman</SelectItem>
+                  <SelectItem value="Verdana, sans-serif">Verdana</SelectItem>
+                  <SelectItem value="'Comic Sans MS', cursive">Comic Sans</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t pt-4">
           <Label htmlFor="email_subject">נושא המייל *</Label>
           <Input
             id="email_subject"
