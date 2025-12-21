@@ -110,32 +110,58 @@ Deno.serve(async (req) => {
           .replace('{user_name}', targetUser.full_name || 'לקוחה יקרה')
           .replace('{coupon_code}', couponCode);
 
+        // Build email body with coupon code display
+        const couponCodeDisplay = `
+          <div style="background: #f0f0f0; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;">
+            <p style="margin: 0 0 10px 0; font-size: 14px; color: #666;">הקוד שלך:</p>
+            <h1 style="margin: 0; color: #e91e63; font-size: 32px; letter-spacing: 2px;">{coupon_code}</h1>
+          </div>
+        `;
+
         let emailBody;
         
-        // If template has an image, use it instead of text template
-        if (template.email_image_url) {
+        // Build email: text content (if exists) + coupon code + image (if exists)
+        if (template.email_body_template || template.email_image_url) {
+          let bodyParts = [];
+          
+          // Add text content if exists
+          if (template.email_body_template) {
+            const textContent = template.email_body_template
+              .replace(/{user_name}/g, targetUser.full_name || 'לקוחה יקרה')
+              .replace(/{coupon_code}/g, couponCode)
+              .replace(/{valid_until_date}/g, validUntilDate);
+            bodyParts.push(textContent);
+          }
+          
+          // Always add coupon code display
+          bodyParts.push(couponCodeDisplay.replace('{coupon_code}', couponCode));
+          
+          // Add image if exists
+          if (template.email_image_url) {
+            bodyParts.push(`
+              <div style="text-align: center; margin-top: 20px;">
+                <img src="${template.email_image_url}" alt="קופון הנחה" style="max-width: 100%; height: auto; display: block; margin: 0 auto;" />
+              </div>
+            `);
+          }
+          
           emailBody = `
-            <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; text-align: center;">
-              <img src="${template.email_image_url}" alt="קופון הנחה" style="max-width: 100%; height: auto; display: block; margin: 0 auto;" />
+            <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              ${bodyParts.join('')}
             </div>
           `;
         } else {
-          // Use text template or default
-          emailBody = (template.email_body_template || `
+          // Default template with coupon code
+          emailBody = `
             <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2>שלום {user_name}!</h2>
+              <h2>שלום ${targetUser.full_name || 'לקוחה יקרה'}!</h2>
               <p>שמחים לשלוח לך קופון הנחה מיוחד:</p>
-              <div style="background: #f0f0f0; padding: 20px; text-align: center; margin: 20px 0;">
-                <h1 style="margin: 0; color: #e91e63;">{coupon_code}</h1>
-              </div>
+              ${couponCodeDisplay.replace('{coupon_code}', couponCode)}
               <p><strong>ההנחה שלך:</strong> ${template.discount_type === 'percentage' ? template.discount_value + '%' : '₪' + template.discount_value}</p>
-              <p><strong>תוקף:</strong> עד {valid_until_date}</p>
+              <p><strong>תוקף:</strong> עד ${validUntilDate}</p>
               <p>להזמנה חדשה, הזיני את הקוד בקופה ותיהני מההנחה!</p>
             </div>
-          `)
-            .replace(/{user_name}/g, targetUser.full_name || 'לקוחה יקרה')
-            .replace(/{coupon_code}/g, couponCode)
-            .replace(/{valid_until_date}/g, validUntilDate);
+          `;
         }
 
         // Send email
