@@ -18,6 +18,7 @@ import { Package, Plus, Edit, Trash2, Loader2, Link as LinkIcon, Image as ImageI
 import { motion } from "framer-motion";
 import StockHistoryDialog from '../components/admin/StockHistoryDialog';
 import BulkActionsToolbar from '../components/admin/BulkActionsToolbar';
+import BulkUpdateDialog from '../components/admin/BulkUpdateDialog';
 import { AnimatePresence } from 'framer-motion';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Search } from 'lucide-react';
@@ -67,6 +68,9 @@ export default function ManageLocalStock() {
   const [historyDialog, setHistoryDialog] = useState({ open: false, itemId: null, itemName: '' });
   const [selectedItems, setSelectedItems] = useState(new Set());
   const [searchQuery, setSearchQuery] = useState('');
+  const [bulkUpdateDialogOpen, setBulkUpdateDialogOpen] = useState(false);
+  const [currentBulkUpdateType, setCurrentBulkUpdateType] = useState(null);
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -340,6 +344,65 @@ export default function ManageLocalStock() {
       loadItems();
     } catch (error) {
       alert('שגיאה במחיקת פריטים');
+    }
+  };
+
+  const openBulkUpdateDialog = (type) => {
+    setCurrentBulkUpdateType(type);
+    setBulkUpdateDialogOpen(true);
+  };
+
+  const handleBulkUpdateOperation = async (operation, value) => {
+    setIsBulkUpdating(true);
+
+    try {
+      if (currentBulkUpdateType === 'price') {
+        const itemsToUpdate = items.filter(item => selectedItems.has(item.id));
+        const updates = itemsToUpdate.map(item => {
+          let newPrice = item.price_ils;
+          if (operation === 'set') newPrice = value;
+          if (operation === 'increase_by') newPrice += value;
+          if (operation === 'decrease_by') newPrice -= value;
+          if (operation === 'multiply_by') newPrice *= value;
+          return LocalStockItem.update(item.id, { price_ils: Math.max(0, newPrice) });
+        });
+        await Promise.all(updates);
+      } else if (currentBulkUpdateType === 'quantity') {
+        const itemsToUpdate = items.filter(item => selectedItems.has(item.id));
+        const { StockTransaction } = await import('@/entities/StockTransaction');
+        
+        const updates = itemsToUpdate.map(async item => {
+          let newQuantity = item.quantity_available;
+          if (operation === 'set') newQuantity = value;
+          if (operation === 'increase_by') newQuantity += value;
+          if (operation === 'decrease_by') newQuantity -= value;
+          newQuantity = Math.max(0, Math.round(newQuantity));
+          
+          const quantityChange = newQuantity - item.quantity_available;
+          
+          await StockTransaction.create({
+            local_stock_item_id: item.id,
+            product_name: item.product_name,
+            transaction_type: quantityChange > 0 ? 'inbound' : quantityChange < 0 ? 'outbound' : 'adjustment',
+            quantity_change: quantityChange,
+            quantity_before: item.quantity_available,
+            quantity_after: newQuantity,
+            notes: 'עדכון כמות בבת אחת מממשק הניהול',
+            performed_by: userRole || 'admin'
+          });
+          
+          return LocalStockItem.update(item.id, { quantity_available: newQuantity });
+        });
+        await Promise.all(updates);
+      }
+
+      setSelectedItems(new Set());
+      loadItems();
+      setBulkUpdateDialogOpen(false);
+    } catch (error) {
+      alert('שגיאה בעדכון פריטים');
+    } finally {
+      setIsBulkUpdating(false);
     }
   };
 
@@ -822,6 +885,8 @@ export default function ManageLocalStock() {
             onUnhide={() => handleBulkUpdate({ is_hidden: false })}
             onMakeAvailable={() => handleBulkUpdate({ is_available: true })}
             onMakeUnavailable={() => handleBulkUpdate({ is_available: false })}
+            onPriceUpdate={() => openBulkUpdateDialog('price')}
+            onQuantityUpdate={() => openBulkUpdateDialog('quantity')}
             onClear={() => setSelectedItems(new Set())}
           />
         )}
@@ -833,6 +898,16 @@ export default function ManageLocalStock() {
         itemName={historyDialog.itemName}
         open={historyDialog.open}
         onOpenChange={(open) => setHistoryDialog({ ...historyDialog, open })}
+      />
+
+      {/* Bulk Update Dialog */}
+      <BulkUpdateDialog
+        isOpen={bulkUpdateDialogOpen}
+        onClose={() => setBulkUpdateDialogOpen(false)}
+        onUpdate={handleBulkUpdateOperation}
+        updateType={currentBulkUpdateType}
+        selectedCount={selectedItems.size}
+        isUpdating={isBulkUpdating}
       />
     </motion.div>
   );

@@ -1,9 +1,9 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Trash2, Eye, EyeOff, Check, X } from 'lucide-react';
+import { Trash2, Eye, EyeOff, Check, X, Tag, Box } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-export default function BulkActionsToolbar({ selectedCount, onDelete, onHide, onUnhide, onMakeAvailable, onMakeUnavailable, onClear }) {
+export default function BulkActionsToolbar({ selectedCount, onDelete, onHide, onUnhide, onMakeAvailable, onMakeUnavailable, onClear, onPriceUpdate, onQuantityUpdate }) {
   return (
     <motion.div
       initial={{ y: -20, opacity: 0 }}
@@ -52,6 +52,26 @@ export default function BulkActionsToolbar({ selectedCount, onDelete, onHide, on
       >
         <Eye className="w-4 h-4 ml-1" />
         הצג
+      </Button>
+      
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={onPriceUpdate}
+        className="text-white hover:bg-stone-700 h-8"
+      >
+        <Tag className="w-4 h-4 ml-1" />
+        עדכן מחיר
+      </Button>
+      
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={onQuantityUpdate}
+        className="text-white hover:bg-stone-700 h-8"
+      >
+        <Box className="w-4 h-4 ml-1" />
+        עדכן כמות
       </Button>
       
       <Button
