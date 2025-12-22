@@ -1,7 +1,14 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Trash2, Eye, EyeOff, Check, X, Tag, Box } from 'lucide-react';
+import { Trash2, Eye, EyeOff, Check, X, Tag, Box, MoreVertical } from 'lucide-react';
 import { motion } from 'framer-motion';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export default function BulkActionsToolbar({ selectedCount, onDelete, onHide, onUnhide, onMakeAvailable, onMakeUnavailable, onClear, onPriceUpdate, onQuantityUpdate }) {
   return (
@@ -14,75 +21,51 @@ export default function BulkActionsToolbar({ selectedCount, onDelete, onHide, on
       <span className="font-medium">{selectedCount} פריטים נבחרו</span>
       <div className="w-px h-6 bg-stone-600" />
       
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={onMakeAvailable}
-        className="text-white hover:bg-stone-700 h-8"
-      >
-        <Check className="w-4 h-4 ml-1" />
-        סמן כזמין
-      </Button>
-      
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={onMakeUnavailable}
-        className="text-white hover:bg-stone-700 h-8"
-      >
-        <X className="w-4 h-4 ml-1" />
-        סמן כלא זמין
-      </Button>
-      
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={onHide}
-        className="text-white hover:bg-stone-700 h-8"
-      >
-        <EyeOff className="w-4 h-4 ml-1" />
-        הסתר
-      </Button>
-      
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={onUnhide}
-        className="text-white hover:bg-stone-700 h-8"
-      >
-        <Eye className="w-4 h-4 ml-1" />
-        הצג
-      </Button>
-      
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={onPriceUpdate}
-        className="text-white hover:bg-stone-700 h-8"
-      >
-        <Tag className="w-4 h-4 ml-1" />
-        עדכן מחיר
-      </Button>
-      
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={onQuantityUpdate}
-        className="text-white hover:bg-stone-700 h-8"
-      >
-        <Box className="w-4 h-4 ml-1" />
-        עדכן כמות
-      </Button>
-      
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={onDelete}
-        className="text-red-400 hover:bg-red-900/30 h-8"
-      >
-        <Trash2 className="w-4 h-4 ml-1" />
-        מחק
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-white hover:bg-stone-700 h-8"
+          >
+            <MoreVertical className="w-4 h-4 ml-1" />
+            פעולות
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuItem onClick={onMakeAvailable}>
+            <Check className="w-4 h-4 ml-2" />
+            סמן כזמין למכירה
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={onMakeUnavailable}>
+            <X className="w-4 h-4 ml-2" />
+            סמן כלא זמין למכירה
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={onHide}>
+            <EyeOff className="w-4 h-4 ml-2" />
+            הסתר מלקוחות
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={onUnhide}>
+            <Eye className="w-4 h-4 ml-2" />
+            הצג ללקוחות
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={onPriceUpdate}>
+            <Tag className="w-4 h-4 ml-2" />
+            עדכן מחיר
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={onQuantityUpdate}>
+            <Box className="w-4 h-4 ml-2" />
+            עדכן כמות במלאי
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={onDelete} className="text-red-600 focus:text-red-600">
+            <Trash2 className="w-4 h-4 ml-2" />
+            מחק פריטים
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
       
       <div className="w-px h-6 bg-stone-600" />
       
