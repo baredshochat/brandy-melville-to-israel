@@ -20,6 +20,7 @@ import StockHistoryDialog from '../components/admin/StockHistoryDialog';
 import BulkActionsToolbar from '../components/admin/BulkActionsToolbar';
 import { AnimatePresence } from 'framer-motion';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Search } from 'lucide-react';
 
 const categoryNames = {
   tops: "חולצות וטופים",
@@ -64,6 +65,8 @@ export default function ManageLocalStock() {
   const [editingQuantity, setEditingQuantity] = useState(null);
   const [reorderSuggestions, setReorderSuggestions] = useState([]);
   const [historyDialog, setHistoryDialog] = useState({ open: false, itemId: null, itemName: '' });
+  const [selectedItems, setSelectedItems] = useState(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedItems, setSelectedItems] = useState(new Set());
 
   useEffect(() => {
@@ -321,10 +324,11 @@ export default function ManageLocalStock() {
   };
 
   const toggleSelectAll = () => {
-    if (selectedItems.size === items.length) {
+    const filteredItems = items.filter(item => !searchQuery || item.product_name.toLowerCase().includes(searchQuery.toLowerCase()));
+    if (selectedItems.size === filteredItems.length && filteredItems.length > 0) {
       setSelectedItems(new Set());
     } else {
-      setSelectedItems(new Set(items.map(item => item.id)));
+      setSelectedItems(new Set(filteredItems.map(item => item.id)));
     }
   };
 
@@ -645,10 +649,23 @@ export default function ManageLocalStock() {
 
 
 
+      {/* Search Bar */}
+      <div className="mb-6">
+        <div className="relative">
+          <Search className="absolute right-3 top-3 w-5 h-5 text-stone-400" />
+          <Input
+            placeholder="חיפוש לפי שם מוצר..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pr-10"
+          />
+        </div>
+      </div>
+
       {/* Items Table */}
       <Card>
         <CardHeader>
-          <CardTitle>פריטים במלאי ({items.length})</CardTitle>
+          <CardTitle>פריטים במלאי ({items.filter(item => !searchQuery || item.product_name.toLowerCase().includes(searchQuery.toLowerCase())).length})</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -667,7 +684,7 @@ export default function ManageLocalStock() {
                   <tr className="border-b">
                     <th className="text-center p-2 w-12">
                       <Checkbox
-                        checked={selectedItems.size === items.length && items.length > 0}
+                        checked={selectedItems.size === items.filter(item => !searchQuery || item.product_name.toLowerCase().includes(searchQuery.toLowerCase())).length && items.filter(item => !searchQuery || item.product_name.toLowerCase().includes(searchQuery.toLowerCase())).length > 0}
                         onCheckedChange={toggleSelectAll}
                       />
                     </th>
@@ -682,7 +699,7 @@ export default function ManageLocalStock() {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map(item => (
+                  {items.filter(item => !searchQuery || item.product_name.toLowerCase().includes(searchQuery.toLowerCase())).map(item => (
                     <tr key={item.id} className="border-b hover:bg-stone-50">
                       <td className="text-center p-2">
                         <Checkbox
