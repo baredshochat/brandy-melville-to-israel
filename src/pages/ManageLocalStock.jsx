@@ -67,7 +67,6 @@ export default function ManageLocalStock() {
   const [historyDialog, setHistoryDialog] = useState({ open: false, itemId: null, itemName: '' });
   const [selectedItems, setSelectedItems] = useState(new Set());
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedItems, setSelectedItems] = useState(new Set());
 
   useEffect(() => {
     const checkAccess = async () => {
