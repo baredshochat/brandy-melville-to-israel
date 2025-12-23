@@ -19,9 +19,10 @@ import { motion } from "framer-motion";
 import StockHistoryDialog from '../components/admin/StockHistoryDialog';
 import BulkActionsToolbar from '../components/admin/BulkActionsToolbar';
 import BulkUpdateDialog from '../components/admin/BulkUpdateDialog';
+import ExportDialog from '../components/admin/ExportDialog';
 import { AnimatePresence } from 'framer-motion';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Search } from 'lucide-react';
+import { Search, FileDown } from 'lucide-react';
 
 const categoryNames = {
   tops: "חולצות וטופים",
@@ -71,6 +72,7 @@ export default function ManageLocalStock() {
   const [bulkUpdateDialogOpen, setBulkUpdateDialogOpen] = useState(false);
   const [currentBulkUpdateType, setCurrentBulkUpdateType] = useState(null);
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -468,15 +470,23 @@ export default function ManageLocalStock() {
           <p className="text-lg text-stone-600">הוספה ועריכה של פריטים זמינים במלאי</p>
         </div>
         <div className="flex gap-3">
-          <Button 
-            onClick={() => window.location.href = createPageUrl('LocalStock')}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <Eye className="w-4 h-4" />
-            צפייה בעמוד המלאי
-          </Button>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <Button 
+              onClick={() => setExportDialogOpen(true)}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <FileDown className="w-4 h-4" />
+              ייצוא לאקסל
+            </Button>
+            <Button 
+              onClick={() => window.location.href = createPageUrl('LocalStock')}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Eye className="w-4 h-4" />
+              צפייה בעמוד המלאי
+            </Button>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={handleNewItem} className="bg-black hover:bg-stone-800">
                 <Plus className="w-4 h-4 ml-2" />
@@ -908,6 +918,12 @@ export default function ManageLocalStock() {
         updateType={currentBulkUpdateType}
         selectedCount={selectedItems.size}
         isUpdating={isBulkUpdating}
+      />
+
+      {/* Export Dialog */}
+      <ExportDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
       />
     </motion.div>
   );

@@ -1,129 +1,187 @@
-import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, FileSpreadsheet, Loader2 } from "lucide-react";
-import { format } from "date-fns";
+import React, { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Download, Mail, Loader2 } from 'lucide-react';
 
-export default function ExportDialog({ orders }) {
-  const [site, setSite] = useState('all');
-  const [isExporting, setIsExporting] = useState(false);
+const categoryNames = {
+  all: 'כל הקטגוריות',
+  tops: 'חולצות וטופים',
+  bottoms: 'מכנסיים וחצאיות',
+  dresses: 'שמלות',
+  sweaters: 'סוודרים וסווטשירטים',
+  accessories: 'אביזרים',
+  other: 'אחר'
+};
 
-  const exportOrders = async () => {
-    setIsExporting(true);
-    
+export default function ExportDialog({ open, onOpenChange }) {
+  const [filters, setFilters] = useState({
+    isAvailable: 'all',
+    isHidden: 'all',
+    inStock: 'all',
+    category: 'all',
+    searchQuery: ''
+  });
+  const [sendToEmail, setSendToEmail] = useState(false);
+  const [recipientEmail, setRecipientEmail] = useState('');
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async (withEmail = false) => {
+    setExporting(true);
     try {
-      let filteredOrders = orders;
-      if (site !== 'all') {
-        filteredOrders = orders.filter(order => order.site === site);
-      }
-
-      if (filteredOrders.length === 0) {
-        alert("No orders to export for the selected site.");
-        setIsExporting(false);
-        return;
-      }
-
-      const csvData = filteredOrders.flatMap(order => 
-        order.items.map(item => ({
-          'מספר הזמנה': order.order_number,
-          'אתר': order.site === 'us' ? 'ארה״ב' : order.site === 'eu' ? 'אירופה' : order.site === 'uk' ? 'בריטניה' : 'מלאי מקומי',
-          'שם מוצר': item.product_name,
-          'מק״ט': item.product_sku,
-          'צבע': item.color,
-          'מידה': item.size,
-          'כמות': item.quantity,
-          'מחיר מקורי': item.original_price,
-          'מטבע': item.original_currency,
-          'מחיר סופי בש״ח': order.total_price_ils,
-          'שם לקוח': order.customer_name,
-          'אימייל': order.customer_email,
-          'טלפון': order.customer_phone,
-          'כתובת': order.shipping_address,
-          'עיר': order.city,
-          'מיקוד': order.postal_code,
-          'סטטוס': order.status,
-          'תאריך הזמנה': format(new Date(order.created_date), 'dd/MM/yyyy HH:mm'),
-          'קישור מוצר': item.product_url
-        }))
-      );
-
-      const headers = Object.keys(csvData[0]);
-      const csvContent = [
-        headers.join(','),
-        ...csvData.map(row => headers.map(header => `"${(row[header] || '').toString().replace(/"/g, '""')}"`).join(','))
-      ].join('\n');
-
-      const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
+      const { base44 } = await import('@/api/base44Client');
       
-      const siteName = site === 'all' ? 'כל_האתרים' : 
-                     site === 'us' ? 'ארהב' : 
-                     site === 'eu' ? 'אירופה' : 
-                     site === 'uk' ? 'בריטניה' : 'מלאי_מקומי';
-      const fileName = `הזמנות_${siteName}_${format(new Date(), 'dd-MM-yyyy')}.csv`;
+      const payload = {
+        filters,
+        sendEmail: withEmail,
+        recipientEmail: withEmail ? recipientEmail : null
+      };
+
+      const response = await base44.functions.invoke('exportLocalStock', payload);
       
-      link.setAttribute('download', fileName);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      if (withEmail) {
+        alert('הדוח נשלח בהצלחה למייל! 📧');
+      } else {
+        // Download the CSV
+        const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `stock_report_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+      }
+      
+      onOpenChange(false);
     } catch (error) {
-      console.error('Error exporting orders:', error);
-      alert('An error occurred during export.');
+      console.error('Export error:', error);
+      alert('שגיאה בייצוא הדוח');
     } finally {
-      setIsExporting(false);
+      setExporting(false);
     }
   };
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="flex items-center gap-2 h-10 border-stone-300 rounded-none">
-          <Download className="w-4 h-4" />
-          Export Report
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="rounded-none">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileSpreadsheet className="w-5 h-5" />
-            Export Orders Report
-          </DialogTitle>
+          <DialogTitle>ייצוא דוח מלאי</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4 pt-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">Select site to export:</label>
-            <Select value={site} onValueChange={setSite}>
-              <SelectTrigger className="h-12 border-stone-300 rounded-none">
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label>זמין למכירה</Label>
+            <Select value={filters.isAvailable} onValueChange={(val) => setFilters({...filters, isAvailable: val})}>
+              <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Sites</SelectItem>
-                <SelectItem value="us">🇺🇸 USA</SelectItem>
-                <SelectItem value="eu">🇪🇺 Europe</SelectItem>
-                <SelectItem value="uk">🇬🇧 UK</SelectItem>
-                <SelectItem value="local">🇮🇱 מלאי מקומי</SelectItem>
+                <SelectItem value="all">הכל</SelectItem>
+                <SelectItem value="true">זמין בלבד</SelectItem>
+                <SelectItem value="false">לא זמין בלבד</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          <div className="bg-stone-100 p-4 border border-stone-200 rounded-none">
-            <p className="text-sm text-stone-700">
-              The report will include all order details: products, customers, prices, and statuses.
-            </p>
+          <div className="space-y-2">
+            <Label>סטטוס תצוגה</Label>
+            <Select value={filters.isHidden} onValueChange={(val) => setFilters({...filters, isHidden: val})}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">הכל</SelectItem>
+                <SelectItem value="false">גלוי ללקוחות</SelectItem>
+                <SelectItem value="true">מוסתר מלקוחות</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          <Button
-            onClick={exportOrders}
-            disabled={isExporting}
-            className="w-full h-12 bg-black hover:bg-stone-800 text-white font-semibold rounded-none"
-          >
-            {isExporting ? <><Loader2 className="w-4 h-4 animate-spin mr-2"/> Exporting...</> : 'Export CSV File'}
-          </Button>
+          <div className="space-y-2">
+            <Label>מלאי</Label>
+            <Select value={filters.inStock} onValueChange={(val) => setFilters({...filters, inStock: val})}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">הכל</SelectItem>
+                <SelectItem value="true">יש במלאי</SelectItem>
+                <SelectItem value="false">אזל המלאי</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>קטגוריה</Label>
+            <Select value={filters.category} onValueChange={(val) => setFilters({...filters, category: val})}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(categoryNames).map(([key, name]) => (
+                  <SelectItem key={key} value={key}>{name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>חיפוש טקסט (אופציונלי)</Label>
+            <Input
+              placeholder="שם מוצר, תיאור, או מק״ט..."
+              value={filters.searchQuery}
+              onChange={(e) => setFilters({...filters, searchQuery: e.target.value})}
+            />
+          </div>
+
+          <div className="border-t pt-4 mt-4 space-y-3">
+            <div className="flex items-center space-x-2 space-x-reverse">
+              <Checkbox
+                id="sendEmail"
+                checked={sendToEmail}
+                onCheckedChange={setSendToEmail}
+              />
+              <Label htmlFor="sendEmail" className="cursor-pointer">
+                שלח גם למייל (לדוגמה, לרואת חשבון)
+              </Label>
+            </div>
+
+            {sendToEmail && (
+              <div className="space-y-2">
+                <Label>כתובת מייל</Label>
+                <Input
+                  type="email"
+                  placeholder="example@email.com"
+                  value={recipientEmail}
+                  onChange={(e) => setRecipientEmail(e.target.value)}
+                />
+              </div>
+            )}
+          </div>
         </div>
+
+        <DialogFooter className="flex gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={exporting}>
+            ביטול
+          </Button>
+          
+          {sendToEmail && recipientEmail ? (
+            <Button onClick={() => handleExport(true)} disabled={exporting}>
+              {exporting ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Mail className="w-4 h-4 ml-2" />}
+              ייצא ושלח למייל
+            </Button>
+          ) : (
+            <Button onClick={() => handleExport(false)} disabled={exporting}>
+              {exporting ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Download className="w-4 h-4 ml-2" />}
+              ייצא והורד
+            </Button>
+          )}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
