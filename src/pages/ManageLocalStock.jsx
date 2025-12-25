@@ -879,11 +879,12 @@ export default function ManageLocalStock() {
                                 if (!confirm(`לשלוח התראות ל-${waitingCounts[item.id] || 0} לקוחות?`)) return;
                                 try {
                                   const { base44 } = await import('@/api/base44Client');
-                                  const result = await base44.functions.invoke('sendBackInStockNotifications', { item_id: item.id });
-                                  alert(result.data.message || 'ההתראות נשלחו בהצלחה!');
+                                  const response = await base44.functions.invoke('sendBackInStockNotifications', { item_id: item.id });
+                                  alert(response.message || 'ההתראות נשלחו בהצלחה!');
                                   loadItems();
                                 } catch (error) {
-                                  alert('שגיאה בשליחת ההתראות');
+                                  console.error('Send notifications error:', error);
+                                  alert(`שגיאה בשליחת ההתראות: ${error.message || 'שגיאה לא ידועה'}`);
                                 }
                               }}
                               disabled={!waitingCounts[item.id] || waitingCounts[item.id] === 0}
