@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
       try {
         const host = req.headers.get('host');
         const protocol = host.includes('localhost') ? 'http' : 'https';
-        const productUrl = `${protocol}://${host}/#/LocalStockItemDetail?id=${item.id}`;
+        const productUrl = `${protocol}://${host}/#/LocalStock`;
         
         const emailHtml = `
           <!DOCTYPE html>
@@ -159,7 +159,8 @@ Deno.serve(async (req) => {
                 ${notification.customer_name ? `<p class="message">היי ${notification.customer_name},</p>` : ''}
                 
                 <p class="message">
-                  יש לנו חדשות מעולות! הפריט שביקשת להתעדכן עליו חזר למלאי:
+                  יש לנו חדשות מעולות! 🎉<br/>
+                  הפריט שביקשת להתעדכן עליו חזר למלאי:
                 </p>
 
                 ${item.image_url ? `<img src="${item.image_url}" alt="${item.product_name}" class="product-image" />` : ''}
