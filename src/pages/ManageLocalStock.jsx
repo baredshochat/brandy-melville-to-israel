@@ -881,9 +881,19 @@ export default function ManageLocalStock() {
                                 try {
                                   const { base44 } = await import('@/api/base44Client');
                                   const response = await base44.functions.invoke('sendBackInStockNotifications', { item_id: item.id });
-                                  const sentCount = response?.sent || 0;
-                                  const totalCount = response?.total || count;
-                                  alert(`נשלחו ${sentCount} מתוך ${totalCount} התראות בהצלחה! ✅`);
+                                  console.log('Response from sendBackInStockNotifications:', response);
+
+                                  // Handle different response formats
+                                  const result = response?.data || response;
+                                  const sentCount = result?.sent || 0;
+                                  const totalCount = result?.total || count;
+                                  const errors = result?.errors || [];
+
+                                  if (errors.length > 0) {
+                                    alert(`נשלחו ${sentCount} מתוך ${totalCount} התראות.\n\nשגיאות:\n${errors.map(e => `${e.email}: ${e.error}`).join('\n')}`);
+                                  } else {
+                                    alert(`נשלחו ${sentCount} התראות בהצלחה! ✅`);
+                                  }
                                   loadItems();
                                 } catch (error) {
                                   console.error('Send notifications error:', error);
