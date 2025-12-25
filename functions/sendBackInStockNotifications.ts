@@ -24,10 +24,9 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Item not found' }, { status: 404 });
     }
 
-    // Get all notifications for this item that haven't been sent yet
+    // Get all notifications for this item (including those marked as notified but not deleted)
     const notifications = await base44.asServiceRole.entities.BackInStockNotification.filter({
-      local_stock_item_id: item_id,
-      notified: false
+      local_stock_item_id: item_id
     });
 
     if (notifications.length === 0) {
