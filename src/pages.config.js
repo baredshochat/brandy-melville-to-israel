@@ -1,4 +1,3 @@
-import BackInStockNotifications from './pages/BackInStockNotifications';
 import Chat from './pages/Chat';
 import ChatLogs from './pages/ChatLogs';
 import CompletePayment from './pages/CompletePayment';
@@ -26,7 +25,6 @@ import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
-    "BackInStockNotifications": BackInStockNotifications,
     "Chat": Chat,
     "ChatLogs": ChatLogs,
     "CompletePayment": CompletePayment,

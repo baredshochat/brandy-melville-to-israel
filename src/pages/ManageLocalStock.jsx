@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Package, Plus, Edit, Trash2, Loader2, Link as LinkIcon, Image as ImageIcon, AlertTriangle, Eye, Copy, Bell, MoreHorizontal, History, EyeOff } from "lucide-react";
 import { motion } from "framer-motion";
 import StockHistoryDialog from '../components/admin/StockHistoryDialog';
@@ -21,6 +22,7 @@ import BulkActionsToolbar from '../components/admin/BulkActionsToolbar';
 import BulkUpdateDialog from '../components/admin/BulkUpdateDialog';
 import ExportDialog from '../components/admin/ExportDialog';
 import WaitingListDialog from '../components/admin/WaitingListDialog';
+import BackInStockNotificationsTab from '../components/admin/BackInStockNotificationsTab';
 import { AnimatePresence } from 'framer-motion';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Search, FileDown } from 'lucide-react';
@@ -466,11 +468,19 @@ export default function ManageLocalStock() {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="pb-12">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-4xl font-bold text-stone-900 mb-2">ניהול מלאי מקומי</h1>
-          <p className="text-lg text-stone-600">הוספה ועריכה של פריטים זמינים במלאי</p>
-        </div>
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-stone-900 mb-2">ניהול מלאי מקומי</h1>
+        <p className="text-lg text-stone-600">הוספה ועריכה של פריטים זמינים במלאי</p>
+      </div>
+
+      <Tabs defaultValue="stock" className="w-full">
+        <TabsList className="mb-6">
+          <TabsTrigger value="stock">ניהול מלאי</TabsTrigger>
+          <TabsTrigger value="notifications">התראות חזרה למלאי</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="stock">
+          <div className="flex justify-between items-center mb-6">
         <div className="flex gap-3">
             <Button 
               onClick={() => setExportDialogOpen(true)}
@@ -968,7 +978,13 @@ export default function ManageLocalStock() {
         onOpenChange={(open) => setWaitingListDialog({ ...waitingListDialog, open })}
         itemId={waitingListDialog.itemId}
         itemName={waitingListDialog.itemName}
-      />
-      </motion.div>
-      );
-      }
+        />
+        </TabsContent>
+
+        <TabsContent value="notifications">
+        <BackInStockNotificationsTab />
+        </TabsContent>
+        </Tabs>
+        </motion.div>
+        );
+        }

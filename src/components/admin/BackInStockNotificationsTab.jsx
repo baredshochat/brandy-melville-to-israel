@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { BackInStockNotification } from "@/entities/BackInStockNotification";
-import { LocalStockItem } from "@/entities/LocalStockItem";
-import { User } from "@/entities/User";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,21 +8,13 @@ import { Loader2, Search, Mail, CheckCircle, Clock, Trash2 } from "lucide-react"
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
 
-export default function BackInStockNotifications() {
+export default function BackInStockNotificationsTab() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [deleting, setDeleting] = useState({});
 
   useEffect(() => {
-    User.me().then(u => {
-      setUser(u);
-      if (u?.role !== 'admin') {
-        window.location.href = '/';
-      }
-    }).catch(() => window.location.href = '/');
-    
     loadNotifications();
   }, []);
 
@@ -90,9 +80,9 @@ export default function BackInStockNotifications() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div>
       <div className="mb-8">
-        <h1 className="text-3xl font-light text-stone-800 mb-2">התראות חזרה למלאי</h1>
+        <h2 className="text-2xl font-light text-stone-800 mb-2">התראות חזרה למלאי</h2>
         <p className="text-stone-600">ניהול בקשות ללקוחות שרוצים להתעדכן כשפריטים חוזרים</p>
       </div>
 
