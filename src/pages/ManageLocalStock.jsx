@@ -876,11 +876,14 @@ export default function ManageLocalStock() {
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               onClick={async () => {
-                                if (!confirm(`לשלוח התראות ל-${waitingCounts[item.id] || 0} לקוחות?`)) return;
+                                const count = waitingCounts[item.id] || 0;
+                                if (!confirm(`לשלוח התראות ל-${count} לקוחות?`)) return;
                                 try {
                                   const { base44 } = await import('@/api/base44Client');
                                   const response = await base44.functions.invoke('sendBackInStockNotifications', { item_id: item.id });
-                                  alert(response.message || 'ההתראות נשלחו בהצלחה!');
+                                  const sentCount = response?.sent || 0;
+                                  const totalCount = response?.total || count;
+                                  alert(`נשלחו ${sentCount} מתוך ${totalCount} התראות בהצלחה! ✅`);
                                   loadItems();
                                 } catch (error) {
                                   console.error('Send notifications error:', error);

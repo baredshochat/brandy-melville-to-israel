@@ -213,10 +213,8 @@ Deno.serve(async (req) => {
           body: emailHtml
         });
 
-        // Mark as notified
-        await base44.asServiceRole.entities.BackInStockNotification.update(notification.id, {
-          notified: true
-        });
+        // Delete notification after sending
+        await base44.asServiceRole.entities.BackInStockNotification.delete(notification.id);
 
         sentCount++;
       } catch (error) {
