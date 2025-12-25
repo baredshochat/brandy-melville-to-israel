@@ -81,14 +81,14 @@ export default function LocalStock() {
       });
       
       // Sort: available for sale first, then unavailable
-      // Secondary sort: by created_date (newest first) within each group
+      // Secondary sort: by updated_date (newest first) within each group
       visibleItems.sort((a, b) => {
         // Primary: is_available (true first)
         if (a.is_available !== b.is_available) {
           return a.is_available ? -1 : 1;
         }
-        // Secondary: created_date (newest first)
-        return new Date(b.created_date) - new Date(a.created_date);
+        // Secondary: updated_date (newest first)
+        return new Date(b.updated_date) - new Date(a.updated_date);
       });
       
       setItems(visibleItems);
