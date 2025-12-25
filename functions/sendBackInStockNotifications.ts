@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
       try {
         const host = req.headers.get('host');
         const protocol = host.includes('localhost') ? 'http' : 'https';
-        const productUrl = `${protocol}://${host}/#/LocalStockItemDetail?id=${item.id}`;
+        const productUrl = `${protocol}://${host}/#/LocalStock?highlight=${item.id}`;
         
         const emailHtml = `
           <!DOCTYPE html>
