@@ -20,6 +20,7 @@ import StockHistoryDialog from '../components/admin/StockHistoryDialog';
 import BulkActionsToolbar from '../components/admin/BulkActionsToolbar';
 import BulkUpdateDialog from '../components/admin/BulkUpdateDialog';
 import ExportDialog from '../components/admin/ExportDialog';
+import WaitingListDialog from '../components/admin/WaitingListDialog';
 import { AnimatePresence } from 'framer-motion';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Search, FileDown } from 'lucide-react';
@@ -73,6 +74,7 @@ export default function ManageLocalStock() {
   const [currentBulkUpdateType, setCurrentBulkUpdateType] = useState(null);
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [waitingListDialog, setWaitingListDialog] = useState({ open: false, itemId: null, itemName: '' });
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -822,10 +824,13 @@ export default function ManageLocalStock() {
                       </td>
                       <td className="p-2">
                         {waitingCounts[item.id] > 0 && (
-                          <span className="flex items-center gap-1 text-amber-600">
+                          <button
+                            onClick={() => setWaitingListDialog({ open: true, itemId: item.id, itemName: item.product_name })}
+                            className="flex items-center gap-1 text-amber-600 hover:text-amber-700 hover:underline"
+                          >
                             <Bell className="w-3 h-3" />
                             {waitingCounts[item.id]}
-                          </span>
+                          </button>
                         )}
                       </td>
                       <td className="p-2 text-stone-500">
@@ -942,6 +947,14 @@ export default function ManageLocalStock() {
         open={exportDialogOpen}
         onOpenChange={setExportDialogOpen}
       />
-    </motion.div>
-  );
-}
+
+      {/* Waiting List Dialog */}
+      <WaitingListDialog
+        open={waitingListDialog.open}
+        onOpenChange={(open) => setWaitingListDialog({ ...waitingListDialog, open })}
+        itemId={waitingListDialog.itemId}
+        itemName={waitingListDialog.itemName}
+      />
+      </motion.div>
+      );
+      }
