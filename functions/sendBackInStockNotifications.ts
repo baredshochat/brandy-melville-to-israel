@@ -16,7 +16,7 @@ async function sendEmailViaSendGrid(to, subject, htmlContent) {
     body: JSON.stringify({
       personalizations: [{ to: [{ email: to }] }],
       from: { 
-        email: 'noreply@brandymelvilletoisrael.com', 
+        email: 'brandyorder@gmail.com', 
         name: 'Brandy Melville to Israel' 
       },
       subject: subject,
