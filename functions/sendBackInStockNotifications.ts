@@ -44,7 +44,9 @@ Deno.serve(async (req) => {
     // Send email to each customer
     for (const notification of notifications) {
       try {
-        const productUrl = `https://${req.headers.get('host')}/LocalStockItemDetail?id=${item.id}`;
+        const host = req.headers.get('host');
+        const protocol = host.includes('localhost') ? 'http' : 'https';
+        const productUrl = `${protocol}://${host}/#/LocalStockItemDetail?id=${item.id}`;
         
         const emailHtml = `
           <!DOCTYPE html>
