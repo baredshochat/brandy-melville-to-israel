@@ -763,14 +763,16 @@ export default function ManageLocalStock() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm" dir="rtl">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-right p-2 w-12">
-                      <Checkbox
-                        checked={selectedItems.size === items.filter(item => !searchQuery || item.product_name.toLowerCase().includes(searchQuery.toLowerCase())).length && items.filter(item => !searchQuery || item.product_name.toLowerCase().includes(searchQuery.toLowerCase())).length > 0}
-                        onCheckedChange={toggleSelectAll}
-                      />
+                    <th className="p-2 w-12">
+                      <div className="flex justify-start">
+                        <Checkbox
+                          checked={selectedItems.size === items.filter(item => !searchQuery || item.product_name.toLowerCase().includes(searchQuery.toLowerCase())).length && items.filter(item => !searchQuery || item.product_name.toLowerCase().includes(searchQuery.toLowerCase())).length > 0}
+                          onCheckedChange={toggleSelectAll}
+                        />
+                      </div>
                     </th>
                     <th className="text-right p-2">תמונה</th>
                     <th className="text-right p-2">שם</th>
@@ -779,17 +781,19 @@ export default function ManageLocalStock() {
                     <th className="text-right p-2">ממתינים</th>
                     <th className="text-right p-2">צבע/מידה</th>
                     <th className="text-right p-2">סטטוס</th>
-                    <th className="text-left p-2">פעולות</th>
+                    <th className="text-right p-2">פעולות</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.filter(item => !searchQuery || item.product_name.toLowerCase().includes(searchQuery.toLowerCase())).map(item => (
                     <tr key={item.id} className="border-b hover:bg-stone-50">
-                      <td className="text-right p-2">
-                        <Checkbox
-                          checked={selectedItems.has(item.id)}
-                          onCheckedChange={() => toggleSelectItem(item.id)}
-                        />
+                      <td className="p-2">
+                        <div className="flex justify-start">
+                          <Checkbox
+                            checked={selectedItems.has(item.id)}
+                            onCheckedChange={() => toggleSelectItem(item.id)}
+                          />
+                        </div>
                       </td>
                       <td className="p-2">
                         {item.image_url ? (
@@ -800,9 +804,9 @@ export default function ManageLocalStock() {
                           </div>
                         )}
                       </td>
-                      <td className="p-2 font-medium">{item.product_name}</td>
-                      <td className="p-2">₪{item.price_ils}</td>
-                      <td className="p-2">
+                      <td className="p-2 font-medium text-right">{item.product_name}</td>
+                      <td className="p-2 text-right">₪{item.price_ils}</td>
+                      <td className="p-2 text-right">
                         {editingQuantity === item.id ? (
                           <div className="flex items-center gap-1">
                             <Input
@@ -832,7 +836,7 @@ export default function ManageLocalStock() {
                           </button>
                         )}
                       </td>
-                      <td className="p-2">
+                      <td className="p-2 text-right">
                         {waitingCounts[item.id] > 0 && (
                           <button
                             onClick={() => setWaitingListDialog({ open: true, itemId: item.id, itemName: item.product_name })}
@@ -843,11 +847,11 @@ export default function ManageLocalStock() {
                           </button>
                         )}
                       </td>
-                      <td className="p-2 text-stone-500">
+                      <td className="p-2 text-right text-stone-500">
                         {[item.color, item.size].filter(Boolean).join(' / ') || '—'}
                       </td>
-                      <td className="p-2">
-                        <div className="flex flex-col gap-1">
+                      <td className="p-2 text-right">
+                        <div className="flex flex-col gap-1 items-end">
                           {item.is_available ? (
                             <span className="text-green-600 text-xs">✓ זמין</span>
                           ) : (
@@ -860,7 +864,7 @@ export default function ManageLocalStock() {
                           )}
                         </div>
                       </td>
-                      <td className="p-2 text-left">
+                      <td className="p-2 text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
