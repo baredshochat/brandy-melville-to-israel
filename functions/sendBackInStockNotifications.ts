@@ -10,7 +10,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    const { item_id, notification_id } = await req.json();
+    const { item_id } = await req.json();
     
     if (!item_id) {
       return Response.json({ error: 'item_id is required' }, { status: 400 });
@@ -25,21 +25,10 @@ Deno.serve(async (req) => {
     }
 
     // Get all notifications for this item that haven't been sent yet
-    let notifications;
-    if (notification_id) {
-      // Send to specific customer only
-      const singleNotif = await base44.asServiceRole.entities.BackInStockNotification.filter({
-        id: notification_id,
-        local_stock_item_id: item_id
-      });
-      notifications = singleNotif;
-    } else {
-      // Send to all waiting customers
-      notifications = await base44.asServiceRole.entities.BackInStockNotification.filter({
-        local_stock_item_id: item_id,
-        notified: false
-      });
-    }
+    const notifications = await base44.asServiceRole.entities.BackInStockNotification.filter({
+      local_stock_item_id: item_id,
+      notified: false
+    });
 
     if (notifications.length === 0) {
       return Response.json({ 
