@@ -47,6 +47,19 @@ export default function LocalStock() {
       }
     }).catch(() => setUser(null));
     loadItems();
+    
+    // Check for highlighted item from email
+    const urlParams = new URLSearchParams(window.location.search);
+    const highlightId = urlParams.get('highlight');
+    if (highlightId) {
+      setTimeout(() => {
+        const element = document.getElementById(`item-${highlightId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          element.classList.add('ring-4', 'ring-rose-400', 'ring-offset-4');
+        }
+      }, 500);
+    }
   }, []);
 
   const loadItems = async () => {
@@ -234,6 +247,7 @@ export default function LocalStock() {
               {filteredItems.map((item, index) => (
                 <motion.div
                   key={item.id}
+                  id={`item-${item.id}`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
