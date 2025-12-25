@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { BackInStockNotification } from '@/entities/BackInStockNotification';
-import { Loader2, Mail, User } from 'lucide-react';
+import { Loader2, Mail, User, Send } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
 
 export default function WaitingListDialog({ open, onOpenChange, itemId, itemName }) {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [sendingTo, setSendingTo] = useState(null);
 
   useEffect(() => {
     if (open && itemId) {
@@ -25,6 +28,25 @@ export default function WaitingListDialog({ open, onOpenChange, itemId, itemName
       console.error('Error loading notifications:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSendToCustomer = async (notificationId, customerEmail) => {
+    if (!confirm(`לשלוח התראה ל-${customerEmail}?`)) return;
+    
+    setSendingTo(notificationId);
+    try {
+      const result = await base44.functions.invoke('sendBackInStockNotifications', {
+        item_id: itemId,
+        notification_id: notificationId
+      });
+      alert(result.data.message || 'ההתראה נשלחה בהצלחה!');
+      loadNotifications(); // Refresh list
+    } catch (error) {
+      console.error('Error sending notification:', error);
+      alert('שגיאה בשליחת ההתראה');
+    } finally {
+      setSendingTo(null);
     }
   };
 
@@ -68,8 +90,23 @@ export default function WaitingListDialog({ open, onOpenChange, itemId, itemName
                       </div>
                     </div>
                   </div>
-                  <div className="text-xs text-stone-400">
-                    {new Date(notif.created_date).toLocaleDateString('he-IL')}
+                  <div className="flex items-center gap-3">
+                    <div className="text-xs text-stone-400">
+                      {new Date(notif.created_date).toLocaleDateString('he-IL')}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleSendToCustomer(notif.id, notif.customer_email)}
+                      disabled={sendingTo === notif.id}
+                      className="h-8 w-8 p-0"
+                    >
+                      {sendingTo === notif.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
+                    </Button>
                   </div>
                 </div>
               ))}
