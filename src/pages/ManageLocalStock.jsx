@@ -869,12 +869,29 @@ export default function ManageLocalStock() {
                               <Copy className="w-4 h-4 ml-2" />
                               שכפול
                             </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={async () => {
+                                if (!confirm(`לשלוח התראות ל-${waitingCounts[item.id] || 0} לקוחות?`)) return;
+                                try {
+                                  const { base44 } = await import('@/api/base44Client');
+                                  const result = await base44.functions.invoke('sendBackInStockNotifications', { item_id: item.id });
+                                  alert(result.data.message || 'ההתראות נשלחו בהצלחה!');
+                                  loadItems();
+                                } catch (error) {
+                                  alert('שגיאה בשליחת ההתראות');
+                                }
+                              }}
+                              disabled={!waitingCounts[item.id] || waitingCounts[item.id] === 0}
+                            >
+                              <Bell className="w-4 h-4 ml-2" />
+                              שלח התראות מלאי ({waitingCounts[item.id] || 0})
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleDelete(item.id)} className="text-red-600 focus:text-red-600">
                               <Trash2 className="w-4 h-4 ml-2" />
                               מחיקה
                             </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                            </DropdownMenuContent>
+                            </DropdownMenu>
                       </td>
                     </tr>
                   ))}
