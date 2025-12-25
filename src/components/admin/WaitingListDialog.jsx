@@ -140,12 +140,12 @@ export default function WaitingListDialog({ open, onOpenChange, itemId, itemName
             </div>
           )}
         </div>
-        </DialogContent>
-        </Dialog>
+      </DialogContent>
+    </Dialog>
 
-        {/* Add Notification Dialog */}
-        <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-        <DialogContent className="max-w-md">
+    {/* Add Notification Dialog */}
+    <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>הוסף ממתינה לרשימה</DialogTitle>
         </DialogHeader>
@@ -182,7 +182,8 @@ export default function WaitingListDialog({ open, onOpenChange, itemId, itemName
             הוסף
           </Button>
         </DialogFooter>
-        </DialogContent>
-        </Dialog>
-        );
-        }
+      </DialogContent>
+    </Dialog>
+  </>
+  );
+}
