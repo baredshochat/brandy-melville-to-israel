@@ -44,9 +44,22 @@ Deno.serve(async (req) => {
     // Send email to each customer
     for (const notification of notifications) {
       try {
-        const host = req.headers.get('host');
-        const protocol = host.includes('localhost') ? 'http' : 'https';
-        const productUrl = `${protocol}://${host}/#/LocalStock?highlight=${item.id}`;
+        // Get app URL from environment or construct from request
+        const referer = req.headers.get('referer');
+        let appBaseUrl = '';
+        
+        if (referer) {
+          // Extract base URL from referer
+          const url = new URL(referer);
+          appBaseUrl = `${url.protocol}//${url.host}`;
+        } else {
+          // Fallback to constructing from host
+          const host = req.headers.get('host');
+          const protocol = host.includes('localhost') ? 'http' : 'https';
+          appBaseUrl = `${protocol}://${host}`;
+        }
+        
+        const productUrl = `${appBaseUrl}/#/LocalStock?highlight=${item.id}`;
         
         const emailHtml = `
           <!DOCTYPE html>
