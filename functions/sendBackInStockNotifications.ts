@@ -1,5 +1,37 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
+async function sendEmailViaSendGrid(to, subject, htmlContent) {
+  const SENDGRID_API_KEY = Deno.env.get('SENDGRID_API_KEY');
+  
+  if (!SENDGRID_API_KEY) {
+    throw new Error('SENDGRID_API_KEY not configured');
+  }
+  
+  const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${SENDGRID_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      personalizations: [{ to: [{ email: to }] }],
+      from: { 
+        email: 'noreply@brandymelvilletoisrael.com', 
+        name: 'Brandy Melville to Israel' 
+      },
+      subject: subject,
+      content: [{ type: 'text/html', value: htmlContent }],
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`SendGrid error: ${error}`);
+  }
+  
+  return response;
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -208,12 +240,11 @@ Deno.serve(async (req) => {
           </html>
         `;
 
-        await base44.asServiceRole.integrations.Core.SendEmail({
-          from_name: 'Brandy Melville to Israel',
-          to: notification.customer_email,
-          subject: `💖 ${item.product_name} חזר למלאי!`,
-          body: emailHtml
-        });
+        await sendEmailViaSendGrid(
+          notification.customer_email,
+          `💖 ${item.product_name} חזר למלאי!`,
+          emailHtml
+        );
 
         // Delete notification after sending
         await base44.asServiceRole.entities.BackInStockNotification.delete(notification.id);
