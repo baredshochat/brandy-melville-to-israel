@@ -24,16 +24,18 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Item not found' }, { status: 404 });
     }
 
-    // Get all notifications for this item (including those marked as notified but not deleted)
-    const notifications = await base44.asServiceRole.entities.BackInStockNotification.filter({
-      local_stock_item_id: item_id
-    });
+    // Get all notifications for this item
+    const allNotifications = await base44.asServiceRole.entities.BackInStockNotification.list();
+    const notifications = allNotifications.filter(n => n.local_stock_item_id === item_id);
+    
+    console.log(`Found ${notifications.length} notifications for item ${item_id}`);
 
     if (notifications.length === 0) {
       return Response.json({ 
         success: true, 
-        message: 'No pending notifications',
-        sent: 0 
+        message: 'אין ממתינות לפריט זה',
+        sent: 0,
+        total: 0
       });
     }
 
@@ -42,6 +44,7 @@ Deno.serve(async (req) => {
 
     // Send email to each customer
     for (const notification of notifications) {
+      console.log(`Processing notification ${notification.id} for ${notification.customer_email}`);
       try {
         // Get app URL from environment or construct from request
         const referer = req.headers.get('referer');
@@ -214,6 +217,7 @@ Deno.serve(async (req) => {
 
         // Delete notification after sending
         await base44.asServiceRole.entities.BackInStockNotification.delete(notification.id);
+        console.log(`Successfully sent and deleted notification for ${notification.customer_email}`);
 
         sentCount++;
       } catch (error) {
