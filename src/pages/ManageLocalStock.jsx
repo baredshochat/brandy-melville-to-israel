@@ -766,7 +766,7 @@ export default function ManageLocalStock() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-center p-2 w-12">
+                    <th className="text-right p-2 w-12">
                       <Checkbox
                         checked={selectedItems.size === items.filter(item => !searchQuery || item.product_name.toLowerCase().includes(searchQuery.toLowerCase())).length && items.filter(item => !searchQuery || item.product_name.toLowerCase().includes(searchQuery.toLowerCase())).length > 0}
                         onCheckedChange={toggleSelectAll}
@@ -779,13 +779,13 @@ export default function ManageLocalStock() {
                     <th className="text-right p-2">ממתינים</th>
                     <th className="text-right p-2">צבע/מידה</th>
                     <th className="text-right p-2">סטטוס</th>
-                    <th className="text-right p-2">פעולות</th>
+                    <th className="text-left p-2">פעולות</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.filter(item => !searchQuery || item.product_name.toLowerCase().includes(searchQuery.toLowerCase())).map(item => (
                     <tr key={item.id} className="border-b hover:bg-stone-50">
-                      <td className="text-center p-2">
+                      <td className="text-right p-2">
                         <Checkbox
                           checked={selectedItems.has(item.id)}
                           onCheckedChange={() => toggleSelectItem(item.id)}
@@ -860,7 +860,7 @@ export default function ManageLocalStock() {
                           )}
                         </div>
                       </td>
-                      <td className="p-2">
+                      <td className="p-2 text-left">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
