@@ -296,7 +296,7 @@ export default function LocalStock() {
                     }
                         </div>
                   }
-                      <div className="px-1 py-1">
+                      <div className="px-1 py-1 text-center">
                         <h3 className="font-medium text-xs text-stone-800 truncate">
                           {item.product_name}
                         </h3>
