@@ -23,9 +23,103 @@ Deno.serve(async (req) => {
     if (!templates || templates.length === 0) {
       return Response.json({ error: 'No active template found' }, { status: 404 });
     }
-    
+
     const template = templates[0];
-    const templateContent = template.content || '';
+
+    // Parse the template - it's now stored as JSON with enabled blocks
+    let templateContent = '';
+    try {
+      const parsed = JSON.parse(template.content);
+      if (parsed.enabledBlocks) {
+        // Build HTML from enabled blocks
+        const DOCUMENT_BLOCKS = [
+          {
+            id: 'header',
+            html: `
+              <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 30px;">
+                <h1 style="margin: 0; font-size: 28px;">Brandy Melville to Israel</h1>
+                <p style="margin: 5px 0 0 0; color: #666;">מסמך הזמנה</p>
+              </div>
+            `
+          },
+          {
+            id: 'order_info',
+            html: `
+              <div style="margin-bottom: 30px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                  <div><strong>מספר הזמנה:</strong> {{order_number}}</div>
+                  <div><strong>תאריך:</strong> {{created_date}}</div>
+                </div>
+              </div>
+            `
+          },
+          {
+            id: 'customer_info',
+            html: `
+              <div style="margin-bottom: 30px;">
+                <h2 style="font-size: 18px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">פרטי לקוחה</h2>
+                <div style="margin-top: 10px;">
+                  <div><strong>שם:</strong> {{customer_name}}</div>
+                  <div><strong>אימייל:</strong> {{customer_email}}</div>
+                  <div><strong>טלפון:</strong> {{customer_phone}}</div>
+                  <div><strong>כתובת משלוח:</strong> {{shipping_address}}, {{city}}</div>
+                </div>
+              </div>
+            `
+          },
+          {
+            id: 'items_table',
+            html: `
+              <div style="margin-bottom: 30px;">
+                <h2 style="font-size: 18px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">פריטים בהזמנה</h2>
+                {{items_table}}
+              </div>
+            `
+          },
+          {
+            id: 'payment_summary',
+            html: `
+              <div style="margin-bottom: 30px;">
+                <h2 style="font-size: 18px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">סיכום תשלום</h2>
+                <div style="margin-top: 10px;">
+                  <div style="display: flex; justify-content: space-between;"><span>סכום ביניים:</span><span>₪{{subtotal}}</span></div>
+                  <div style="display: flex; justify-content: space-between;"><span>משלוח:</span><span>₪{{shipping_cost}}</span></div>
+                  <div style="display: flex; justify-content: space-between;"><span>מע״מ (18%):</span><span>₪{{vat}}</span></div>
+                  <div style="display: flex; justify-content: space-between; font-size: 20px; font-weight: bold; margin-top: 10px; padding-top: 10px; border-top: 2px solid #000;">
+                    <span>סה״כ לתשלום:</span><span>₪{{total}}</span>
+                  </div>
+                </div>
+              </div>
+            `
+          },
+          {
+            id: 'footer',
+            html: `
+              <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ccc; text-align: center; color: #666; font-size: 12px;">
+                <p>תודה שבחרת בנו! 💖</p>
+                <p>Brandy Melville to Israel - הדרך הקלה להזמין ברנדי</p>
+              </div>
+            `
+          }
+        ];
+
+        const enabledBlocksHTML = DOCUMENT_BLOCKS
+          .filter(block => parsed.enabledBlocks[block.id])
+          .map(block => block.html)
+          .join('\n');
+
+        templateContent = `
+          <div style="max-width: 800px; margin: 0 auto; padding: 40px; font-family: Arial, sans-serif; direction: rtl;">
+            ${enabledBlocksHTML}
+          </div>
+        `;
+      } else {
+        templateContent = template.content;
+      }
+    } catch {
+      // Old format - use as-is
+      templateContent = template.content || '';
+    }
 
     // If single order - return PDF directly
     if (order_ids.length === 1) {
