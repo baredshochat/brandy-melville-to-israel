@@ -180,23 +180,8 @@ export default function OrderTemplateEditor() {
 const loadOrders = async () => {
   try {
     const data = await getOrdersForDocuments();
-    console.log("ORDERS RAW:", data);
-
-    const allowedStatuses = [
-      "pending",
-      "ordered",
-      "warehouse",
-      "shipping_to_israel",
-      "in_israel",
-      "shipping_to_customer",
-      "delivered"
-    ];
-    const receivedOrders = (data || []).filter(order =>
-      allowedStatuses.includes(order.status)
-    );
-
-    console.log("ORDERS FILTERED:", receivedOrders);
-    setOrders(receivedOrders);
+    console.log("ORDERS FOR DOCUMENTS:", data);
+    setOrders(data);
   } catch (error) {
     console.error("Error loading orders:", error);
   }
