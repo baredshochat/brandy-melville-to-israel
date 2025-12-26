@@ -25,7 +25,7 @@ export default function LocalStockItemDetail() {
   const [submittingNotification, setSubmittingNotification] = useState(false);
 
   useEffect(() => {
-    User.me().then(u => {
+    User.me().then((u) => {
       setUser(u);
       if (u) {
         setNotifyEmail(u.email || '');
@@ -40,7 +40,7 @@ export default function LocalStockItemDetail() {
     try {
       const urlParams = new URLSearchParams(window.location.search);
       const itemId = urlParams.get('id');
-      
+
       if (!itemId) {
         window.location.href = createPageUrl('LocalStock');
         return;
@@ -102,7 +102,7 @@ export default function LocalStockItemDetail() {
 
   const handleSubmitNotification = async () => {
     if (!notifyEmail || !item) return;
-    
+
     setSubmittingNotification(true);
     try {
       await BackInStockNotification.create({
@@ -112,7 +112,7 @@ export default function LocalStockItemDetail() {
         customer_name: notifyName,
         notified: false
       });
-      
+
       alert('נרשמת בהצלחה! נעדכן אותך כשהפריט יחזור למלאי 💖');
       setNotifyDialogOpen(false);
     } catch (error) {
@@ -127,8 +127,8 @@ export default function LocalStockItemDetail() {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
         <Loader2 className="w-8 h-8 animate-spin text-stone-400" />
-      </div>
-    );
+      </div>);
+
   }
 
   if (!item) {
@@ -144,8 +144,8 @@ export default function LocalStockItemDetail() {
         <Button
           variant="ghost"
           onClick={() => window.location.href = createPageUrl('LocalStock')}
-          className="mb-6 flex items-center gap-2 text-stone-600 hover:text-black"
-        >
+          className="mb-6 flex items-center gap-2 text-stone-600 hover:text-black">
+
           <ArrowRight className="w-4 h-4" />
           חזרה למלאי
         </Button>
@@ -159,38 +159,38 @@ export default function LocalStockItemDetail() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="w-full bg-stone-100 overflow-hidden flex items-center justify-center"
-              style={{ minHeight: '400px' }}
-            >
+              style={{ minHeight: '400px' }}>
+
               <img
                 src={allImages[selectedImage]}
                 alt={item.product_name}
-                className="w-full h-auto object-contain max-h-[600px]"
-              />
+                className="w-full h-auto object-contain max-h-[600px]" />
+
             </motion.div>
 
             {/* Thumbnail Gallery */}
-            {allImages.length > 1 && (
-              <div className="grid grid-cols-5 gap-2">
-                {allImages.map((img, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setSelectedImage(index)}
-                    className={`w-full bg-stone-100 overflow-hidden border-2 transition-all flex items-center justify-center ${
-                      selectedImage === index
-                        ? 'border-rose-400'
-                        : 'border-stone-200 hover:border-stone-400'
-                    }`}
-                    style={{ height: '100px' }}
-                  >
+            {allImages.length > 1 &&
+            <div className="grid grid-cols-5 gap-2">
+                {allImages.map((img, index) =>
+              <button
+                key={index}
+                onClick={() => setSelectedImage(index)}
+                className={`w-full bg-stone-100 overflow-hidden border-2 transition-all flex items-center justify-center ${
+                selectedImage === index ?
+                'border-rose-400' :
+                'border-stone-200 hover:border-stone-400'}`
+                }
+                style={{ height: '100px' }}>
+
                     <img
-                      src={img}
-                      alt={`${item.product_name} ${index + 1}`}
-                      className="w-full h-full object-contain p-1"
-                    />
+                  src={img}
+                  alt={`${item.product_name} ${index + 1}`}
+                  className="w-full h-full object-contain p-1" />
+
                   </button>
-                ))}
+              )}
               </div>
-            )}
+            }
           </div>
 
           {/* Product Details */}
@@ -200,103 +200,103 @@ export default function LocalStockItemDetail() {
                 {item.product_name}
               </h1>
               
-              {item.product_description && (
-                <p 
-                  className="text-base text-stone-600 leading-relaxed" 
-                  dir="ltr" 
-                  style={{ textAlign: 'left' }}
-                >
+              {item.product_description &&
+              <p
+                className="text-base text-stone-600 leading-relaxed"
+                dir="ltr"
+                style={{ textAlign: 'left' }}>
+
                   {item.product_description}
                 </p>
-              )}
+              }
             </div>
 
             {/* Metadata */}
             <div className="flex flex-wrap gap-3">
-              {item.color && (
-                <Badge variant="outline" className="px-4 py-2 text-sm">
+              {item.color &&
+              <Badge variant="outline" className="px-4 py-2 text-sm">
                   צבע: {item.color}
                 </Badge>
-              )}
-              {item.size && (
-                <Badge variant="outline" className="px-4 py-2 text-sm">
+              }
+              {item.size &&
+              <Badge variant="outline" className="px-4 py-2 text-sm">
                   מידה: {item.size}
                 </Badge>
-              )}
+              }
             </div>
 
             {/* Price / Sold Out */}
             <div className="pt-6 border-t border-stone-200">
-              {item.quantity_available > 0 && item.is_available ? (
-                <>
+              {item.quantity_available > 0 && item.is_available ?
+              <>
                   <p className="text-4xl font-bold text-stone-900">
                     ₪{item.price_ils}
                   </p>
-                  {item.free_shipping ? (
-                    <p className="text-sm text-green-600 mt-2 font-medium">
+                  {item.free_shipping ?
+                <p className="text-sm text-green-600 mt-2 font-medium">
                       ✨ משלוח חינם!
-                    </p>
-                  ) : (
-                    <p className="text-sm text-stone-500 mt-2">
+                    </p> :
+
+                <p className="text-sm text-stone-500 mt-2">
                       + 30 ש״ח משלוח עד הבית
                     </p>
-                  )}
-                </>
-              ) : (
-                <div className="p-4 bg-stone-100 border-2 border-stone-300 text-center">
-                  <p className="text-3xl font-bold text-stone-700 mb-2">Sold Out</p>
+                }
+                </> :
+
+              <div className="p-4 bg-stone-100 border-2 border-stone-300 text-center">
+                  <p className="text-stone-700 mb-2 text-lg font-bold">Sold Out</p>
                   <p className="text-sm text-stone-600">הפריט אזל מהמלאי</p>
                 </div>
-              )}
+              }
             </div>
 
             {/* Action Buttons */}
             <div className="flex flex-col gap-3">
-              {item.quantity_available > 0 && item.is_available ? (
-                <>
+              {item.quantity_available > 0 && item.is_available ?
+              <>
                   <Button
-                    onClick={() => handleAddToCart(true)}
-                    disabled={addingToCart || addedToCart}
-                    className="w-full h-14 bg-rose-500 hover:bg-rose-600 text-white text-lg"
-                  >
-                    {addingToCart ? (
-                      <>
+                  onClick={() => handleAddToCart(true)}
+                  disabled={addingToCart || addedToCart}
+                  className="w-full h-14 bg-rose-500 hover:bg-rose-600 text-white text-lg">
+
+                    {addingToCart ?
+                  <>
                         <Loader2 className="w-5 h-5 animate-spin ml-2" />
                         מוסיף לסל...
-                      </>
-                    ) : (
-                      'לרכישה'
-                    )}
+                      </> :
+
+                  'לרכישה'
+                  }
                   </Button>
                   
                   <Button
-                    onClick={() => handleAddToCart(false)}
-                    disabled={addingToCart || addedToCart}
-                    variant="outline"
-                    className="w-full h-12 border-stone-300 text-stone-800 hover:bg-stone-100 text-base"
-                  >
-                    {addedToCart ? (
-                      <>
+                  onClick={() => handleAddToCart(false)}
+                  disabled={addingToCart || addedToCart}
+                  variant="outline"
+                  className="w-full h-12 border-stone-300 text-stone-800 hover:bg-stone-100 text-base">
+
+                    {addedToCart ?
+                  <>
                         <CheckCircle className="w-5 h-5 ml-2 text-green-600" />
                         נוסף לסל!
-                      </>
-                    ) : (
-                      <>
+                      </> :
+
+                  <>
                         <ShoppingCart className="w-5 h-5 ml-2" />
                         הוסף לסל
                       </>
-                    )}
+                  }
                   </Button>
-                </>
-              ) : (
-                <Button
-                  onClick={() => setNotifyDialogOpen(true)}
-                  className="w-full h-14 bg-rose-500 hover:bg-rose-600 text-white text-lg flex items-center justify-center gap-2"
-                >
+                </> :
+
+              <Button
+                onClick={() => setNotifyDialogOpen(true)}
+                className="w-full h-14 bg-rose-500 hover:bg-rose-600 text-white text-lg flex items-center justify-center gap-2">
+
                   <Bell className="w-5 h-5" />
                   NOTIFY ME WHEN AVAILABLE
                 </Button>
-              )}
+              }
             </div>
 
             {/* Info Box */}
@@ -314,16 +314,16 @@ export default function LocalStockItemDetail() {
             </div>
 
             {/* Source Link */}
-            {item.source_url && (
-              <a
-                href={item.source_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-rose-600 hover:underline block"
-              >
+            {item.source_url &&
+            <a
+              href={item.source_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-rose-600 hover:underline block">
+
                 צפייה באתר המקורי ↗
               </a>
-            )}
+            }
           </div>
         </div>
       </div>
@@ -343,8 +343,8 @@ export default function LocalStockItemDetail() {
               <Input
                 value={notifyName}
                 onChange={(e) => setNotifyName(e.target.value)}
-                placeholder="השם שלך"
-              />
+                placeholder="השם שלך" />
+
             </div>
             <div className="space-y-2">
               <Label>אימייל *</Label>
@@ -353,8 +353,8 @@ export default function LocalStockItemDetail() {
                 value={notifyEmail}
                 onChange={(e) => setNotifyEmail(e.target.value)}
                 placeholder="example@email.com"
-                required
-              />
+                required />
+
             </div>
           </div>
           <DialogFooter>
@@ -364,13 +364,13 @@ export default function LocalStockItemDetail() {
             <Button
               onClick={handleSubmitNotification}
               disabled={!notifyEmail || submittingNotification}
-              className="bg-rose-500 hover:bg-rose-600"
-            >
+              className="bg-rose-500 hover:bg-rose-600">
+
               {submittingNotification ? 'שומר...' : 'עדכן אותי'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
-  );
+    </div>);
+
 }
