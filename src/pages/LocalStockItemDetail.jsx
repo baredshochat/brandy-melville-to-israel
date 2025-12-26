@@ -196,7 +196,7 @@ export default function LocalStockItemDetail() {
           {/* Product Details */}
           <div className="space-y-6">
             <div>
-              <h1 className="text-3xl sm:text-4xl font-light text-stone-900 mb-3">
+              <h1 className="text-2xl sm:text-3xl font-light text-stone-900 mb-3" dir="ltr" style={{ textAlign: 'left' }}>
                 {item.product_name}
               </h1>
               
