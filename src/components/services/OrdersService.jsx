@@ -33,22 +33,33 @@ export const loadAllOrders = async () => {
  * Filters: complete orders, paid, not deleted
  * @returns {Promise<Array>} Filtered orders ready for PDF generation
  */
+const RECEIVED_STATUSES = [
+  "pending",
+  "ordered",
+  "warehouse",
+  "shipping_to_israel",
+  "in_israel",
+  "shipping_to_customer"
+];
+
 export const getOrdersForDocuments = async () => {
-  const allOrders = await loadAllOrders();
-  
-  return allOrders.filter(order => {
-    // Only complete orders with all required data
-    if (!isCompleteOrder(order)) return false;
-    
-    // Only paid orders
-    if (order.payment_status !== 'completed') return false;
-    
-    // Not deleted
-    if (order.is_deleted) return false;
-    
-    return true;
-  });
+  try {
+    const orders = await Order.filter(
+      {
+        is_deleted: false,
+        payment_status: "completed",
+        status: { $in: RECEIVED_STATUSES }
+      },
+      "-created_date"
+    );
+
+    return orders || [];
+  } catch (error) {
+    console.error("getOrdersForDocuments error:", error);
+    return [];
+  }
 };
+
 
 // Validators - exported for use in other components
 export const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((email || '').trim());
