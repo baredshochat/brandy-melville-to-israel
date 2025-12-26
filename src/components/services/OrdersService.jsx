@@ -1,4 +1,5 @@
 import { Order } from "@/entities/Order";
+import { calcFinalPriceILS } from "../pricing/PricingEngine";
 
 // Shared service for loading and filtering orders across the app
 // This ensures consistency between Orders Admin page and Order Template Editor
@@ -90,10 +91,6 @@ const calculateOrderPricing = (order) => {
       EUR: 4.0,
       GBP: 4.5
     };
-
-    // Import pricing engine dynamically
-    const PricingEngine = await import('../pricing/PricingEngine');
-    const calcFinalPriceILS = PricingEngine.calcFinalPriceILS;
 
     const result = calcFinalPriceILS({
       currency,
