@@ -50,6 +50,7 @@ import ExportDialog from '../components/admin/ExportDialog';
 import ShoppingListTab from '../components/admin/orders/ShoppingListTab';
 import SupplierTrackingTab from '../components/admin/orders/SupplierTrackingTab';
 import InlineStatusSelect from '../components/admin/InlineStatusSelect';
+import OrderTemplateEditor from '../components/admin/OrderTemplateEditor';
 
 // NEW: add dialog imports for email preview
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -1024,10 +1025,14 @@ export default function Orders() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-4 w-full md:w-auto">
+          <TabsList className="grid grid-cols-5 w-full md:w-auto">
             <TabsTrigger value="orders">הזמנות לקוחות</TabsTrigger>
             <TabsTrigger value="shopping">רשימת קניות</TabsTrigger>
             <TabsTrigger value="supplier">מעקב ספקים</TabsTrigger>
+            <TabsTrigger value="template">
+              <FileText className="w-4 h-4 ml-1" />
+              מסמך הזמנה
+            </TabsTrigger>
             <TabsTrigger value="trash" className="text-red-600">
               אשפה ({kpis.inTrash})
             </TabsTrigger>
@@ -1650,6 +1655,11 @@ export default function Orders() {
           {/* Supplier Tracking Tab */}
           <TabsContent value="supplier">
             <SupplierTrackingTab orders={orders} onUpdated={loadOrders} />
+          </TabsContent>
+
+          {/* Order Template Tab */}
+          <TabsContent value="template">
+            <OrderTemplateEditor />
           </TabsContent>
 
           {/* Trash Tab */}
