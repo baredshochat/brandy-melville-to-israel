@@ -185,7 +185,6 @@ export default function OrderTemplateEditor() {
     const receivedOrders = (data || []).filter(order =>
       order.status ==="pending"||"ordered"||"warehouse"||"shipping_to_israel"|| order.status === "paid"
     );
-
     setOrders(receivedOrders);
   } catch (error) {
     console.error("Error loading orders:", error);
