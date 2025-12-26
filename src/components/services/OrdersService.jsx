@@ -50,8 +50,10 @@ export const getOrdersForDocuments = async () => {
   });
 };
 
-// Helper: Check if order has all required data
-const isCompleteOrder = (order) => {
+// Validators - exported for use in other components
+export const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((email || '').trim());
+
+export const isCompleteOrder = (order) => {
   if (!order) return false;
   const hasItems = Array.isArray(order.items) && order.items.length > 0;
   const hasName = !!(order.customer_name && String(order.customer_name).trim());
@@ -60,8 +62,6 @@ const isCompleteOrder = (order) => {
   const hasCity = !!(order.city && String(order.city).trim());
   return hasItems && hasName && hasEmail && hasAddress && hasCity;
 };
-
-const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((email || '').trim());
 
 // Helper: Calculate order pricing (same logic as in Orders page)
 const calculateOrderPricing = (order) => {
