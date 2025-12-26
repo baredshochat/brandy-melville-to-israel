@@ -91,8 +91,9 @@ const calculateOrderPricing = (order) => {
       GBP: 4.5
     };
 
-    // Import pricing engine
-    const { calcFinalPriceILS } = require('../pricing/PricingEngine');
+    // Import pricing engine dynamically
+    const PricingEngine = await import('../pricing/PricingEngine');
+    const calcFinalPriceILS = PricingEngine.calcFinalPriceILS;
 
     const result = calcFinalPriceILS({
       currency,

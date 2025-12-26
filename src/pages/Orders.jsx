@@ -3,7 +3,7 @@ import { User } from "@/entities/User";
 import { SendEmail } from "@/integrations/Core";
 import { sendEmailToCustomer } from "@/functions/sendEmailToCustomer";
 import { createPageUrl } from "@/utils";
-import { loadAllOrders } from "../components/services/OrdersService";
+import { loadAllOrders, isCompleteOrder, isValidEmail } from "../components/services/OrdersService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,11 +58,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 // Import pricing engine for calculations
 import { calcFinalPriceILS } from '../components/pricing/PricingEngine';
 
-// Validators imported from OrdersService
-import { isCompleteOrder, isValidEmail } from "../components/services/OrdersService";
 
-// Moved to OrdersService for reuse
-export { isCompleteOrder, isValidEmail };
 
 // Status configuration
 const statusConfig = {
