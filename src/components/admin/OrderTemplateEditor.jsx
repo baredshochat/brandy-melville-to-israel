@@ -31,6 +31,22 @@ const SAMPLE_ORDER_DATA = {
   total: 450
 };
 
+const AVAILABLE_FIELDS = [
+  { key: 'order_number', label: 'מספר הזמנה', example: 'BM1234567890' },
+  { key: 'created_date', label: 'תאריך ההזמנה', example: '26/12/2024' },
+  { key: 'customer_name', label: 'שם הלקוחה', example: 'שרה כהן' },
+  { key: 'customer_email', label: 'אימייל', example: 'sarah@example.com' },
+  { key: 'customer_phone', label: 'טלפון', example: '050-1234567' },
+  { key: 'shipping_address', label: 'כתובת משלוח', example: 'רחוב הרצל 123' },
+  { key: 'city', label: 'עיר', example: 'תל אביב' },
+  { key: 'items_table', label: 'טבלת פריטים', example: '[טבלה]' },
+  { key: 'subtotal', label: 'סכום ביניים', example: '380' },
+  { key: 'shipping_cost', label: 'עלות משלוח', example: '35' },
+  { key: 'vat', label: 'מע״מ', example: '70' },
+  { key: 'total', label: 'סה״כ לתשלום', example: '450' },
+  { key: 'total_price_ils', label: 'מחיר כולל', example: '450' },
+];
+
 const DEFAULT_TEMPLATE = `
 <div style="max-width: 800px; margin: 0 auto; padding: 40px; font-family: Arial, sans-serif; direction: rtl;">
   <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 30px;">
@@ -217,22 +233,19 @@ export default function OrderTemplateEditor() {
     });
   };
 
+  const insertField = (fieldKey) => {
+    const placeholder = `{{${fieldKey}}}`;
+    setContent(prev => prev + `<p><strong>${AVAILABLE_FIELDS.find(f => f.key === fieldKey)?.label}:</strong> ${placeholder}</p>`);
+  };
+
   const processPreview = (html) => {
     let processed = html;
     
-    // Replace all placeholders with sample data
-    processed = processed.replace(/{{order_number}}/g, SAMPLE_ORDER_DATA.order_number);
-    processed = processed.replace(/{{created_date}}/g, SAMPLE_ORDER_DATA.created_date);
-    processed = processed.replace(/{{customer_name}}/g, SAMPLE_ORDER_DATA.customer_name);
-    processed = processed.replace(/{{customer_email}}/g, SAMPLE_ORDER_DATA.customer_email);
-    processed = processed.replace(/{{customer_phone}}/g, SAMPLE_ORDER_DATA.customer_phone);
-    processed = processed.replace(/{{shipping_address}}/g, SAMPLE_ORDER_DATA.shipping_address);
-    processed = processed.replace(/{{city}}/g, SAMPLE_ORDER_DATA.city);
-    processed = processed.replace(/{{subtotal}}/g, SAMPLE_ORDER_DATA.subtotal);
-    processed = processed.replace(/{{shipping_cost}}/g, SAMPLE_ORDER_DATA.shipping_cost);
-    processed = processed.replace(/{{vat}}/g, SAMPLE_ORDER_DATA.vat);
-    processed = processed.replace(/{{total}}/g, SAMPLE_ORDER_DATA.total);
-    processed = processed.replace(/{{total_price_ils}}/g, SAMPLE_ORDER_DATA.total_price_ils);
+    // Replace all placeholders with sample data using the AVAILABLE_FIELDS mapping
+    AVAILABLE_FIELDS.forEach(field => {
+      const regex = new RegExp(`{{${field.key}}}`, 'g');
+      processed = processed.replace(regex, field.example);
+    });
 
     // Process items table
     if (processed.includes('{{items_table}}')) {
@@ -287,25 +300,39 @@ export default function OrderTemplateEditor() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="font-semibold text-blue-900 mb-2">שדות דינמיים זמינים:</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm text-blue-800">
-          <code>{'{{order_number}}'}</code>
-          <code>{'{{created_date}}'}</code>
-          <code>{'{{customer_name}}'}</code>
-          <code>{'{{customer_email}}'}</code>
-          <code>{'{{customer_phone}}'}</code>
-          <code>{'{{shipping_address}}'}</code>
-          <code>{'{{city}}'}</code>
-          <code>{'{{items_table}}'}</code>
-          <code>{'{{subtotal}}'}</code>
-          <code>{'{{shipping_cost}}'}</code>
-          <code>{'{{vat}}'}</code>
-          <code>{'{{total}}'}</code>
-          <code>{'{{total_price_ils}}'}</code>
-        </div>
-        <p className="text-xs text-blue-700 mt-3">כל שדה הוא אופציונלי - אם תמחקי אותו, הוא פשוט לא יופיע במסמך.</p>
-      </div>
+      <Card className="bg-blue-50 border-2 border-blue-200">
+        <CardHeader>
+          <CardTitle className="text-lg text-blue-900 flex items-center gap-2">
+            <FileText className="w-5 h-5" />
+            שדות זמינים להוספה
+          </CardTitle>
+          <p className="text-sm text-blue-700 mt-1">לחצי על שדה כדי להוסיף אותו למסמך שלך</p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {AVAILABLE_FIELDS.map(field => (
+              <button
+                key={field.key}
+                onClick={() => insertField(field.key)}
+                className="text-right p-3 bg-white border-2 border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-400 transition-all group"
+              >
+                <div className="font-semibold text-blue-900 text-sm mb-1 group-hover:text-blue-700">
+                  {field.label}
+                </div>
+                <div className="text-xs text-blue-600 font-mono bg-blue-100 inline-block px-2 py-0.5 rounded mb-1">
+                  {`{{${field.key}}}`}
+                </div>
+                <div className="text-xs text-stone-500 mt-1">
+                  דוגמה: {field.example}
+                </div>
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-blue-700 mt-4 text-center">
+            💡 כל שדה הוא אופציונלי - אם תמחקי אותו מהעורך, הוא פשוט לא יופיע במסמך
+          </p>
+        </CardContent>
+      </Card>
 
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-stone-900">עריכת מסמך הזמנה</h2>
