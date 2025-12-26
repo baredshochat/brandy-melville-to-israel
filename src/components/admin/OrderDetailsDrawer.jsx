@@ -40,7 +40,9 @@ import {
   ExternalLink,
   Plus,
   Trash2,
-  Loader2
+  Loader2,
+  FileText,
+  Download
 } from 'lucide-react';
 
 export default function OrderDetailsDrawer({ order, open, onOpenChange, onUpdateOrder, onDeleteOrder, statusConfig }) {
@@ -51,6 +53,7 @@ export default function OrderDetailsDrawer({ order, open, onOpenChange, onUpdate
   const [editingItems, setEditingItems] = useState([]);
   const [savingItems, setSavingItems] = useState(false);
   const [fetchingProduct, setFetchingProduct] = useState(null); // index of item being fetched
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   if (!order) return null;
 
@@ -179,6 +182,30 @@ Return valid JSON only.`,
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
+  };
+
+  const handleDownloadPdf = async () => {
+    setDownloadingPdf(true);
+    try {
+      const { base44 } = await import('@/api/base44Client');
+      const response = await base44.functions.invoke('generateOrderPdf', { order_ids: [order.id] });
+      
+      // The response should be a blob/arraybuffer
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `order_${order.order_number}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      alert('שגיאה בהורדת ה-PDF');
+    } finally {
+      setDownloadingPdf(false);
+    }
   };
 
   const calculateETA = (status) => {
@@ -321,11 +348,12 @@ Return valid JSON only.`,
         </SheetHeader>
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">סקירה</TabsTrigger>
             <TabsTrigger value="items">פריטים</TabsTrigger>
             <TabsTrigger value="logistics">לוגיסטיקה</TabsTrigger>
             <TabsTrigger value="pricing">תמחור</TabsTrigger>
+            <TabsTrigger value="document">מסמך PDF</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -748,6 +776,49 @@ Return valid JSON only.`,
               </CardHeader>
               <CardContent>
                 {renderPricingBreakdown()}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="document">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  מסמך הזמנה להדפסה
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-sm text-blue-800">
+                      מסמך ההזמנה נוצר על בסיס הטמפלייט שהוגדר בטאב "מסמך הזמנה" בעמוד ניהול ההזמנות.
+                      המסמך כולל את כל הפרטים הרלוונטיים להזמנה זו.
+                    </p>
+                  </div>
+
+                  <Button 
+                    onClick={handleDownloadPdf} 
+                    disabled={downloadingPdf}
+                    className="w-full bg-stone-800 hover:bg-stone-900"
+                  >
+                    {downloadingPdf ? (
+                      <>
+                        <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                        מייצר PDF...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4 ml-2" />
+                        הורדת PDF להזמנה זו
+                      </>
+                    )}
+                  </Button>
+
+                  <p className="text-xs text-stone-500 text-center">
+                    הקובץ יכיל את הנתונים העדכניים ביותר של ההזמנה
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
