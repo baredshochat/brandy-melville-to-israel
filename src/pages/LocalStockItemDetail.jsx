@@ -308,17 +308,7 @@ export default function LocalStockItemDetail() {
               </p>
             </div>
 
-            {/* Source Link */}
-            {item.source_url &&
-            <a
-              href={item.source_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-rose-600 hover:underline block">
 
-                צפייה באתר המקורי ↗
-              </a>
-            }
           </div>
         </div>
       </div>
