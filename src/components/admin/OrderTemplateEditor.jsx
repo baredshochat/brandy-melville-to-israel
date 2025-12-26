@@ -183,7 +183,7 @@ export default function OrderTemplateEditor() {
 
     // ⬇️ רק הזמנות שהתקבלו
     const receivedOrders = (data || []).filter(order =>
-      order.status === "completed" || order.status === "paid"
+      order.status ==="pending"||"ordered"||"warehouse"||"shipping_to_israel"|| order.status === "paid"
     );
 
     setOrders(receivedOrders);
