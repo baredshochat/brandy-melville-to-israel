@@ -39,8 +39,13 @@ export default function OrderTemplateEditor() {
       const templates = await OrderTemplate.list();
       if (templates?.length) {
         setTemplate(templates[0]);
-        const parsed = JSON.parse(templates[0].content || "{}");
-        setEnabledBlocks(parsed.enabledBlocks || {});
+        try {
+          const parsed = JSON.parse(templates[0].content || "{}");
+          setEnabledBlocks(parsed.enabledBlocks || {});
+        } catch {
+          // Old format - HTML content, start with empty blocks
+          setEnabledBlocks({});
+        }
       }
     } finally {
       setLoading(false);
