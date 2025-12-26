@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 import { jsPDF } from 'npm:jspdf@2.5.1';
+import JSZip from 'npm:jszip@3.10.1';
 
 Deno.serve(async (req) => {
   try {
@@ -47,11 +48,27 @@ Deno.serve(async (req) => {
     }
 
     // Multiple orders - create a ZIP file
-    // For now, we'll return an error asking to download one by one
-    // In future, can use a ZIP library
-    return Response.json({ 
-      error: 'Bulk download coming soon - please download orders one by one for now' 
-    }, { status: 501 });
+    const zip = new JSZip();
+    
+    for (const orderId of order_ids) {
+      const orders = await base44.asServiceRole.entities.Order.filter({ id: orderId });
+      const order = orders[0];
+      
+      if (!order) continue;
+      
+      const pdfBytes = generateSinglePdf(order, templateContent);
+      zip.file(`order_${order.order_number}.pdf`, pdfBytes);
+    }
+
+    const zipBytes = await zip.generateAsync({ type: 'uint8array' });
+    
+    return new Response(zipBytes, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/zip',
+        'Content-Disposition': `attachment; filename="orders_${new Date().toISOString().split('T')[0]}.zip"`
+      }
+    });
 
   } catch (error) {
     console.error('Generate PDF error:', error);

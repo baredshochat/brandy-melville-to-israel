@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { OrderTemplate } from "@/entities/OrderTemplate";
+import { Order } from "@/entities/Order";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Save, FileText, Eye } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Loader2, Save, FileText, Eye, Download, Search } from "lucide-react";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 
@@ -81,9 +84,14 @@ export default function OrderTemplateEditor() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('editor');
+  const [orders, setOrders] = useState([]);
+  const [selectedOrderIds, setSelectedOrderIds] = useState(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   useEffect(() => {
     loadTemplate();
+    loadOrders();
   }, []);
 
   const loadTemplate = async () => {
@@ -112,6 +120,15 @@ export default function OrderTemplateEditor() {
     }
   };
 
+  const loadOrders = async () => {
+    try {
+      const data = await Order.filter({ is_deleted: false, payment_status: 'completed' });
+      setOrders(data || []);
+    } catch (error) {
+      console.error("Error loading orders:", error);
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -132,6 +149,65 @@ export default function OrderTemplateEditor() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleDownloadPdfs = async () => {
+    if (selectedOrderIds.size === 0) {
+      alert('אנא בחרי לפחות הזמנה אחת');
+      return;
+    }
+
+    setDownloadingPdf(true);
+    try {
+      const { base44 } = await import('@/api/base44Client');
+      const response = await base44.functions.invoke('generateOrderPdf', { 
+        order_ids: Array.from(selectedOrderIds) 
+      });
+      
+      // Check if response is a zip or pdf
+      const contentType = selectedOrderIds.size > 1 ? 'application/zip' : 'application/pdf';
+      const filename = selectedOrderIds.size > 1 
+        ? `orders_${new Date().toISOString().split('T')[0]}.zip`
+        : `order.pdf`;
+      
+      const blob = new Blob([response.data], { type: contentType });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+      
+      setSelectedOrderIds(new Set());
+    } catch (error) {
+      console.error('Error downloading PDFs:', error);
+      alert('שגיאה בהורדת הקבצים');
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
+  const toggleSelectAll = () => {
+    const filtered = filteredOrders();
+    if (selectedOrderIds.size === filtered.length && filtered.length > 0) {
+      setSelectedOrderIds(new Set());
+    } else {
+      setSelectedOrderIds(new Set(filtered.map(o => o.id)));
+    }
+  };
+
+  const filteredOrders = () => {
+    return orders.filter(order => {
+      if (!searchQuery) return true;
+      const query = searchQuery.toLowerCase();
+      return (
+        order.order_number?.toLowerCase().includes(query) ||
+        order.customer_name?.toLowerCase().includes(query) ||
+        order.customer_email?.toLowerCase().includes(query)
+      );
+    });
   };
 
   const processPreview = (html) => {
@@ -246,14 +322,18 @@ export default function OrderTemplateEditor() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-2 w-full md:w-96">
+        <TabsList className="grid grid-cols-3 w-full md:w-auto">
           <TabsTrigger value="editor">
             <FileText className="w-4 h-4 ml-2" />
-            עריכה
+            עיצוב מסמך
           </TabsTrigger>
           <TabsTrigger value="preview">
             <Eye className="w-4 h-4 ml-2" />
             תצוגה מקדימה
+          </TabsTrigger>
+          <TabsTrigger value="generate">
+            <Download className="w-4 h-4 ml-2" />
+            הפקת מסמכים
           </TabsTrigger>
         </TabsList>
 
@@ -289,6 +369,123 @@ export default function OrderTemplateEditor() {
               <p className="text-sm text-stone-500 mt-4 text-center">
                 זוהי תצוגה מקדימה עם נתוני דוגמה. ה-PDF האמיתי יכיל את הנתונים מההזמנה הספציפית.
               </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="generate">
+          <Card>
+            <CardHeader>
+              <CardTitle>הפקת מסמכים להזמנות</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
+                <p className="text-sm text-stone-700 mb-2">
+                  <strong>בחרי הזמנות:</strong> סמני את ההזמנות שברצונך להפיק עבורן מסמכי PDF
+                </p>
+                <p className="text-xs text-stone-500">
+                  • הזמנה בודדת = קובץ PDF אחד<br/>
+                  • מספר הזמנות = קובץ ZIP עם PDF נפרד לכל הזמנה
+                </p>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="absolute right-3 top-3 w-4 h-4 text-stone-400" />
+                  <Input
+                    placeholder="חיפוש לפי מספר הזמנה, שם לקוח או אימייל..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pr-10"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  {selectedOrderIds.size > 0 && (
+                    <Button
+                      variant="outline"
+                      onClick={() => setSelectedOrderIds(new Set())}
+                    >
+                      נקה בחירה ({selectedOrderIds.size})
+                    </Button>
+                  )}
+                  <Button 
+                    onClick={handleDownloadPdfs}
+                    disabled={selectedOrderIds.size === 0 || downloadingPdf}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    {downloadingPdf ? (
+                      <>
+                        <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                        מפיק...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4 ml-2" />
+                        הפק מסמכים ({selectedOrderIds.size})
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="border rounded-lg overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-stone-100 border-b">
+                    <tr>
+                      <th className="p-3 text-right w-12">
+                        <Checkbox
+                          checked={filteredOrders().length > 0 && selectedOrderIds.size === filteredOrders().length}
+                          onCheckedChange={toggleSelectAll}
+                        />
+                      </th>
+                      <th className="text-right p-3">מס׳ הזמנה</th>
+                      <th className="text-right p-3">לקוח</th>
+                      <th className="text-right p-3">תאריך</th>
+                      <th className="text-right p-3">סכום</th>
+                      <th className="text-right p-3">פריטים</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredOrders().map(order => (
+                      <tr key={order.id} className="border-b hover:bg-stone-50">
+                        <td className="p-3">
+                          <Checkbox
+                            checked={selectedOrderIds.has(order.id)}
+                            onCheckedChange={(checked) => {
+                              setSelectedOrderIds(prev => {
+                                const next = new Set(prev);
+                                if (checked) {
+                                  next.add(order.id);
+                                } else {
+                                  next.delete(order.id);
+                                }
+                                return next;
+                              });
+                            }}
+                          />
+                        </td>
+                        <td className="p-3 font-mono text-xs">{order.order_number}</td>
+                        <td className="p-3">
+                          <div className="font-medium">{order.customer_name}</div>
+                          <div className="text-xs text-stone-500">{order.customer_email}</div>
+                        </td>
+                        <td className="p-3 text-xs">
+                          {order.created_date ? new Date(order.created_date).toLocaleDateString('he-IL') : '—'}
+                        </td>
+                        <td className="p-3 font-semibold">₪{(order.total_price_ils || 0).toLocaleString()}</td>
+                        <td className="p-3 text-xs text-stone-600">{order.items?.length || 0} פריטים</td>
+                      </tr>
+                    ))}
+                    {filteredOrders().length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="p-8 text-center text-stone-500">
+                          לא נמצאו הזמנות מתאימות
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
