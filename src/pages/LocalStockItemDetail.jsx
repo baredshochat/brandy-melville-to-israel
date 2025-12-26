@@ -229,7 +229,7 @@ export default function LocalStockItemDetail() {
             <div className="pt-6 border-t border-stone-200">
               {item.quantity_available > 0 && item.is_available ?
               <>
-                  <p className="text-4xl font-bold text-stone-900">
+                  <p className="text-2xl font-bold text-stone-900">
                     ₪{item.price_ils}
                   </p>
                   {item.free_shipping &&
@@ -252,7 +252,7 @@ export default function LocalStockItemDetail() {
                   <Button
                   onClick={() => handleAddToCart(true)}
                   disabled={addingToCart || addedToCart}
-                  className="w-full h-14 bg-rose-500 hover:bg-rose-600 text-white text-lg">
+                  className="w-full h-10 bg-rose-500 hover:bg-rose-600 text-white text-sm">
 
                     {addingToCart ?
                   <>
@@ -268,7 +268,7 @@ export default function LocalStockItemDetail() {
                   onClick={() => handleAddToCart(false)}
                   disabled={addingToCart || addedToCart}
                   variant="outline"
-                  className="w-full h-12 border-stone-300 text-stone-800 hover:bg-stone-100 text-base">
+                  className="w-full h-10 border-stone-300 text-stone-800 hover:bg-stone-100 text-sm">
 
                     {addedToCart ?
                   <>
