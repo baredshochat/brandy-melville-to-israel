@@ -39,7 +39,7 @@ export default function LocalStock() {
   const [allItems, setAllItems] = useState([]);
 
   useEffect(() => {
-    User.me().then(u => {
+    User.me().then((u) => {
       setUser(u);
       if (u) {
         setNotifyEmail(u.email || '');
@@ -47,7 +47,7 @@ export default function LocalStock() {
       }
     }).catch(() => setUser(null));
     loadItems();
-    
+
     // Check for highlighted item from email
     const urlParams = new URLSearchParams(window.location.search);
     const highlightId = urlParams.get('highlight');
@@ -67,19 +67,19 @@ export default function LocalStock() {
     try {
       const data = await LocalStockItem.list();
       setAllItems(data);
-      
+
       const now = new Date();
-      
+
       // Filter: not hidden and available_from has passed (show both in-stock and out-of-stock items)
-      const visibleItems = data.filter(item => {
-        const isVisibleToCustomer = (user && user.role === 'admin') || !item.is_hidden;
-        
+      const visibleItems = data.filter((item) => {
+        const isVisibleToCustomer = user && user.role === 'admin' || !item.is_hidden;
+
         // Check if scheduled availability has passed
         const isScheduledAvailable = !item.available_from || new Date(item.available_from) <= now;
-        
+
         return isVisibleToCustomer && isScheduledAvailable;
       });
-      
+
       // Sort: available for sale first, then unavailable
       // Secondary sort: by updated_date (newest first) within each group
       visibleItems.sort((a, b) => {
@@ -90,7 +90,7 @@ export default function LocalStock() {
         // Secondary: updated_date (newest first)
         return new Date(b.updated_date) - new Date(a.updated_date);
       });
-      
+
       setItems(visibleItems);
     } catch (error) {
       console.error("Error loading local stock items:", error);
@@ -162,7 +162,7 @@ export default function LocalStock() {
 
   const handleSubmitNotification = async () => {
     if (!notifyEmail || !selectedItemForNotify) return;
-    
+
     setSubmittingNotification(true);
     try {
       await BackInStockNotification.create({
@@ -172,7 +172,7 @@ export default function LocalStock() {
         customer_name: notifyName,
         notified: false
       });
-      
+
       alert('נרשמת בהצלחה! נעדכן אותך כשהפריט יחזור למלאי 💖');
       setNotifyDialogOpen(false);
       setSelectedItemForNotify(null);
@@ -233,84 +233,84 @@ export default function LocalStock() {
           </Select>
         </div>
 
-        {loading ? (
-          <div className="flex justify-center items-center py-20">
+        {loading ?
+        <div className="flex justify-center items-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-stone-400" />
-          </div>
-        ) : filteredItems.length === 0 ? (
-          <div className="text-center py-20">
+          </div> :
+        filteredItems.length === 0 ?
+        <div className="text-center py-20">
             <p className="text-stone-500 text-lg">לא נמצאו פריטים במלאי</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+          </div> :
+
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
             <AnimatePresence>
-              {filteredItems.map((item, index) => (
-                <motion.div
-                  key={item.id}
-                  id={`item-${item.id}`}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ delay: index * 0.05 }}
-                >
+              {filteredItems.map((item, index) =>
+            <motion.div
+              key={item.id}
+              id={`item-${item.id}`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ delay: index * 0.05 }}>
+
                   <Card
-                    className="h-full overflow-hidden hover:shadow-lg transition-all duration-300 bg-white cursor-pointer group border-0 shadow-none"
-                    onClick={() => window.location.href = createPageUrl('LocalStockItemDetail') + '?id=' + item.id}
-                  >
+                className="h-full overflow-hidden hover:shadow-lg transition-all duration-300 bg-white cursor-pointer group border-0 shadow-none"
+                onClick={() => window.location.href = createPageUrl('LocalStockItemDetail') + '?id=' + item.id}>
+
                     <CardContent className="p-0 relative">
-                      {item.image_url && (
-                        <div className="w-full bg-stone-50 overflow-hidden relative flex items-center justify-center" style={{ minHeight: '280px' }}>
+                      {item.image_url &&
+                  <div className="w-full bg-stone-50 overflow-hidden relative flex items-center justify-center" style={{ minHeight: '280px' }}>
                           <img
-                            src={item.image_url}
-                            alt={item.product_name}
-                            className={`w-full h-auto object-contain transition-transform duration-300 ${(item.quantity_available > 0 && item.is_available) ? 'group-hover:scale-105' : ''}`}
-                            style={{ maxHeight: '320px' }}
-                          />
-                          {(item.quantity_available === 0 || !item.is_available) ? (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleNotifyRequest(item);
-                              }}
-                              className="absolute bottom-1 left-1 w-6 h-6 bg-white/80 hover:bg-white flex items-center justify-center rounded-full shadow-sm transition-all duration-200"
-                            >
+                      src={item.image_url}
+                      alt={item.product_name}
+                      className={`w-full h-auto object-contain transition-transform duration-300 ${item.quantity_available > 0 && item.is_available ? 'group-hover:scale-105' : ''}`}
+                      style={{ maxHeight: '320px' }} />
+
+                          {item.quantity_available === 0 || !item.is_available ?
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleNotifyRequest(item);
+                      }}
+                      className="absolute bottom-1 left-1 w-6 h-6 bg-white/80 hover:bg-white flex items-center justify-center rounded-full shadow-sm transition-all duration-200">
+
                               <Bell className="w-3 h-3 text-stone-800" />
+                            </button> :
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAddToCart(item);
+                      }}
+                      disabled={addingToCart[item.id] || addedItems.has(item.id)}
+                      className="absolute bottom-1 left-1 w-6 h-6 bg-white/80 hover:bg-white flex items-center justify-center rounded-full shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+
+                              {addingToCart[item.id] ?
+                      <Loader2 className="w-3 h-3 animate-spin text-stone-800" /> :
+                      addedItems.has(item.id) ?
+                      <CheckCircle className="w-3 h-3 text-green-600" /> :
+
+                      <Plus className="w-3 h-3 text-stone-800" />
+                      }
                             </button>
-                          ) : (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleAddToCart(item);
-                              }}
-                              disabled={addingToCart[item.id] || addedItems.has(item.id)}
-                              className="absolute bottom-1 left-1 w-6 h-6 bg-white/80 hover:bg-white flex items-center justify-center rounded-full shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              {addingToCart[item.id] ? (
-                                <Loader2 className="w-3 h-3 animate-spin text-stone-800" />
-                              ) : addedItems.has(item.id) ? (
-                                <CheckCircle className="w-3 h-3 text-green-600" />
-                              ) : (
-                                <Plus className="w-3 h-3 text-stone-800" />
-                              )}
-                            </button>
-                          )}
+                    }
                         </div>
-                      )}
+                  }
                       <div className="px-1 py-1">
                         <h3 className="font-medium text-xs text-stone-800 truncate">
                           {item.product_name}
                         </h3>
-                        <p className="text-stone-800 text-sm font-semibold">
+                        <p className="text-stone-800 text-sm font-normal">
                           ₪{item.price_ils}
                         </p>
                       </div>
                     </CardContent>
                   </Card>
                 </motion.div>
-              ))}
+            )}
             </AnimatePresence>
           </div>
-        )}
+        }
 
         <div className="mt-12 text-center">
           <Button
@@ -338,8 +338,8 @@ export default function LocalStock() {
               <Input
                 value={notifyName}
                 onChange={(e) => setNotifyName(e.target.value)}
-                placeholder="השם שלך"
-              />
+                placeholder="השם שלך" />
+
             </div>
             <div className="space-y-2">
               <Label>אימייל *</Label>
@@ -348,8 +348,8 @@ export default function LocalStock() {
                 value={notifyEmail}
                 onChange={(e) => setNotifyEmail(e.target.value)}
                 placeholder="example@email.com"
-                required
-              />
+                required />
+
             </div>
           </div>
           <DialogFooter>
@@ -359,8 +359,8 @@ export default function LocalStock() {
             <Button
               onClick={handleSubmitNotification}
               disabled={!notifyEmail || submittingNotification}
-              className="bg-rose-500 hover:bg-rose-600"
-            >
+              className="bg-rose-500 hover:bg-rose-600">
+
               {submittingNotification ? 'שומר...' : 'עדכן אותי'}
             </Button>
           </DialogFooter>
