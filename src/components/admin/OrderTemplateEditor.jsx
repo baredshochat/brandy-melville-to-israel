@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Loader2, Save, FileText, Eye, Download, Search } from "lucide-react";
+import { Loader2, Save, FileText, Eye, Download, Search, Package } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 
@@ -153,7 +154,7 @@ export default function OrderTemplateEditor() {
 
   const handleDownloadPdfs = async () => {
     if (selectedOrderIds.size === 0) {
-      alert('אנא בחרי לפחות הזמנה אחת');
+      alert('❌ אנא בחרי לפחות הזמנה אחת להפקה');
       return;
     }
 
@@ -180,10 +181,16 @@ export default function OrderTemplateEditor() {
       window.URL.revokeObjectURL(url);
       a.remove();
       
+      // Success message
+      const message = selectedOrderIds.size === 1 
+        ? '✅ מסמך PDF הורד בהצלחה!'
+        : `✅ ${selectedOrderIds.size} מסמכי PDF הורדו בהצלחה (בתוך קובץ ZIP)`;
+      alert(message);
+      
       setSelectedOrderIds(new Set());
     } catch (error) {
       console.error('Error downloading PDFs:', error);
-      alert('שגיאה בהורדת הקבצים');
+      alert('❌ שגיאה בהורדת הקבצים. נסי שוב.');
     } finally {
       setDownloadingPdf(false);
     }
@@ -376,115 +383,164 @@ export default function OrderTemplateEditor() {
         <TabsContent value="generate">
           <Card>
             <CardHeader>
-              <CardTitle>הפקת מסמכים להזמנות</CardTitle>
+              <CardTitle className="flex items-center justify-between">
+                <span>הפקת מסמכים להזמנות</span>
+                {selectedOrderIds.size > 0 && (
+                  <Badge className="bg-green-100 text-green-800 text-base">
+                    {selectedOrderIds.size} הזמנות נבחרו
+                  </Badge>
+                )}
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
-                <p className="text-sm text-stone-700 mb-2">
-                  <strong>בחרי הזמנות:</strong> סמני את ההזמנות שברצונך להפיק עבורן מסמכי PDF
-                </p>
-                <p className="text-xs text-stone-500">
-                  • הזמנה בודדת = קובץ PDF אחד<br/>
-                  • מספר הזמנות = קובץ ZIP עם PDF נפרד לכל הזמנה
-                </p>
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-5">
+                <h3 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  איך זה עובד?
+                </h3>
+                <div className="space-y-2 text-sm text-blue-800">
+                  <p>✅ <strong>סמני הזמנות</strong> מהטבלה למטה</p>
+                  <p>✅ <strong>לחצי "הפק מסמכים"</strong></p>
+                  <p>✅ <strong>קבלי קובץ PDF</strong> (או ZIP עם מספר PDFs)</p>
+                </div>
+                <div className="mt-3 pt-3 border-t border-blue-300 text-xs text-blue-700">
+                  💡 כל PDF מכיל את המסמך שעיצבת עם הנתונים המדויקים של ההזמנה
+                </div>
               </div>
 
-              <div className="flex justify-between items-center">
-                <div className="relative flex-1 max-w-md">
-                  <Search className="absolute right-3 top-3 w-4 h-4 text-stone-400" />
-                  <Input
-                    placeholder="חיפוש לפי מספר הזמנה, שם לקוח או אימייל..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pr-10"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  {selectedOrderIds.size > 0 && (
-                    <Button
-                      variant="outline"
-                      onClick={() => setSelectedOrderIds(new Set())}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center gap-4 flex-wrap">
+                  <div className="relative flex-1 min-w-[300px]">
+                    <Search className="absolute right-3 top-3 w-4 h-4 text-stone-400" />
+                    <Input
+                      placeholder="חיפוש הזמנה..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pr-10"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    {selectedOrderIds.size > 0 && (
+                      <Button
+                        variant="outline"
+                        onClick={() => setSelectedOrderIds(new Set())}
+                        className="border-stone-300"
+                      >
+                        ✕ נקה הכל
+                      </Button>
+                    )}
+                    <Button 
+                      onClick={handleDownloadPdfs}
+                      disabled={selectedOrderIds.size === 0 || downloadingPdf}
+                      className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6"
+                      size="lg"
                     >
-                      נקה בחירה ({selectedOrderIds.size})
+                      {downloadingPdf ? (
+                        <>
+                          <Loader2 className="w-5 h-5 ml-2 animate-spin" />
+                          מייצר מסמכים...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="w-5 h-5 ml-2" />
+                          {selectedOrderIds.size === 0 ? 'הפק מסמכים' : `הפק ${selectedOrderIds.size} מסמכים`}
+                        </>
+                      )}
                     </Button>
-                  )}
-                  <Button 
-                    onClick={handleDownloadPdfs}
-                    disabled={selectedOrderIds.size === 0 || downloadingPdf}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    {downloadingPdf ? (
-                      <>
-                        <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                        מפיק...
-                      </>
-                    ) : (
-                      <>
-                        <Download className="w-4 h-4 ml-2" />
-                        הפק מסמכים ({selectedOrderIds.size})
-                      </>
-                    )}
-                  </Button>
+                  </div>
                 </div>
+
+                {selectedOrderIds.size > 0 && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-800">
+                    ✓ נבחרו {selectedOrderIds.size} הזמנות • 
+                    {selectedOrderIds.size === 1 ? ' יורד קובץ PDF אחד' : ` יורד קובץ ZIP עם ${selectedOrderIds.size} קבצי PDF`}
+                  </div>
+                )}
               </div>
 
-              <div className="border rounded-lg overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-stone-100 border-b">
-                    <tr>
-                      <th className="p-3 text-right w-12">
-                        <Checkbox
-                          checked={filteredOrders().length > 0 && selectedOrderIds.size === filteredOrders().length}
-                          onCheckedChange={toggleSelectAll}
-                        />
-                      </th>
-                      <th className="text-right p-3">מס׳ הזמנה</th>
-                      <th className="text-right p-3">לקוח</th>
-                      <th className="text-right p-3">תאריך</th>
-                      <th className="text-right p-3">סכום</th>
-                      <th className="text-right p-3">פריטים</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredOrders().map(order => (
-                      <tr key={order.id} className="border-b hover:bg-stone-50">
-                        <td className="p-3">
-                          <Checkbox
-                            checked={selectedOrderIds.has(order.id)}
-                            onCheckedChange={(checked) => {
-                              setSelectedOrderIds(prev => {
-                                const next = new Set(prev);
-                                if (checked) {
-                                  next.add(order.id);
-                                } else {
-                                  next.delete(order.id);
-                                }
-                                return next;
-                              });
-                            }}
-                          />
-                        </td>
-                        <td className="p-3 font-mono text-xs">{order.order_number}</td>
-                        <td className="p-3">
-                          <div className="font-medium">{order.customer_name}</div>
-                          <div className="text-xs text-stone-500">{order.customer_email}</div>
-                        </td>
-                        <td className="p-3 text-xs">
-                          {order.created_date ? new Date(order.created_date).toLocaleDateString('he-IL') : '—'}
-                        </td>
-                        <td className="p-3 font-semibold">₪{(order.total_price_ils || 0).toLocaleString()}</td>
-                        <td className="p-3 text-xs text-stone-600">{order.items?.length || 0} פריטים</td>
-                      </tr>
-                    ))}
-                    {filteredOrders().length === 0 && (
+              <div className="border-2 border-stone-200 rounded-lg overflow-hidden shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-stone-100 border-b-2 border-stone-200">
                       <tr>
-                        <td colSpan={6} className="p-8 text-center text-stone-500">
-                          לא נמצאו הזמנות מתאימות
-                        </td>
+                        <th className="p-3 text-right w-12">
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              checked={filteredOrders().length > 0 && selectedOrderIds.size === filteredOrders().length}
+                              onCheckedChange={toggleSelectAll}
+                            />
+                            <span className="text-xs text-stone-500 hidden sm:inline">הכל</span>
+                          </div>
+                        </th>
+                        <th className="text-right p-3 font-semibold">מס׳ הזמנה</th>
+                        <th className="text-right p-3 font-semibold">לקוח</th>
+                        <th className="text-right p-3 font-semibold">תאריך</th>
+                        <th className="text-right p-3 font-semibold">סכום</th>
+                        <th className="text-right p-3 font-semibold">פריטים</th>
                       </tr>
-                    )}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {filteredOrders().map(order => (
+                        <tr 
+                          key={order.id} 
+                          className={`border-b transition-colors ${
+                            selectedOrderIds.has(order.id) 
+                              ? 'bg-green-50 hover:bg-green-100' 
+                              : 'hover:bg-stone-50'
+                          }`}
+                        >
+                          <td className="p-3">
+                            <Checkbox
+                              checked={selectedOrderIds.has(order.id)}
+                              onCheckedChange={(checked) => {
+                                setSelectedOrderIds(prev => {
+                                  const next = new Set(prev);
+                                  if (checked) {
+                                    next.add(order.id);
+                                  } else {
+                                    next.delete(order.id);
+                                  }
+                                  return next;
+                                });
+                              }}
+                            />
+                          </td>
+                          <td className="p-3">
+                            <code className="bg-stone-100 px-2 py-1 rounded text-xs font-mono">
+                              {order.order_number}
+                            </code>
+                          </td>
+                          <td className="p-3">
+                            <div className="font-medium text-stone-900">{order.customer_name}</div>
+                            <div className="text-xs text-stone-500">{order.customer_email}</div>
+                          </td>
+                          <td className="p-3 text-xs text-stone-600">
+                            {order.created_date ? new Date(order.created_date).toLocaleDateString('he-IL') : '—'}
+                          </td>
+                          <td className="p-3">
+                            <span className="font-bold text-stone-900">
+                              ₪{(order.total_price_ils || 0).toLocaleString()}
+                            </span>
+                          </td>
+                          <td className="p-3">
+                            <Badge variant="outline" className="text-xs">
+                              {order.items?.length || 0} פריטים
+                            </Badge>
+                          </td>
+                        </tr>
+                      ))}
+                      {filteredOrders().length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="p-12 text-center">
+                            <Package className="w-12 h-12 mx-auto mb-3 text-stone-300" />
+                            <p className="text-stone-500 font-medium">לא נמצאו הזמנות</p>
+                            <p className="text-xs text-stone-400 mt-1">נסי לשנות את מילות החיפוש</p>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </CardContent>
           </Card>
