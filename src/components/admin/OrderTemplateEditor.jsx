@@ -9,60 +9,107 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
-import { Loader2, Save, FileText, Eye, Download, Search, Package } from "lucide-react";
+import {
+  Loader2,
+  Save,
+  FileText,
+  Eye,
+  Download,
+  Search,
+  Package
+} from "lucide-react";
 
-/* ---------------------------------------------------- */
-/* קומפוננטה */
-/* ---------------------------------------------------- */
+/* -------------------------------------------------- */
+/* SAMPLE DATA FOR PREVIEW */
+/* -------------------------------------------------- */
+const SAMPLE_ORDER_DATA = {
+  order_number: "BM123456789",
+  created_date: new Date().toLocaleDateString("he-IL"),
+  customer_name: "שרה כהן",
+  customer_email: "sarah@example.com",
+  customer_phone: "050-1234567",
+  shipping_address: "רחוב הרצל 10",
+  city: "תל אביב",
+  subtotal: 380,
+  shipping_cost: 35,
+  vat: 70,
+  total: 450,
+  items: [
+    {
+      product_name: "חולצת ברנדי",
+      color: "לבן",
+      size: "S",
+      quantity: 1,
+      customer_price_ils: 180
+    }
+  ]
+};
 
+/* -------------------------------------------------- */
+/* MAIN COMPONENT */
+/* -------------------------------------------------- */
 export default function OrderTemplateEditor() {
   const [template, setTemplate] = useState(null);
   const [enabledBlocks, setEnabledBlocks] = useState({});
   const [orders, setOrders] = useState([]);
   const [selectedOrderIds, setSelectedOrderIds] = useState(new Set());
   const [searchQuery, setSearchQuery] = useState("");
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [activeTab, setActiveTab] = useState("editor");
 
-  /* ---------- init ---------- */
+  /* ---------------- INIT ---------------- */
   useEffect(() => {
     loadTemplate();
     loadOrders();
   }, []);
 
-  /* ---------- load template ---------- */
+  /* ---------------- LOAD TEMPLATE ---------------- */
   async function loadTemplate() {
     setLoading(true);
     try {
       const templates = await OrderTemplate.list();
       if (templates?.length) {
         setTemplate(templates[0]);
-        try {
-          const parsed = JSON.parse(templates[0].content || "{}");
-          setEnabledBlocks(parsed.enabledBlocks || {});
-        } catch {
-          // Old format - HTML content, start with empty blocks
-          setEnabledBlocks({});
-        }
+        const parsed = JSON.parse(templates[0].content || "{}");
+        setEnabledBlocks(parsed.enabledBlocks || {});
       }
+    } catch (e) {
+      console.error(e);
     } finally {
       setLoading(false);
     }
   }
 
-  /* ---------- load orders (רק הזמנות שהתקבלו!) ---------- */
+  /* ---------------- LOAD ORDERS (RECEIVED ONLY) ---------------- */
   async function loadOrders() {
     try {
       const data = await getOrdersForDocuments();
       setOrders(data || []);
-    } catch (err) {
-      console.error("Failed loading orders", err);
+    } catch (e) {
+      console.error(e);
     }
   }
 
-  /* ---------- helpers ---------- */
+  /* ---------------- SAVE TEMPLATE ---------------- */
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const content = JSON.stringify({ enabledBlocks });
+      if (template?.id) {
+        await OrderTemplate.update(template.id, { content });
+      }
+      alert("הטמפלייט נשמר");
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  /* ---------------- FILTER ORDERS ---------------- */
   function filteredOrders() {
     if (!searchQuery) return orders;
     const q = searchQuery.toLowerCase();
@@ -82,38 +129,76 @@ export default function OrderTemplateEditor() {
     }
   }
 
-  /* ---------- download ---------- */
+  /* ---------------- DOWNLOAD PDFs ---------------- */
   async function handleDownloadPdfs() {
     if (!selectedOrderIds.size) return;
-    setDownloadingPdf(true);
 
+    setDownloadingPdf(true);
     try {
       const { base44 } = await import("@/api/base44Client");
       await base44.functions.invoke("generateOrderPdf", {
         order_ids: Array.from(selectedOrderIds)
       });
       setSelectedOrderIds(new Set());
+    } catch (e) {
+      console.error(e);
     } finally {
       setDownloadingPdf(false);
     }
   }
 
-  /* ---------- UI ---------- */
+  /* ---------------- LOADING ---------------- */
   if (loading) {
     return (
       <div className="flex justify-center py-20">
-        <Loader2 className="animate-spin w-8 h-8" />
+        <Loader2 className="w-8 h-8 animate-spin" />
       </div>
     );
   }
 
+  /* ---------------- UI ---------------- */
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab}>
       <TabsList className="grid grid-cols-3">
-        <TabsTrigger value="editor">עריכת מסמך</TabsTrigger>
-        <TabsTrigger value="preview">תצוגה מקדימה</TabsTrigger>
-        <TabsTrigger value="generate">הפקת מסמכים</TabsTrigger>
+        <TabsTrigger value="editor">
+          <FileText className="w-4 h-4 ml-2" />
+          עריכת מסמך
+        </TabsTrigger>
+        <TabsTrigger value="preview">
+          <Eye className="w-4 h-4 ml-2" />
+          תצוגה מקדימה
+        </TabsTrigger>
+        <TabsTrigger value="generate">
+          <Download className="w-4 h-4 ml-2" />
+          הפקת מסמכים
+        </TabsTrigger>
       </TabsList>
+
+      {/* ---------- EDITOR ---------- */}
+      <TabsContent value="editor">
+        <Card>
+          <CardHeader>
+            <CardTitle>עורך מסמך</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? "שומר..." : "שמור טמפלייט"}
+            </Button>
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      {/* ---------- PREVIEW ---------- */}
+      <TabsContent value="preview">
+        <Card>
+          <CardHeader>
+            <CardTitle>תצוגה מקדימה</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-stone-600">
+            תצוגת דוגמה להזמנה: {SAMPLE_ORDER_DATA.order_number}
+          </CardContent>
+        </Card>
+      </TabsContent>
 
       {/* ---------- GENERATE ---------- */}
       <TabsContent value="generate">
@@ -130,11 +215,13 @@ export default function OrderTemplateEditor() {
             />
 
             <Button
-              disabled={!selectedOrderIds.size || downloadingPdf}
               onClick={handleDownloadPdfs}
+              disabled={!selectedOrderIds.size || downloadingPdf}
               className="bg-green-600 text-white"
             >
-              {downloadingPdf ? "מפיק..." : `הפק ${selectedOrderIds.size} מסמכים`}
+              {downloadingPdf
+                ? "מפיק..."
+                : `הפק ${selectedOrderIds.size} מסמכים`}
             </Button>
 
             <table className="w-full text-sm">
@@ -175,7 +262,7 @@ export default function OrderTemplateEditor() {
 
                 {!filteredOrders().length && (
                   <tr>
-                    <td colSpan={4} className="text-center py-10 text-gray-400">
+                    <td colSpan={4} className="text-center py-10 text-stone-400">
                       <Package className="mx-auto mb-2" />
                       אין הזמנות שהתקבלו
                     </td>
