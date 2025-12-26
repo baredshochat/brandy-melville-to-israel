@@ -191,7 +191,6 @@ const loadOrders = async () => {
       "shipping_to_customer",
       "delivered"
     ];
-
     const receivedOrders = (data || []).filter(order =>
       allowedStatuses.includes(order.status)
     );
@@ -202,10 +201,6 @@ const loadOrders = async () => {
     console.error("Error loading orders:", error);
   }
 };
-
-
-
-
   const handleSave = async () => {
     setSaving(true);
     try {
