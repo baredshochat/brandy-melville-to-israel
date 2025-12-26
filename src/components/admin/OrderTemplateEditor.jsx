@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { OrderTemplate } from "@/entities/OrderTemplate";
-import { Order } from "@/entities/Order";
+import { getOrdersForDocuments } from "../services/OrdersService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -179,7 +179,8 @@ export default function OrderTemplateEditor() {
 
   const loadOrders = async () => {
     try {
-      const data = await Order.filter({ is_deleted: false, payment_status: 'completed' });
+      // Use shared service to get orders for documents
+      const data = await getOrdersForDocuments();
       setOrders(data || []);
     } catch (error) {
       console.error("Error loading orders:", error);

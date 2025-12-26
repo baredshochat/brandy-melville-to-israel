@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { Order } from "@/entities/Order";
 import { User } from "@/entities/User";
 import { SendEmail } from "@/integrations/Core";
 import { sendEmailToCustomer } from "@/functions/sendEmailToCustomer";
 import { createPageUrl } from "@/utils";
+import { loadAllOrders } from "../components/services/OrdersService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,18 +58,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 // Import pricing engine for calculations
 import { calcFinalPriceILS } from '../components/pricing/PricingEngine';
 
-// NEW: validators for email and order completeness
-const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((email || '').trim());
+// Validators imported from OrdersService
+import { isCompleteOrder, isValidEmail } from "../components/services/OrdersService";
 
-const isCompleteOrder = (order) => {
-  if (!order) return false;
-  const hasItems = Array.isArray(order.items) && order.items.length > 0;
-  const hasName = !!(order.customer_name && String(order.customer_name).trim());
-  const hasEmail = isValidEmail(order.customer_email);
-  const hasAddress = !!(order.shipping_address && String(order.shipping_address).trim());
-  const hasCity = !!(order.city && String(order.city).trim());
-  return hasItems && hasName && hasEmail && hasAddress && hasCity;
-};
+// Moved to OrdersService for reuse
+export { isCompleteOrder, isValidEmail };
 
 // Status configuration
 const statusConfig = {
@@ -128,108 +121,6 @@ const siteInfo = {
   eu: { name: 'אירופה', flag: '🇪🇺', currency: 'EUR' },
   uk: { name: 'בריטניה', flag: '🇬🇧', currency: 'GBP' }
 };
-
-// The new function provided by the user for accurate net profit calculation
-function computeNetProfit(snapshot) {
-  const vat = snapshot.vat_pct;
-
-  const domesticIncomeEx = snapshot.domestic_vat_applies
-    ? snapshot.domestic_charge_to_customer / (1 + vat)
-    : snapshot.domestic_charge_to_customer;
-
-  const domesticCostEx = snapshot.domestic_cost_includes_vat
-    ? snapshot.domestic_ship_cost_ils / (1 + vat)
-    : snapshot.domestic_ship_cost_ils;
-
-  const revenueEx = snapshot.priceExVAT + domesticIncomeEx;
-
-  let feeBase;
-  switch (snapshot.processor_fee_on) {
-    case 'gross':  feeBase = snapshot.priceGross; break;
-    case 'final':  feeBase = snapshot.finalPriceILS; break;
-    default:       feeBase = snapshot.priceExVAT + domesticIncomeEx;
-  }
-  const processorFees = feeBase * snapshot.processor_pct_used + snapshot.processor_fixed_used;
-
-  const totalCostsEx = snapshot.cost_ex_vat + (domesticCostEx || 0) + (snapshot.refunds_and_adjustments_exVAT || 0);
-
-  const net = revenueEx - processorFees - totalCostsEx;
-  const marginPct = revenueEx > 0 ? net / revenueEx : 0;
-
-  return { net_profit_ils: net, margin_pct: marginPct, revenue_exVAT: revenueEx, processor_fees: processorFees, total_costs_exVAT: totalCostsEx };
-}
-
-const calculateOrderPricing = (order) => {
-    if (!order.items || order.items.length === 0) {
-      console.log('Order has no items:', order.order_number);
-      return null;
-    }
-
-    try {
-      const totalProductPrice = order.items.reduce((sum, item) =>
-        sum + (item.original_price * item.quantity), 0);
-
-      const totalWeight = order.items.reduce((sum, item) =>
-        sum + ((item.weight || 0.35) * item.quantity), 0);
-
-      const site = order.site || 'us';
-      const currency = siteInfo[site]?.currency || 'USD';
-
-      // Mock exchange rates - in real implementation, get from settings
-      const fxRates = {
-        USD: 3.7,
-        EUR: 4.0,
-        GBP: 4.5
-      };
-
-      const result = calcFinalPriceILS({
-        currency,
-        productPrice: totalProductPrice,
-        weight_kg: totalWeight,
-        fxToILS: fxRates[currency],
-        fxUSDToILS: fxRates.USD,
-        dimensions_cm: { L: 0, W: 0, H: 0 },
-        payment_method: 'card'
-      });
-
-      const breakdown = result.breakdown;
-
-      // Construct snapshot for the new computeNetProfit function
-      const snapshot = {
-        vat_pct: breakdown?.vat_pct || 0.18,
-        domestic_vat_applies: true, // Assumption
-        domestic_charge_to_customer: breakdown?.domestic_charge_to_customer || 0,
-        domestic_cost_includes_vat: true, // Assumption
-        domestic_ship_cost_ils: (breakdown?.domestic_absorbed_cost || 0) + (breakdown?.domestic_charge_to_customer || 0),
-        priceExVAT: breakdown?.priceExVAT || 0,
-        processor_fee_on: 'final', // Assumption
-        priceGross: breakdown?.priceGross || 0,
-        finalPriceILS: result.finalPriceILS || 0,
-        processor_pct_used: breakdown?.processor_pct_used || 0.025,
-        processor_fixed_used: breakdown?.processor_fixed_used || 1.2,
-        cost_ex_vat: breakdown?.cost_ex_vat || 0,
-        refunds_and_adjustments_exVAT: 0 // Assumption
-      };
-
-      const { net_profit_ils, margin_pct, processor_fees } = computeNetProfit(snapshot);
-
-      const enhancedBreakdown = {
-        ...breakdown,
-        net_profit_ils: net_profit_ils,
-        profit_pct_of_final: margin_pct, // Using the new accurate margin
-        processor_fees: processor_fees, // Storing the calculated processor fees
-        customsILS: breakdown?.customsILS || 0
-      };
-
-      return {
-        ...result,
-        breakdown: enhancedBreakdown
-      };
-    } catch (error) {
-      console.error('Error calculating pricing for order', order.order_number, error);
-      return null;
-    }
-  };
 
 
 // Helper: Build nice HTML email for status updates
@@ -493,19 +384,11 @@ export default function Orders() {
     document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
   };
 
-  // UPDATE: load all orders (not only paid), sort by created_date desc
+  // Use shared service for loading orders
   const loadOrders = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await Order.list('-created_date');
-      // Enrich orders with calculated pricing data
-      const enrichedOrders = data.map(order => {
-        const calculatedPricing = calculateOrderPricing(order);
-        return {
-          ...order,
-          calculatedPricing
-        };
-      });
+      const enrichedOrders = await loadAllOrders();
       setOrders(enrichedOrders);
     } catch (error) {
       console.error('Error loading orders:', error);
