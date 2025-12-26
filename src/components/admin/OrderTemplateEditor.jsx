@@ -177,15 +177,21 @@ export default function OrderTemplateEditor() {
     }
   };
 
-  const loadOrders = async () => {
-    try {
-      // Use shared service to get orders for documents
-      const data = await getOrdersForDocuments();
-      setOrders(data || []);
-    } catch (error) {
-      console.error("Error loading orders:", error);
-    }
-  };
+ const loadOrders = async () => {
+  try {
+    const data = await getOrdersForDocuments();
+
+    // ⬇️ רק הזמנות שהתקבלו
+    const receivedOrders = (data || []).filter(order =>
+      order.status === "received" || order.status === "paid"
+    );
+
+    setOrders(receivedOrders);
+  } catch (error) {
+    console.error("Error loading orders:", error);
+  }
+};
+
 
   const handleSave = async () => {
     setSaving(true);
