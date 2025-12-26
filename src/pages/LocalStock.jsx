@@ -266,7 +266,17 @@ export default function LocalStock() {
                             className={`w-full h-auto object-contain transition-transform duration-300 ${(item.quantity_available > 0 && item.is_available) ? 'group-hover:scale-105' : ''}`}
                             style={{ maxHeight: '320px' }}
                           />
-                          {(item.quantity_available === 0 || !item.is_available) ? null : (
+                          {(item.quantity_available === 0 || !item.is_available) ? (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleNotifyRequest(item);
+                              }}
+                              className="absolute bottom-1 left-1 w-6 h-6 bg-white/80 hover:bg-white flex items-center justify-center rounded-full shadow-sm transition-all duration-200"
+                            >
+                              <Bell className="w-3 h-3 text-stone-800" />
+                            </button>
+                          ) : (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -290,24 +300,9 @@ export default function LocalStock() {
                         <h3 className="font-medium text-xs text-stone-800 truncate">
                           {item.product_name}
                         </h3>
-                        <div className="flex items-center gap-1 flex-wrap">
-                          {(item.quantity_available === 0 || !item.is_available) ? (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleNotifyRequest(item);
-                              }}
-                              className="flex items-center gap-1 text-[10px] text-rose-600 hover:text-rose-700 underline"
-                            >
-                              <Bell className="w-3 h-3" />
-                              NOTIFY ME WHEN AVAILABLE
-                            </button>
-                          ) : (
-                            <p className="text-stone-800 text-sm font-semibold">
-                              ₪{item.price_ils}
-                            </p>
-                          )}
-                        </div>
+                        <p className="text-stone-800 text-sm font-semibold">
+                          ₪{item.price_ils}
+                        </p>
                       </div>
                     </CardContent>
                   </Card>
