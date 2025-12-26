@@ -177,14 +177,22 @@ export default function OrderTemplateEditor() {
     }
   };
 
- const loadOrders = async () => {
+const loadOrders = async () => {
   try {
     const data = await getOrdersForDocuments();
 
-    // ⬇️ רק הזמנות שהתקבלו
+    const allowedStatuses = [
+      "pending",
+      "ordered",
+      "warehouse",
+      "shipping_to_israel",
+      "paid"
+    ];
+
     const receivedOrders = (data || []).filter(order =>
-      order.status ==="pending"||"ordered"||"warehouse"||"shipping_to_israel"|| order.status === "paid"
+      allowedStatuses.includes(order.status)
     );
+
     setOrders(receivedOrders);
   } catch (error) {
     console.error("Error loading orders:", error);
