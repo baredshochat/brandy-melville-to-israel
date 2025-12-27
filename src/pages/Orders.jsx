@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { User } from "@/entities/User";
+import { Order } from "@/entities/Order";
 import { SendEmail } from "@/integrations/Core";
 import { sendEmailToCustomer } from "@/functions/sendEmailToCustomer";
 import { createPageUrl } from "@/utils";
