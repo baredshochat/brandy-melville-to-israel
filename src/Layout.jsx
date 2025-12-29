@@ -63,7 +63,7 @@ export default function Layout({ children }) {
   { name: "ManageLocalStock", label: "ניהול מלאי מקומי", icon: Package, roles: ['admin'] },
   { name: "Reports", label: "דוחות ואנליטיקה", icon: BarChart3, roles: ['admin'] },
   { name: "ProfitReports", label: "דוחות רווח נקי", icon: TrendingUp, roles: ['admin'] },
-  { name: "ManageCouponTemplates", label: "ניהול קופונים אישיים", icon: FileText, roles: ['admin'] },
+  { name: "ManageCoupons", label: "ניהול קופונים והטבות", icon: FileText, roles: ['admin'] },
 
   { name: "LoyaltyAdmin", label: "ניהול מועדון לקוחות", icon: Heart, roles: ['admin'] },
     { name: "ChatLogs", label: "לוג שיחות צ'אט", icon: MessageSquare, roles: ['admin'] }];
