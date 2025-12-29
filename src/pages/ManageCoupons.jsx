@@ -38,7 +38,7 @@ export default function ManageCoupons() {
   const [sending, setSending] = useState(false);
   const [deleteTemplateDialogOpen, setDeleteTemplateDialogOpen] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState(null);
-  const [activeTab, setActiveTab] = useState('personalTemplates');
+  const [activeTab, setActiveTab] = useState('coupons');
 
   useEffect(() => {
     loadCouponTemplates();
@@ -159,94 +159,97 @@ export default function ManageCoupons() {
         </div>
       </div>
 
-      <Tabs defaultValue="personalTemplates" value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2 md:w-auto mb-6">
-          <TabsTrigger value="personalTemplates">
-            <FileText className="w-4 h-4 ml-2" /> תבניות קופונים אישיים
+      <Tabs defaultValue="coupons" value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsTrigger value="coupons">
+            <Tag className="w-4 h-4 ml-2" />
+            קודי קופון
           </TabsTrigger>
-          <TabsTrigger value="generalCoupons">
-            <Tag className="w-4 h-4 ml-2" /> קופונים כלליים
+          <TabsTrigger value="credit">
+            <FileText className="w-4 h-4 ml-2" />
+            קרדיט
+          </TabsTrigger>
+          <TabsTrigger value="giftcard">
+            <FileText className="w-4 h-4 ml-2" />
+            גיפטקארד
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="personalTemplates">
+        {/* ========= קופונים ========= */}
+        <TabsContent value="coupons">
           <div className="flex justify-end mb-4">
-            <Button onClick={() => { setEditingTemplate(null); setShowTemplateForm(true); }} className="bg-rose-500 hover:bg-rose-600">
+            <Button
+              onClick={() => {
+                setEditingTemplate(null);
+                setShowTemplateForm(true);
+              }}
+              className="bg-rose-500 hover:bg-rose-600"
+            >
               <Plus className="w-4 h-4 ml-2" />
-              צור תבנית חדשה
+              קוד קופון חדש
             </Button>
           </div>
+
           {loadingTemplates ? (
-            <div className="flex items-center justify-center min-h-[400px]">
-              <Loader2 className="w-8 h-8 animate-spin text-rose-400" />
+            <div className="flex items-center justify-center min-h-[300px]">
+              <Loader2 className="w-6 h-6 animate-spin text-rose-400" />
             </div>
           ) : couponTemplates.length === 0 ? (
-            <div className="text-center py-12 border-2 border-dashed rounded-lg">
-              <p className="text-stone-500 mb-4">אין עדיין תבניות קופונים</p>
-              <Button onClick={() => setShowTemplateForm(true)} variant="outline">
-                צור תבנית ראשונה
+            <div className="text-center py-12 border border-dashed rounded-lg">
+              <p className="text-stone-500 mb-4">אין עדיין קודי קופון</p>
+              <Button variant="outline" onClick={() => setShowTemplateForm(true)}>
+                צור קוד ראשון
               </Button>
             </div>
           ) : (
-            <div className="grid gap-4">
+            <div className="grid gap-3">
               {couponTemplates.map((template) => (
-                <div key={template.id} className="border rounded-lg p-4 bg-white hover:shadow-md transition-shadow">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold text-stone-900">{template.name}</h3>
-                        <span className={`px-2 py-1 text-xs rounded ${template.is_active ? 'bg-green-100 text-green-800' : 'bg-stone-100 text-stone-600'}`}>
-                          {template.is_active ? 'פעיל' : 'מושבת'}
-                        </span>
-                        <span className="px-2 py-1 text-xs rounded bg-blue-100 text-blue-800">
-                          {getEventTypeLabel(template.event_type)}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-3 gap-4 text-sm text-stone-600">
-                        <div>
-                          <span className="font-medium">הנחה:</span> {getDiscountDisplay(template)}
-                        </div>
-                        <div>
-                          <span className="font-medium">תוקף:</span> {template.valid_days ? `${template.valid_days} ימים` : template.valid_until || 'לא הוגדר'}
-                        </div>
-                        <div>
-                          <span className="font-medium">פורמט קוד:</span> {template.code_prefix}{template.code_suffix_template}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleToggleTemplateActive(template)}
-                        title={template.is_active ? 'השבת תבנית' : 'הפעל תבנית'}
-                      >
-                        {template.is_active ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => { setSelectedTemplate(template); setShowSendDialog(true); }}
-                        disabled={!template.is_active}
-                        title="שלח קופונים"
-                      >
-                        <Send className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => { setEditingTemplate(template); setShowTemplateForm(true); }}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => { setTemplateToDelete(template); setDeleteTemplateDialogOpen(true); }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+                <div
+                  key={template.id}
+                  className="border rounded-lg p-4 bg-white flex items-center justify-between"
+                >
+                  <div>
+                    <h3 className="font-medium">{template.name}</h3>
+                    <p className="text-sm text-stone-500">
+                      הנחה: {getDiscountDisplay(template)} ·
+                      {template.is_active ? ' פעיל' : ' מושבת'}
+                    </p>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleToggleTemplateActive(template)}
+                    >
+                      {template.is_active ? (
+                        <ToggleRight className="w-4 h-4" />
+                      ) : (
+                        <ToggleLeft className="w-4 h-4" />
+                      )}
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setEditingTemplate(template);
+                        setShowTemplateForm(true);
+                      }}
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setTemplateToDelete(template);
+                        setDeleteTemplateDialogOpen(true);
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -254,8 +257,18 @@ export default function ManageCoupons() {
           )}
         </TabsContent>
 
-        <TabsContent value="generalCoupons">
-          <ManageGeneralCoupons />
+        {/* ========= קרדיט ========= */}
+        <TabsContent value="credit">
+          <div className="text-center py-20 text-stone-500 border border-dashed rounded-lg">
+            ניהול קרדיטים יתווסף כאן
+          </div>
+        </TabsContent>
+
+        {/* ========= גיפטקארד ========= */}
+        <TabsContent value="giftcard">
+          <div className="text-center py-20 text-stone-500 border border-dashed rounded-lg">
+            ניהול גיפטקארדים יתווסף כאן
+          </div>
         </TabsContent>
       </Tabs>
 
