@@ -25,6 +25,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CouponTemplateForm from '../components/admin/CouponTemplateForm';
 import UserSelector from '../components/admin/UserSelector';
 import ManageGeneralCoupons from '../components/admin/ManageGeneralCoupons';
+import ManageStoreCredit from '../components/admin/ManageStoreCredit';
+import ManageGiftCards from '../components/admin/ManageGiftCards';
 import { toast } from 'sonner';
 
 export default function ManageCoupons() {
@@ -259,16 +261,12 @@ export default function ManageCoupons() {
 
         {/* ========= קרדיט ========= */}
         <TabsContent value="credit">
-          <div className="text-center py-20 text-stone-500 border border-dashed rounded-lg">
-            ניהול קרדיטים יתווסף כאן
-          </div>
+          <ManageStoreCredit />
         </TabsContent>
 
         {/* ========= גיפטקארד ========= */}
         <TabsContent value="giftcard">
-          <div className="text-center py-20 text-stone-500 border border-dashed rounded-lg">
-            ניהול גיפטקארדים יתווסף כאן
-          </div>
+          <ManageGiftCards />
         </TabsContent>
       </Tabs>
 
