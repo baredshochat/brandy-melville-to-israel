@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { X, Mail, FileText, Truck, Package, Trash2 } from 'lucide-react';
+import { X, Mail, FileText, Truck, Package, Trash2, Download } from 'lucide-react';
 
 export default function BulkActionsBar({ selectedCount, onAction, onClear }) {
   return (
@@ -37,6 +37,11 @@ export default function BulkActionsBar({ selectedCount, onAction, onClear }) {
               <Button variant="outline" size="sm" onClick={() => onAction('sendUpdate')}>
                 <Mail className="w-4 h-4 mr-2" />
                 שלח עדכון
+              </Button>
+
+              <Button variant="outline" size="sm" onClick={() => onAction('export')} className="text-green-600 border-green-200 hover:bg-green-50">
+                <Download className="w-4 h-4 mr-2" />
+                ייצא לאקסל
               </Button>
 
               <Button variant="outline" size="sm" onClick={() => onAction('exportLabels')}>
