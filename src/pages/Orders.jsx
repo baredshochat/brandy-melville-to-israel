@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { subDays, format, differenceInDays } from "date-fns";
 import { motion } from "framer-motion";
+import * as XLSX from 'xlsx';
 import {
   Package,
   DollarSign,
@@ -737,10 +738,131 @@ export default function Orders() {
   const handleBulkAction = (action, orderIds) => {
     if (action === 'delete') {
       handleBulkDelete();
+    } else if (action === 'export') {
+      handleExportToExcel();
     } else {
       console.log('Bulk action:', action, 'on orders:', orderIds);
       // Implement other bulk actions here
     }
+  };
+
+  const handleExportToExcel = () => {
+    const selectedOrders = orders.filter(o => selectedOrderIds.has(o.id));
+    
+    if (selectedOrders.length === 0) {
+      alert('לא נבחרו הזמנות לייצוא');
+      return;
+    }
+
+    // Prepare data for Excel
+    const excelData = [];
+    
+    selectedOrders.forEach(order => {
+      const baseRow = {
+        'מספר הזמנה': order.order_number || '',
+        'תאריך יצירה': order.created_date ? format(new Date(order.created_date), 'dd/MM/yyyy HH:mm') : '',
+        'שם לקוח': order.customer_name || '',
+        'אימייל': order.customer_email || '',
+        'טלפון': order.customer_phone || '',
+        'כתובת משלוח': order.shipping_address || '',
+        'עיר': order.city || '',
+        'אתר': order.site === 'us' ? 'ארה״ב' : order.site === 'eu' ? 'אירופה' : order.site === 'uk' ? 'בריטניה' : order.site === 'local' ? 'מלאי מקומי' : order.site,
+        'סטטוס': statusConfig[order.status]?.label || order.status,
+        'סטטוס תשלום': order.payment_status === 'completed' ? 'שולם' : order.payment_status === 'failed' ? 'נכשל' : 'ממתין',
+        'סכום כולל (₪)': order.total_price_ils || 0,
+        'משקל כולל (ק״ג)': order.total_weight_kg || 0,
+        'רווח נטו (₪)': order.calculatedPricing?.breakdown?.net_profit_ils || 0,
+        'מכס (₪)': order.calculatedPricing?.breakdown?.customsILS || 0,
+        'מס׳ פריטים': order.items?.length || 0,
+        'הערות לקוח': order.notes || '',
+        'הערות פנימיות': order.internal_notes || '',
+        'מייל אחרון - סוג': order.last_email_sent_type || '',
+        'מייל אחרון - תאריך': order.last_email_sent_date ? format(new Date(order.last_email_sent_date), 'dd/MM/yyyy HH:mm') : '',
+        'תזכורות שנשלחו': order.reminder_count || 0,
+      };
+
+      // Add items details
+      if (order.items && order.items.length > 0) {
+        order.items.forEach((item, idx) => {
+          const itemRow = { ...baseRow };
+          itemRow['פריט מס׳'] = idx + 1;
+          itemRow['שם מוצר'] = item.product_name || '';
+          itemRow['SKU'] = item.product_sku || '';
+          itemRow['תיאור'] = item.product_description || '';
+          itemRow['צבע'] = item.color || '';
+          itemRow['מידה'] = item.size || '';
+          itemRow['כמות'] = item.quantity || 0;
+          itemRow['מחיר מקורי'] = item.original_price || 0;
+          itemRow['מטבע מקורי'] = item.original_currency || '';
+          itemRow['מחיר ללקוח (₪)'] = item.customer_price_ils || 0;
+          itemRow['משקל פריט (ק״ג)'] = item.item_weight || 0;
+          itemRow['סטטוס רכש'] = item.purchase_status || '';
+          itemRow['קוד הזמנה ספק'] = item.supplier_order_ref || '';
+          itemRow['חברת שילוח'] = item.carrier || '';
+          itemRow['מספר מעקב'] = item.tracking_number || '';
+          itemRow['תאריך הגעה משוער'] = item.eta_date || '';
+          excelData.push(itemRow);
+        });
+      } else {
+        excelData.push(baseRow);
+      }
+    });
+
+    // Create worksheet
+    const ws = XLSX.utils.json_to_sheet(excelData);
+    
+    // Set column widths
+    const colWidths = [
+      { wch: 15 }, // מספר הזמנה
+      { wch: 18 }, // תאריך יצירה
+      { wch: 20 }, // שם לקוח
+      { wch: 25 }, // אימייל
+      { wch: 15 }, // טלפון
+      { wch: 30 }, // כתובת משלוח
+      { wch: 15 }, // עיר
+      { wch: 12 }, // אתר
+      { wch: 15 }, // סטטוס
+      { wch: 15 }, // סטטוס תשלום
+      { wch: 15 }, // סכום כולל
+      { wch: 15 }, // משקל כולל
+      { wch: 15 }, // רווח נטו
+      { wch: 12 }, // מכס
+      { wch: 12 }, // מס׳ פריטים
+      { wch: 30 }, // הערות לקוח
+      { wch: 30 }, // הערות פנימיות
+      { wch: 18 }, // מייל אחרון - סוג
+      { wch: 18 }, // מייל אחרון - תאריך
+      { wch: 15 }, // תזכורות
+      { wch: 10 }, // פריט מס׳
+      { wch: 30 }, // שם מוצר
+      { wch: 15 }, // SKU
+      { wch: 40 }, // תיאור
+      { wch: 12 }, // צבע
+      { wch: 10 }, // מידה
+      { wch: 10 }, // כמות
+      { wch: 12 }, // מחיר מקורי
+      { wch: 12 }, // מטבע מקורי
+      { wch: 15 }, // מחיר ללקוח
+      { wch: 15 }, // משקל פריט
+      { wch: 15 }, // סטטוס רכש
+      { wch: 20 }, // קוד הזמנה ספק
+      { wch: 15 }, // חברת שילוח
+      { wch: 20 }, // מספר מעקב
+      { wch: 15 }, // תאריך הגעה משוער
+    ];
+    ws['!cols'] = colWidths;
+
+    // Create workbook
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'הזמנות');
+
+    // Generate file name with date
+    const fileName = `orders_export_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.xlsx`;
+
+    // Download
+    XLSX.writeFile(wb, fileName);
+
+    alert(`${selectedOrders.length} הזמנות יוצאו בהצלחה לקובץ ${fileName}`);
   };
 
   // Open reminder confirmation dialog
