@@ -82,12 +82,6 @@ const statusConfig = {
     color: "gray",
     description: "הפריטים המהממים שלך הוזמנו מספק Brandy Melville בחו״ל."
   },
-  warehouse: { 
-    label: "במחסן", 
-    style: "bg-blue-100 text-blue-800", 
-    color: "blue",
-    description: "ההזמנה הגיעה למחסן שלנו בחו״ל ועוברת בדיקת איכות קפדנית."
-  },
   shipping_to_israel: { 
     label: "בדרך לישראל", 
     style: "bg-orange-100 text-orange-800", 
@@ -428,11 +422,10 @@ export default function Orders() {
         awaiting_payment: { label: "ממתין לתשלום", step: 0 },
         pending: { label: "התקבלה", step: 1 },
         ordered: { label: "הוזמן", step: 2 },
-        warehouse: { label: "במחסן", step: 3 },
-        shipping_to_israel: { label: "בדרך לישראל", step: 4 },
-        in_israel: { label: "בארץ", step: 5 },
-        shipping_to_customer: { label: "בדרך ללקוחה", step: 6 },
-        delivered: { label: "נמסר", step: 7 }
+        shipping_to_israel: { label: "בדרך לישראל", step: 3 },
+        in_israel: { label: "בארץ", step: 4 },
+        shipping_to_customer: { label: "בדרך ללקוחה", step: 5 },
+        delivered: { label: "נמסר", step: 6 }
       });
     }
   }, []);
@@ -467,7 +460,6 @@ export default function Orders() {
         const statusToPurchaseStatus = {
           'pending': 'needs_order',
           'ordered': 'ordered',
-          'warehouse': 'warehouse',
           'shipping_to_israel': 'in_transit',
           'in_israel': 'warehouse',
           'shipping_to_customer': 'shipped_to_customer',
