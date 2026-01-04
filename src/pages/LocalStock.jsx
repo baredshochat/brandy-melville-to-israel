@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { ShoppingCart, Search, ArrowRight, Loader2, CheckCircle, Plus, Settings, Bell } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPageUrl } from "@/utils";
@@ -38,6 +39,7 @@ export default function LocalStock() {
   const [notifyName, setNotifyName] = useState('');
   const [submittingNotification, setSubmittingNotification] = useState(false);
   const [allItems, setAllItems] = useState([]);
+  const [showImagesForAdmin, setShowImagesForAdmin] = useState(false);
 
   useEffect(() => {
     User.me().then((u) => {
@@ -219,10 +221,18 @@ export default function LocalStock() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {user && user.role === 'admin' &&
-        <div className="mb-6 flex justify-end gap-3">
+        <div className="mb-6 flex justify-between items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={showImagesForAdmin}
+                onCheckedChange={setShowImagesForAdmin}
+                id="show-images-admin"
+              />
+              <Label htmlFor="show-images-admin" className="cursor-pointer text-sm text-stone-700">הצג תמונות</Label>
+            </div>
             <Button
-            onClick={() => window.location.href = createPageUrl('ManageLocalStock')}
-            className="bg-stone-800 hover:bg-stone-900 text-white flex items-center gap-2">
+              onClick={() => window.location.href = createPageUrl('ManageLocalStock')}
+              className="bg-stone-800 hover:bg-stone-900 text-white flex items-center gap-2">
               <Settings className="w-4 h-4" />
               ניהול מלאי
             </Button>
@@ -275,42 +285,84 @@ export default function LocalStock() {
                 className="h-full overflow-hidden hover:shadow-lg transition-all duration-300 bg-white cursor-pointer group border-0 shadow-none"
                 onClick={() => window.location.href = createPageUrl('LocalStockItemDetail') + '?id=' + item.id}>
 
-                    <CardContent className="p-4 relative">
-                      <div className="space-y-3">
-                        <h3 className="font-medium text-sm text-stone-800">
-                          {item.product_name}
-                        </h3>
-                        <p className="text-stone-800 text-lg font-semibold">
-                          ₪{item.price_ils}
-                        </p>
-                        
-                        <div className="flex gap-2">
+                    <CardContent className="p-0 relative">
+                      {showImagesForAdmin && item.image_url &&
+                      <div className="w-full bg-stone-50 overflow-hidden relative flex items-center justify-center" style={{ minHeight: '280px' }}>
+                          <img
+                          src={item.image_url}
+                          alt={item.product_name}
+                          className={`w-full h-auto object-contain transition-transform duration-300 ${item.quantity_available > 0 && item.is_available ? 'group-hover:scale-105' : ''}`}
+                          style={{ maxHeight: '320px' }} />
+
                           {item.quantity_available === 0 || !item.is_available ?
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleNotifyRequest(item);
-                              }}
-                              className="flex-1 px-3 py-2 bg-stone-100 hover:bg-stone-200 flex items-center justify-center gap-2 transition-all duration-200 text-sm">
-                              <Bell className="w-4 h-4 text-stone-800" />
-                              עדכן אותי
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleNotifyRequest(item);
+                          }}
+                          className="absolute bottom-1 left-1 w-6 h-6 bg-white/80 hover:bg-white flex items-center justify-center rounded-full shadow-sm transition-all duration-200">
+
+                              <Bell className="w-3 h-3 text-stone-800" />
                             </button> :
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleAddToCart(item);
-                              }}
-                              disabled={addingToCart[item.id] || addedItems.has(item.id)}
-                              className="flex-1 px-3 py-2 bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm">
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddToCart(item);
+                          }}
+                          disabled={addingToCart[item.id] || addedItems.has(item.id)}
+                          className="absolute bottom-1 left-1 w-6 h-6 bg-white/80 hover:bg-white flex items-center justify-center rounded-full shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+
                               {addingToCart[item.id] ?
-                                <Loader2 className="w-4 h-4 animate-spin" /> :
-                                addedItems.has(item.id) ?
-                                <CheckCircle className="w-4 h-4" /> :
-                                <Plus className="w-4 h-4" />
-                              }
-                              {addedItems.has(item.id) ? 'נוסף' : 'הוסף'}
-                            </button>
+                          <Loader2 className="w-3 h-3 animate-spin text-stone-800" /> :
+                          addedItems.has(item.id) ?
+                          <CheckCircle className="w-3 h-3 text-green-600" /> :
+
+                          <Plus className="w-3 h-3 text-stone-800" />
                           }
+                            </button>
+                        }
+                        </div>
+                      }
+                      <div className="px-4 py-3">
+                        <div className="space-y-2">
+                          <h3 className="font-medium text-sm text-stone-800">
+                            {item.product_name}
+                          </h3>
+                          <p className="text-stone-800 text-lg font-semibold">
+                            ₪{item.price_ils}
+                          </p>
+                          
+                          {!showImagesForAdmin && (
+                            <div className="flex gap-2">
+                              {item.quantity_available === 0 || !item.is_available ?
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleNotifyRequest(item);
+                                  }}
+                                  className="flex-1 px-3 py-2 bg-stone-100 hover:bg-stone-200 flex items-center justify-center gap-2 transition-all duration-200 text-sm">
+                                  <Bell className="w-4 h-4 text-stone-800" />
+                                  עדכן אותי
+                                </button> :
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleAddToCart(item);
+                                  }}
+                                  disabled={addingToCart[item.id] || addedItems.has(item.id)}
+                                  className="flex-1 px-3 py-2 bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm">
+                                  {addingToCart[item.id] ?
+                                    <Loader2 className="w-4 h-4 animate-spin" /> :
+                                    addedItems.has(item.id) ?
+                                    <CheckCircle className="w-4 h-4" /> :
+                                    <Plus className="w-4 h-4" />
+                                  }
+                                  {addedItems.has(item.id) ? 'נוסף' : 'הוסף'}
+                                </button>
+                              }
+                            </div>
+                          )}
                         </div>
                       </div>
                     </CardContent>
