@@ -797,17 +797,11 @@ export default function ManageLocalStock() {
                       </td>
                       <td className="p-2">
                         <div className="flex items-center gap-2">
-                          {item.show_image ? (
-                            item.image_url ? (
-                              <img src={item.image_url} alt={item.product_name} className="w-12 h-12 object-cover rounded" />
-                            ) : (
-                              <div className="w-12 h-12 bg-stone-200 rounded flex items-center justify-center">
-                                <ImageIcon className="w-6 h-6 text-stone-400" />
-                              </div>
-                            )
+                          {item.image_url ? (
+                            <img src={item.image_url} alt={item.product_name} className="w-12 h-12 object-cover rounded" />
                           ) : (
-                            <div className="w-12 h-12 bg-stone-100 rounded flex items-center justify-center">
-                              <ImageIcon className="w-6 h-6 text-stone-300" />
+                            <div className="w-12 h-12 bg-stone-200 rounded flex items-center justify-center">
+                              <ImageIcon className="w-6 h-6 text-stone-400" />
                             </div>
                           )}
                           {item.image_url && (
