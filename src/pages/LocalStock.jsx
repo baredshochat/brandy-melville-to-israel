@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { ShoppingCart, Search, ArrowRight, Loader2, CheckCircle, Plus, Settings, Bell } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPageUrl } from "@/utils";
@@ -39,7 +38,6 @@ export default function LocalStock() {
   const [notifyName, setNotifyName] = useState('');
   const [submittingNotification, setSubmittingNotification] = useState(false);
   const [allItems, setAllItems] = useState([]);
-  const [showImagesForAdmin, setShowImagesForAdmin] = useState(false);
 
   useEffect(() => {
     User.me().then((u) => {
@@ -221,15 +219,7 @@ export default function LocalStock() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {user && user.role === 'admin' &&
-        <div className="mb-6 flex justify-between items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={showImagesForAdmin}
-                onCheckedChange={setShowImagesForAdmin}
-                id="show-images-admin"
-              />
-              <Label htmlFor="show-images-admin" className="cursor-pointer text-sm text-stone-700">הצג תמונות</Label>
-            </div>
+        <div className="mb-6 flex justify-end gap-3">
             <Button
               onClick={() => window.location.href = createPageUrl('ManageLocalStock')}
               className="bg-stone-800 hover:bg-stone-900 text-white flex items-center gap-2">
@@ -286,7 +276,7 @@ export default function LocalStock() {
                 onClick={() => window.location.href = createPageUrl('LocalStockItemDetail') + '?id=' + item.id}>
 
                     <CardContent className="p-0 relative">
-                      {showImagesForAdmin && item.image_url &&
+                      {item.show_image && item.image_url &&
                       <div className="w-full bg-stone-50 overflow-hidden relative flex items-center justify-center" style={{ minHeight: '280px' }}>
                           <img
                           src={item.image_url}
@@ -333,7 +323,7 @@ export default function LocalStock() {
                             ₪{item.price_ils}
                           </p>
                           
-                          {!showImagesForAdmin && (
+                          {!item.show_image && (
                             <div className="flex gap-2">
                               {item.quantity_available === 0 || !item.is_available ?
                                 <button

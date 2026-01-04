@@ -77,7 +77,6 @@ export default function ManageLocalStock() {
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [waitingListDialog, setWaitingListDialog] = useState({ open: false, itemId: null, itemName: '' });
-  const [showImageForItems, setShowImageForItems] = useState(new Set());
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -798,7 +797,7 @@ export default function ManageLocalStock() {
                       </td>
                       <td className="p-2">
                         <div className="flex items-center gap-2">
-                          {showImageForItems.has(item.id) ? (
+                          {item.show_image ? (
                             item.image_url ? (
                               <img src={item.image_url} alt={item.product_name} className="w-12 h-12 object-cover rounded" />
                             ) : (
@@ -816,17 +815,13 @@ export default function ManageLocalStock() {
                               size="sm"
                               variant="ghost"
                               className="h-6 w-6 p-0"
-                              onClick={() => setShowImageForItems(prev => {
-                                const next = new Set(prev);
-                                if (next.has(item.id)) {
-                                  next.delete(item.id);
-                                } else {
-                                  next.add(item.id);
-                                }
-                                return next;
-                              })}
+                              onClick={async () => {
+                                const newShowImage = !item.show_image;
+                                await LocalStockItem.update(item.id, { show_image: newShowImage });
+                                loadItems();
+                              }}
                             >
-                              {showImageForItems.has(item.id) ? (
+                              {item.show_image ? (
                                 <Eye className="w-4 h-4" />
                               ) : (
                                 <EyeOff className="w-4 h-4" />
