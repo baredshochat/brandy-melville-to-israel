@@ -32,77 +32,50 @@ export default function PackingListDisplay({ orders, open, onClose }) {
           </div>
         </DialogHeader>
 
-        <div className="space-y-6 pt-4" id="packing-list-content">
+        <div className="space-y-2 pt-2" id="packing-list-content">
           {orders.map((order, orderIdx) => (
-            <Card key={order.id} className="p-4 border-2 border-stone-300">
-              {/* Order Header */}
-              <div className="flex justify-between items-start mb-4 pb-3 border-b-2 border-stone-200">
-                <div>
-                  <div className="text-xl font-bold text-stone-900">
-                    #{orderIdx + 1} • הזמנה {order.order_number}
-                  </div>
-                  <div className="text-sm text-stone-600 mt-1">
-                    {order.site === 'us' && '🇺🇸 ארה"ב'}
-                    {order.site === 'eu' && '🇪🇺 אירופה'}
-                    {order.site === 'uk' && '🇬🇧 בריטניה'}
-                    {order.site === 'local' && '🇮🇱 מלאי מקומי'}
-                  </div>
+            <div key={order.id} className="p-2 border border-stone-400 bg-white">
+              {/* Order Header - Compact */}
+              <div className="flex justify-between items-center mb-1 pb-1 border-b border-stone-300">
+                <div className="text-sm font-bold text-stone-900">
+                  #{orderIdx + 1} • {order.order_number}
                 </div>
                 <div className="text-right">
-                  <div className="text-lg font-bold text-stone-900">{order.customer_name}</div>
-                  <div className="text-sm text-stone-600">{order.customer_phone || '—'}</div>
+                  <span className="text-sm font-bold text-stone-900">{order.customer_name}</span>
+                  {order.customer_phone && <span className="text-xs text-stone-600 mr-2">{order.customer_phone}</span>}
                 </div>
               </div>
 
-              {/* Items Table */}
-              <div className="mb-4">
-                <div className="font-semibold text-stone-900 mb-2">פריטים:</div>
-                <table className="w-full border border-stone-300" dir="rtl">
-                  <thead className="bg-stone-100">
-                    <tr>
-                      <th className="border border-stone-300 p-2 text-right text-sm font-semibold">#</th>
-                      <th className="border border-stone-300 p-2 text-right text-sm font-semibold">שם מוצר</th>
-                      <th className="border border-stone-300 p-2 text-right text-sm font-semibold">צבע</th>
-                      <th className="border border-stone-300 p-2 text-right text-sm font-semibold">מידה</th>
-                      <th className="border border-stone-300 p-2 text-right text-sm font-semibold">כמות</th>
-                      <th className="border border-stone-300 p-2 text-right text-sm font-semibold">SKU</th>
+              {/* Items Table - Compact */}
+              <table className="w-full border border-stone-300 mb-1 text-xs" dir="rtl">
+                <thead className="bg-stone-50">
+                  <tr>
+                    <th className="border border-stone-300 px-1 py-0.5 text-right font-semibold">#</th>
+                    <th className="border border-stone-300 px-1 py-0.5 text-right font-semibold">שם מוצר</th>
+                    <th className="border border-stone-300 px-1 py-0.5 text-right font-semibold">צבע</th>
+                    <th className="border border-stone-300 px-1 py-0.5 text-right font-semibold">מידה</th>
+                    <th className="border border-stone-300 px-1 py-0.5 text-center font-semibold">כמות</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(order.items || []).map((item, idx) => (
+                    <tr key={idx}>
+                      <td className="border border-stone-300 px-1 py-0.5 text-center">{idx + 1}</td>
+                      <td className="border border-stone-300 px-1 py-0.5">{item.product_name}</td>
+                      <td className="border border-stone-300 px-1 py-0.5">{item.color || '—'}</td>
+                      <td className="border border-stone-300 px-1 py-0.5 text-center">{item.size || '—'}</td>
+                      <td className="border border-stone-300 px-1 py-0.5 text-center font-semibold">{item.quantity || 1}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {(order.items || []).map((item, idx) => (
-                      <tr key={idx} className="hover:bg-stone-50">
-                        <td className="border border-stone-300 p-2 text-center font-medium">{idx + 1}</td>
-                        <td className="border border-stone-300 p-2">{item.product_name}</td>
-                        <td className="border border-stone-300 p-2">
-                          {item.color || '—'}
-                        </td>
-                        <td className="border border-stone-300 p-2 text-center">{item.size || '—'}</td>
-                        <td className="border border-stone-300 p-2 text-center font-semibold">
-                          {item.quantity || 1}
-                        </td>
-                        <td className="border border-stone-300 p-2 text-xs font-mono">{item.product_sku || '—'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
 
-              {/* Address */}
-              <div className="bg-amber-50 p-3 border-2 border-amber-300 rounded">
-                <div className="font-semibold text-stone-900 mb-1">כתובת משלוח:</div>
-                <div className="text-stone-800">
-                  {order.shipping_address}
-                  {order.city && `, ${order.city}`}
-                </div>
-                {order.notes && (
-                  <div className="mt-2 pt-2 border-t border-amber-200">
-                    <div className="text-sm text-stone-600">
-                      <strong>הערות לקוחה:</strong> {order.notes}
-                    </div>
-                  </div>
-                )}
+              {/* Address - Compact */}
+              <div className="bg-amber-50 p-1.5 border border-amber-400 text-xs">
+                <span className="font-semibold">כתובת:</span> {order.shipping_address}{order.city && `, ${order.city}`}
+                {order.notes && <div className="mt-0.5 text-stone-600"><strong>הערות:</strong> {order.notes}</div>}
               </div>
-            </Card>
+            </div>
           ))}
         </div>
 
