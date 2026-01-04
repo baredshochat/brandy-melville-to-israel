@@ -316,6 +316,16 @@ export default function LocalStockItemDetail() {
               <p className="text-xs text-stone-500">
                 (לא כולל שישי-שבת, חגים ומועדים)
               </p>
+              {item.source_url && (
+                <a 
+                  href={item.source_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-xs text-rose-600 hover:text-rose-700 underline block mt-2"
+                >
+                  🔗 צפייה באתר המקורי
+                </a>
+              )}
             </div>
 
 
