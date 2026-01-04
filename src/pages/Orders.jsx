@@ -53,6 +53,7 @@ import ShoppingListTab from '../components/admin/orders/ShoppingListTab';
 import SupplierTrackingTab from '../components/admin/orders/SupplierTrackingTab';
 import InlineStatusSelect from '../components/admin/InlineStatusSelect';
 import OrderTemplateEditor from '../components/admin/OrderTemplateEditor';
+import PackingListDisplay from '../components/admin/PackingListDisplay';
 
 // NEW: add dialog imports for email preview
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -363,6 +364,9 @@ export default function Orders() {
 
   // NEW: active view mode - 'received' (all confirmed orders), 'awaiting_payment', or 'delivered'
   const [activeView, setActiveView] = useState('received');
+
+  // NEW: packing list state
+  const [packingListOpen, setPackingListOpen] = useState(false);
 
   // helpers for email preview
   const openEmailPreview = (to, subject, html) => setEmailPreview({ open: true, to, subject, html });
@@ -746,6 +750,8 @@ export default function Orders() {
       handleBulkDelete();
     } else if (action === 'export') {
       handleExportToExcel();
+    } else if (action === 'packingList') {
+      setPackingListOpen(true);
     } else {
       console.log('Bulk action:', action, 'on orders:', orderIds);
       // Implement other bulk actions here
@@ -2041,6 +2047,13 @@ export default function Orders() {
         onUpdateOrder={handleUpdateOrder}
         onDeleteOrder={handleDeleteOrder}
         statusConfig={statusConfig}
+      />
+
+      {/* Packing List Display */}
+      <PackingListDisplay
+        orders={orders.filter(o => selectedOrderIds.has(o.id))}
+        open={packingListOpen}
+        onClose={() => setPackingListOpen(false)}
       />
     </motion.div>
   );
