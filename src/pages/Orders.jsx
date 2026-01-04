@@ -662,7 +662,7 @@ export default function Orders() {
   };
 
   // Filter and search logic
-  // UPDATE: filteredOrders → based on activeView mode
+  // UPDATE: filteredOrders → based on activeView mode AND filters
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
       // Hide deleted orders (soft delete)
@@ -671,13 +671,17 @@ export default function Orders() {
       // Show only orders with full details (incl. valid email)
       if (!isCompleteOrder(order)) return false;
       
-      // Filter based on activeView
-      // 'received' = all orders EXCEPT awaiting_payment and delivered
-      // 'awaiting_payment' = only orders waiting for payment
-      // 'delivered' = only delivered orders
-      if (activeView === 'received' && (order.status === 'awaiting_payment' || order.status === 'delivered')) return false;
-      if (activeView === 'awaiting_payment' && order.status !== 'awaiting_payment') return false;
-      if (activeView === 'delivered' && order.status !== 'delivered') return false;
+      // Status filter - priority to manual filter if set, otherwise use activeView
+      let statusMatch = true;
+      if (filters.status !== 'all') {
+        // Manual status filter takes priority
+        statusMatch = order.status === filters.status;
+      } else {
+        // Use activeView logic only if no manual status filter
+        if (activeView === 'received' && (order.status === 'awaiting_payment' || order.status === 'delivered')) return false;
+        if (activeView === 'awaiting_payment' && order.status !== 'awaiting_payment') return false;
+        if (activeView === 'delivered' && order.status !== 'delivered') return false;
+      }
 
       // Search filter
       if (searchQuery) {
@@ -695,7 +699,7 @@ export default function Orders() {
         }
       }
 
-      // Basic filters (only apply if not using activeView for status)
+      // Basic filters
       const siteMatch = filters.site === 'all' || order.site === filters.site;
       const dateMatch = filters.dateRange === 'all' ||
         new Date(order.created_date) >= subDays(new Date(), parseInt(filters.dateRange));
@@ -704,11 +708,11 @@ export default function Orders() {
       const amountMatch = (!filters.minAmount || order.total_price_ils >= parseFloat(filters.minAmount)) &&
                          (!filters.maxAmount || order.total_price_ils <= parseFloat(filters.maxAmount));
 
-      // Margin filter (still exists for filtering purposes, though column display changed)
+      // Margin filter
       const marginMatch = !filters.minMargin ||
         ((order.calculatedPricing?.breakdown?.profit_pct_of_final || 0) * 100) >= parseFloat(filters.minMargin);
 
-      return siteMatch && dateMatch && amountMatch && marginMatch;
+      return statusMatch && siteMatch && dateMatch && amountMatch && marginMatch;
     });
   }, [orders, searchQuery, filters, activeView]);
 
