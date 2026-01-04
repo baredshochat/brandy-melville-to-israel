@@ -27,6 +27,7 @@ export default function LocalStock() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [addingToCart, setAddingToCart] = useState({});
@@ -41,11 +42,20 @@ export default function LocalStock() {
   useEffect(() => {
     User.me().then((u) => {
       setUser(u);
+      // Check if user is admin - if not, redirect to home
+      if (!u || u.role !== 'admin') {
+        window.location.href = createPageUrl('Home');
+        return;
+      }
       if (u) {
         setNotifyEmail(u.email || '');
         setNotifyName(u.full_name || '');
       }
-    }).catch(() => setUser(null));
+      setCheckingAuth(false);
+    }).catch(() => {
+      // User not logged in or error - redirect to home
+      window.location.href = createPageUrl('Home');
+    });
     loadItems();
 
     // Check for highlighted item from email
@@ -183,6 +193,14 @@ export default function LocalStock() {
       setSubmittingNotification(false);
     }
   };
+
+  if (checkingAuth) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-rose-400" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-50 via-rose-50/30 to-stone-100 pb-12">

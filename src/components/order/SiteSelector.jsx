@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -347,7 +346,10 @@ const SupportModal = () =>
   </Dialog>;
 
 
-export default function SiteSelector({ onSiteSelect, onBack }) {
+export default function SiteSelector({ onSiteSelect, onBack, userRole }) {
+  // Filter out 'local' site if user is not admin
+  const availableSites = userRole === 'admin' ? sites : sites.filter(site => site.id !== 'local');
+
   return (
     <motion.div
       key="step1"
@@ -391,8 +393,8 @@ export default function SiteSelector({ onSiteSelect, onBack }) {
       </div>
 
       {/* Site Selection */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 max-w-4xl mx-auto mb-8 sm:mb-12">
-        {sites.map((site, index) =>
+      <div className={`grid grid-cols-1 ${availableSites.length === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-4 sm:gap-6 max-w-4xl mx-auto mb-8 sm:mb-12`}>
+        {availableSites.map((site, index) =>
         <motion.div
           key={site.id}
           initial={{ opacity: 0, y: 20 }}

@@ -16,6 +16,7 @@ export default function LocalStockItemDetail() {
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const [addingToCart, setAddingToCart] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -27,11 +28,20 @@ export default function LocalStockItemDetail() {
   useEffect(() => {
     User.me().then((u) => {
       setUser(u);
+      // Check if user is admin - if not, redirect to home
+      if (!u || u.role !== 'admin') {
+        window.location.href = createPageUrl('LocalStock');
+        return;
+      }
       if (u) {
         setNotifyEmail(u.email || '');
         setNotifyName(u.full_name || '');
       }
-    }).catch(() => setUser(null));
+      setCheckingAuth(false);
+    }).catch(() => {
+      // User not logged in or error - redirect to local stock page
+      window.location.href = createPageUrl('LocalStock');
+    });
     loadItem();
   }, []);
 
@@ -123,7 +133,7 @@ export default function LocalStockItemDetail() {
     }
   };
 
-  if (loading) {
+  if (checkingAuth || loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
         <Loader2 className="w-8 h-8 animate-spin text-stone-400" />

@@ -1021,7 +1021,7 @@ export default function Home() {
   const renderStep = () => {
     const safeCart = Array.isArray(cart) ? cart : [];
     switch (step) {
-      case 1: return <SiteSelector onSiteSelect={handleSiteSelect} />;
+      case 1: return <SiteSelector onSiteSelect={handleSiteSelect} userRole={user?.role} />;
       case 2: return <CartImport site={selectedSite} onImportComplete={handleCartImported} onBack={() => setStep(1)} loading={loading} />;
       case 3: return <ProductPreview productData={currentItem} onConfirm={handleProductConfirm} onBack={() => { setStep(2); setEditingItem(null); }} />;
       case 3.5: return <LoadingCalculation onComplete={() => setStep(4)} />;
