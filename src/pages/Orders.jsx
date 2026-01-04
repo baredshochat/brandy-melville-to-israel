@@ -325,6 +325,16 @@ export default function Orders() {
     minMargin: '',
     country: 'all'
   });
+  const [tempFilters, setTempFilters] = useState({
+    site: 'all',
+    status: 'all',
+    dateRange: 'all',
+    paymentStatus: 'all',
+    minAmount: '',
+    maxAmount: '',
+    minMargin: '',
+    country: 'all'
+  });
 
   // Column visibility
   const [visibleColumns, setVisibleColumns] = useState({
@@ -1144,7 +1154,7 @@ export default function Orders() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
                     <div>
                       <Label>אתר</Label>
-                      <Select value={filters.site} onValueChange={(value) => setFilters({...filters, site: value})}>
+                      <Select value={tempFilters.site} onValueChange={(value) => setTempFilters({...tempFilters, site: value})}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">כל האתרים</SelectItem>
@@ -1158,7 +1168,7 @@ export default function Orders() {
 
                     <div>
                       <Label>סטטוס</Label>
-                      <Select value={filters.status} onValueChange={(value) => setFilters({...filters, status: value})}>
+                      <Select value={tempFilters.status} onValueChange={(value) => setTempFilters({...tempFilters, status: value})}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">כל הסטטוסים</SelectItem>
@@ -1171,7 +1181,7 @@ export default function Orders() {
 
                     <div>
                       <Label>תקופה</Label>
-                      <Select value={filters.dateRange} onValueChange={(value) => setFilters({...filters, dateRange: value})}>
+                      <Select value={tempFilters.dateRange} onValueChange={(value) => setTempFilters({...tempFilters, dateRange: value})}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">כל הזמנים</SelectItem>
@@ -1187,8 +1197,8 @@ export default function Orders() {
                       <Input
                         type="number"
                         placeholder="₪"
-                        value={filters.minAmount}
-                        onChange={(e) => setFilters({...filters, minAmount: e.target.value})}
+                        value={tempFilters.minAmount}
+                        onChange={(e) => setTempFilters({...tempFilters, minAmount: e.target.value})}
                       />
                     </div>
 
@@ -1197,8 +1207,8 @@ export default function Orders() {
                       <Input
                         type="number"
                         placeholder="₪"
-                        value={filters.maxAmount}
-                        onChange={(e) => setFilters({...filters, maxAmount: e.target.value})}
+                        value={tempFilters.maxAmount}
+                        onChange={(e) => setTempFilters({...tempFilters, maxAmount: e.target.value})}
                       />
                     </div>
 
@@ -1207,18 +1217,25 @@ export default function Orders() {
                       <Input
                         type="number"
                         placeholder="%"
-                        value={filters.minMargin}
-                        onChange={(e) => setFilters({...filters, minMargin: e.target.value})}
+                        value={tempFilters.minMargin}
+                        onChange={(e) => setTempFilters({...tempFilters, minMargin: e.target.value})}
                       />
                     </div>
                   </div>
 
-                  <div className="flex justify-end mt-4">
-                    <Button variant="outline" onClick={() => setFilters({
-                      site: 'all', status: 'all', dateRange: 'all', paymentStatus: 'all',
-                      minAmount: '', maxAmount: '', minMargin: '', country: 'all'
-                    })}>
+                  <div className="flex justify-end gap-2 mt-4">
+                    <Button variant="outline" onClick={() => {
+                      const clearedFilters = {
+                        site: 'all', status: 'all', dateRange: 'all', paymentStatus: 'all',
+                        minAmount: '', maxAmount: '', minMargin: '', country: 'all'
+                      };
+                      setTempFilters(clearedFilters);
+                      setFilters(clearedFilters);
+                    }}>
                       נקה מסננים
+                    </Button>
+                    <Button onClick={() => setFilters(tempFilters)} className="bg-black hover:bg-stone-800">
+                      החל מסננים
                     </Button>
                   </div>
                 </CardContent>
