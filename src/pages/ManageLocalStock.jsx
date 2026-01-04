@@ -77,6 +77,7 @@ export default function ManageLocalStock() {
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [waitingListDialog, setWaitingListDialog] = useState({ open: false, itemId: null, itemName: '' });
+  const [showImageForItems, setShowImageForItems] = useState(new Set());
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -796,13 +797,43 @@ export default function ManageLocalStock() {
                         </div>
                       </td>
                       <td className="p-2">
-                        {item.image_url ? (
-                          <img src={item.image_url} alt={item.product_name} className="w-12 h-12 object-cover rounded" />
-                        ) : (
-                          <div className="w-12 h-12 bg-stone-200 rounded flex items-center justify-center">
-                            <ImageIcon className="w-6 h-6 text-stone-400" />
-                          </div>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {showImageForItems.has(item.id) ? (
+                            item.image_url ? (
+                              <img src={item.image_url} alt={item.product_name} className="w-12 h-12 object-cover rounded" />
+                            ) : (
+                              <div className="w-12 h-12 bg-stone-200 rounded flex items-center justify-center">
+                                <ImageIcon className="w-6 h-6 text-stone-400" />
+                              </div>
+                            )
+                          ) : (
+                            <div className="w-12 h-12 bg-stone-100 rounded flex items-center justify-center">
+                              <ImageIcon className="w-6 h-6 text-stone-300" />
+                            </div>
+                          )}
+                          {item.image_url && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0"
+                              onClick={() => setShowImageForItems(prev => {
+                                const next = new Set(prev);
+                                if (next.has(item.id)) {
+                                  next.delete(item.id);
+                                } else {
+                                  next.add(item.id);
+                                }
+                                return next;
+                              })}
+                            >
+                              {showImageForItems.has(item.id) ? (
+                                <EyeOff className="w-4 h-4" />
+                              ) : (
+                                <Eye className="w-4 h-4" />
+                              )}
+                            </Button>
+                          )}
+                        </div>
                       </td>
                       <td className="p-2 font-medium text-right">{item.product_name}</td>
                       <td className="p-2 text-right">₪{item.price_ils}</td>
