@@ -307,7 +307,6 @@ export default function LocalStock() {
                             </button>
                     }
                         </div>
-                  }
                       <div className="px-4 py-3">
                         <div className="space-y-2">
                           <h3 className="font-medium text-sm text-stone-800">
