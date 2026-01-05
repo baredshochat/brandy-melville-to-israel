@@ -214,15 +214,15 @@ export default function LocalStock() {
             <h1 className="text-2xl sm:text-3xl font-light text-stone-800 mb-2">זמין במלאי</h1>
             <p className="text-sm text-stone-500 font-light">אספקה מהירה עד הבית תוך 3-7 ימי עסקים
 
-למען שמירה על זכויות יוצרים, הסרנו את תמונות הפריטים. לינק לאתר המקורי מופיע בתיאור כל פריט</p>
+ למען שמירה על זכויות יוצרים, הסרנו את כל התמונות 
+לינק לפריט המקורי מופיע בתיאור כל פריט</p>
           </motion.div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {user && user.role === 'admin' && <div className="mb-6 flex justify-end gap-3">
-            <Button onClick={() => window.location.href = createPageUrl('ManageLocalStock')}
-          className="bg-stone-800 hover:bg-stone-900 text-white flex items-center gap-2">
+            <Button onClick={() => window.location.href = createPageUrl('ManageLocalStock')} className="bg-stone-800 hover:bg-stone-900 text-white flex items-center gap-2">
               <Settings className="w-4 h-4" />
               ניהול מלאי
             </Button>
