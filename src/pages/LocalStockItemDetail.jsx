@@ -163,44 +163,52 @@ export default function LocalStockItemDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 bg-white p-6 sm:p-8 shadow-lg">
           {/* Image Gallery */}
           <div className="space-y-4">
-            {/* Main Image */}
-            <motion.div
-              key={selectedImage}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="w-full bg-stone-100 overflow-hidden flex items-center justify-center"
-              style={{ minHeight: '400px' }}>
+            {item.show_image && allImages.length > 0 ? (
+              <>
+                {/* Main Image */}
+                <motion.div
+                  key={selectedImage}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="w-full bg-stone-100 overflow-hidden flex items-center justify-center"
+                  style={{ minHeight: '400px' }}>
 
-              <img
-                src={allImages[selectedImage]}
-                alt={item.product_name}
-                className="w-full h-auto object-contain max-h-[600px]" />
+                  <img
+                    src={allImages[selectedImage]}
+                    alt={item.product_name}
+                    className="w-full h-auto object-contain max-h-[600px]" />
 
-            </motion.div>
+                </motion.div>
 
-            {/* Thumbnail Gallery */}
-            {allImages.length > 1 &&
-            <div className="grid grid-cols-5 gap-2">
-                {allImages.map((img, index) =>
-              <button
-                key={index}
-                onClick={() => setSelectedImage(index)}
-                className={`w-full bg-stone-100 overflow-hidden border-2 transition-all flex items-center justify-center ${
-                selectedImage === index ?
-                'border-rose-400' :
-                'border-stone-200 hover:border-stone-400'}`
+                {/* Thumbnail Gallery */}
+                {allImages.length > 1 &&
+                <div className="grid grid-cols-5 gap-2">
+                    {allImages.map((img, index) =>
+                  <button
+                    key={index}
+                    onClick={() => setSelectedImage(index)}
+                    className={`w-full bg-stone-100 overflow-hidden border-2 transition-all flex items-center justify-center ${
+                    selectedImage === index ?
+                    'border-rose-400' :
+                    'border-stone-200 hover:border-stone-400'}`
+                    }
+                    style={{ height: '100px' }}>
+
+                        <img
+                      src={img}
+                      alt={`${item.product_name} ${index + 1}`}
+                      className="w-full h-full object-contain p-1" />
+
+                      </button>
+                  )}
+                  </div>
                 }
-                style={{ height: '100px' }}>
-
-                    <img
-                  src={img}
-                  alt={`${item.product_name} ${index + 1}`}
-                  className="w-full h-full object-contain p-1" />
-
-                  </button>
-              )}
+              </>
+            ) : (
+              <div className="w-full bg-white overflow-hidden flex items-center justify-center" style={{ minHeight: '400px' }}>
+                <Heart className="w-24 h-24 text-rose-200 fill-rose-200" />
               </div>
-            }
+            )}
           </div>
 
           {/* Product Details */}
