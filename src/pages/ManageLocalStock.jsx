@@ -699,104 +699,108 @@ export default function ManageLocalStock() {
                     />
                   </div>
 
-                  <div>
-                    <Label>צבע</Label>
-                    <div className="flex gap-2">
-                      <Select 
-                        value={formData.color || ''} 
-                        onValueChange={(val) => {
-                          const colorMap = {
-                            'שחור': '#000000',
-                            'לבן': '#FFFFFF',
-                            'אדום': '#DC2626',
-                            'כחול': '#2563EB',
-                            'ירוק': '#16A34A',
-                            'צהוב': '#EAB308',
-                            'ורוד': '#EC4899',
-                            'סגול': '#9333EA',
-                            'אפור': '#6B7280',
-                            'חום': '#92400E',
-                            'בז׳': '#D4A574',
-                            'תכלת': '#0EA5E9',
-                            'כתום': '#F97316',
-                            'בורדו': '#7C2D12'
-                          };
-                          setFormData({ ...formData, color: val, color_hex: colorMap[val] || '#CCCCCC' });
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="בחר צבע">
-                            {formData.color && (
-                              <div className="flex items-center gap-2">
-                                {formData.color_hex && (
-                                  <div 
-                                    className="w-4 h-4 border border-stone-300" 
-                                    style={{ backgroundColor: formData.color_hex }}
-                                  />
-                                )}
-                                <span>{formData.color}</span>
-                              </div>
-                            )}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={null}>ללא צבע</SelectItem>
-                          <SelectItem value="שחור">⬛ שחור</SelectItem>
-                          <SelectItem value="לבן">⬜ לבן</SelectItem>
-                          <SelectItem value="אדום">🟥 אדום</SelectItem>
-                          <SelectItem value="כחול">🟦 כחול</SelectItem>
-                          <SelectItem value="ירוק">🟩 ירוק</SelectItem>
-                          <SelectItem value="צהוב">🟨 צהוב</SelectItem>
-                          <SelectItem value="ורוד">🩷 ורוד</SelectItem>
-                          <SelectItem value="סגול">🟪 סגול</SelectItem>
-                          <SelectItem value="אפור">⬜ אפור</SelectItem>
-                          <SelectItem value="חום">🟫 חום</SelectItem>
-                          <SelectItem value="בז׳">🟨 בז׳</SelectItem>
-                          <SelectItem value="תכלת">🔷 תכלת</SelectItem>
-                          <SelectItem value="כתום">🟧 כתום</SelectItem>
-                          <SelectItem value="בורדו">🟥 בורדו</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {formData.image_url && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={async () => {
-                            setExtractingFromUrl(true);
-                            try {
-                              const result = await InvokeLLM({
-                                prompt: `נתח את התמונה הזו של בגד/אביזר ומצא את הצבע העיקרי שלו.
-                                
-                                החזר JSON עם:
-                                - color_name: שם הצבע בעברית (לדוגמה: "שחור", "לבן", "ורוד", "כחול", "אדום", "ירוק", "אפור", "בז'", "חום", "סגול")
-                                - color_hex: קוד צבע HEX (לדוגמה: "#000000", "#FFFFFF", "#FFC0CB")
-                                
-                                תן את הצבע הדומיננטי ביותר בבגד.`,
-                                file_urls: [formData.image_url],
-                                response_json_schema: {
-                                  type: "object",
-                                  properties: {
-                                    color_name: { type: "string" },
-                                    color_hex: { type: "string" }
-                                  }
-                                }
-                              });
-
-                              if (result?.color_name && result?.color_hex) {
-                                setFormData({ ...formData, color: result.color_name, color_hex: result.color_hex });
-                              }
-                            } catch (error) {
-                              alert("שגיאה בזיהוי הצבע");
-                            } finally {
-                              setExtractingFromUrl(false);
-                            }
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label>צבע (טקסט)</Label>
+                      <Input
+                        value={formData.color || ''}
+                        onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                        placeholder="כתוב שם צבע..."
+                      />
+                    </div>
+                    <div>
+                      <Label>קוד צבע (HEX)</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="color"
+                          value={formData.color_hex || '#CCCCCC'}
+                          onChange={(e) => setFormData({ ...formData, color_hex: e.target.value })}
+                          className="h-10 w-16 p-1"
+                        />
+                        <Select 
+                          value="" 
+                          onValueChange={(val) => {
+                            if (!val) return;
+                            const colorMap = {
+                              'שחור': '#000000',
+                              'לבן': '#FFFFFF',
+                              'אדום': '#DC2626',
+                              'כחול': '#2563EB',
+                              'ירוק': '#16A34A',
+                              'צהוב': '#EAB308',
+                              'ורוד': '#EC4899',
+                              'סגול': '#9333EA',
+                              'אפור': '#6B7280',
+                              'חום': '#92400E',
+                              'בז׳': '#D4A574',
+                              'תכלת': '#0EA5E9',
+                              'כתום': '#F97316',
+                              'בורדו': '#7C2D12'
+                            };
+                            setFormData({ ...formData, color: val, color_hex: colorMap[val] || '#CCCCCC' });
                           }}
-                          disabled={extractingFromUrl}
                         >
-                          {extractingFromUrl ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
-                        </Button>
-                      )}
+                          <SelectTrigger className="flex-1">
+                            <SelectValue placeholder="או בחר" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="שחור">⬛ שחור</SelectItem>
+                            <SelectItem value="לבן">⬜ לבן</SelectItem>
+                            <SelectItem value="אדום">🟥 אדום</SelectItem>
+                            <SelectItem value="כחול">🟦 כחול</SelectItem>
+                            <SelectItem value="ירוק">🟩 ירוק</SelectItem>
+                            <SelectItem value="צהוב">🟨 צהוב</SelectItem>
+                            <SelectItem value="ורוד">🩷 ורוד</SelectItem>
+                            <SelectItem value="סגול">🟪 סגול</SelectItem>
+                            <SelectItem value="אפור">⬜ אפור</SelectItem>
+                            <SelectItem value="חום">🟫 חום</SelectItem>
+                            <SelectItem value="בז׳">🟨 בז׳</SelectItem>
+                            <SelectItem value="תכלת">🔷 תכלת</SelectItem>
+                            <SelectItem value="כתום">🟧 כתום</SelectItem>
+                            <SelectItem value="בורדו">🟥 בורדו</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {formData.image_url && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={async () => {
+                              setExtractingFromUrl(true);
+                              try {
+                                const result = await InvokeLLM({
+                                  prompt: `נתח את התמונה הזו של בגד/אביזר ומצא את הצבע העיקרי שלו.
+                                  
+                                  החזר JSON עם:
+                                  - color_name: שם הצבע בעברית (לדוגמה: "שחור", "לבן", "ורוד", "כחול", "אדום", "ירוק", "אפור", "בז'", "חום", "סגול")
+                                  - color_hex: קוד צבע HEX (לדוגמה: "#000000", "#FFFFFF", "#FFC0CB")
+                                  
+                                  תן את הצבע הדומיננטי ביותר בבגד.`,
+                                  file_urls: [formData.image_url],
+                                  response_json_schema: {
+                                    type: "object",
+                                    properties: {
+                                      color_name: { type: "string" },
+                                      color_hex: { type: "string" }
+                                    }
+                                  }
+                                });
+
+                                if (result?.color_name && result?.color_hex) {
+                                  setFormData({ ...formData, color: result.color_name, color_hex: result.color_hex });
+                                }
+                              } catch (error) {
+                                alert("שגיאה בזיהוי הצבע");
+                              } finally {
+                                setExtractingFromUrl(false);
+                              }
+                            }}
+                            disabled={extractingFromUrl}
+                          >
+                            {extractingFromUrl ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
 
