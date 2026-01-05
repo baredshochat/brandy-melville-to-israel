@@ -324,17 +324,21 @@ export default function LocalStockItemDetail() {
               <p className="text-xs text-stone-500">
                 (לא כולל שישי-שבת, חגים ומועדים)
               </p>
-              {item.source_url && (
+            </div>
+
+            {/* Source URL Link */}
+            {item.source_url && (
+              <div className="p-3 bg-blue-50 border border-blue-200">
                 <a 
                   href={item.source_url} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="text-xs text-rose-600 hover:text-rose-700 underline block mt-2"
+                  className="text-sm text-blue-600 hover:text-blue-700 underline flex items-center gap-2"
                 >
-                  🔗 צפייה באתר המקורי
+                  🔗 צפייה בפריט המקורי באתר ברנדי
                 </a>
-              )}
-            </div>
+              </div>
+            )}
 
 
           </div>
