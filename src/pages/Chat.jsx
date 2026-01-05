@@ -12,7 +12,7 @@ import { Order } from '@/entities/Order';
 import MessageContent from '../components/chat/MessageContent';
 
 // The context for the AI assistant
-const CONTEXT_PROMPT =׳ את צ’אטבוט שירות הלקוחות של חנות Brandy-style בישראל.
+const CONTEXT_PROMPT = ` את צ’אטבוט שירות הלקוחות של חנות Brandy-style בישראל.
 המטרה: לפתור לפחות 90% מהפניות באופן עצמאי, בצורה נעימה, ברורה ומקצועית, ולצמצם העברה לנציג אנושי.
 
 טון שיחה:
