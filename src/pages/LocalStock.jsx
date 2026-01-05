@@ -313,9 +313,18 @@ export default function LocalStock() {
                             {item.product_name}
                           </h3>
                           {(item.color || item.size) && (
-                            <p className="text-xs text-stone-500">
-                              {[item.color, item.size].filter(Boolean).join(' • ')}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              {item.color && item.color_hex && (
+                                <div 
+                                  className="w-4 h-4 border border-stone-300 flex-shrink-0" 
+                                  style={{ backgroundColor: item.color_hex }}
+                                  title={item.color}
+                                />
+                              )}
+                              <p className="text-xs text-stone-500">
+                                {[item.color, item.size].filter(Boolean).join(' • ')}
+                              </p>
+                            </div>
                           )}
                           <p className="text-stone-800 text-lg font-semibold">
                             ₪{item.price_ils}

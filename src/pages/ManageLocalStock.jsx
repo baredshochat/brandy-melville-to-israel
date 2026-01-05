@@ -69,6 +69,8 @@ export default function ManageLocalStock() {
   const [waitingCounts, setWaitingCounts] = useState({});
   const [editingQuantity, setEditingQuantity] = useState(null);
   const [editingUrl, setEditingUrl] = useState(null);
+  const [editingColor, setEditingColor] = useState(null);
+  const [extractingColor, setExtractingColor] = useState(null);
   const [reorderSuggestions, setReorderSuggestions] = useState([]);
   const [historyDialog, setHistoryDialog] = useState({ open: false, itemId: null, itemName: '' });
   const [selectedItems, setSelectedItems] = useState(new Set());
@@ -467,6 +469,55 @@ export default function ManageLocalStock() {
     }
   };
 
+  const handleQuickColorUpdate = async (itemId, colorName, colorHex) => {
+    try {
+      await LocalStockItem.update(itemId, { color: colorName, color_hex: colorHex });
+      loadItems();
+      setEditingColor(null);
+    } catch (error) {
+      console.error("Error updating color:", error);
+      alert("שגיאה בעדכון הצבע");
+    }
+  };
+
+  const handleExtractColorFromImage = async (itemId) => {
+    const item = items.find(i => i.id === itemId);
+    if (!item?.image_url) {
+      alert("אין תמונה לפריט זה");
+      return;
+    }
+
+    setExtractingColor(itemId);
+    try {
+      const result = await InvokeLLM({
+        prompt: `נתח את התמונה הזו של בגד/אביזר ומצא את הצבע העיקרי שלו.
+        
+        החזר JSON עם:
+        - color_name: שם הצבע בעברית (לדוגמה: "שחור", "לבן", "ורוד", "כחול", "אדום", "ירוק", "אפור", "בז'", "חום", "סגול")
+        - color_hex: קוד צבע HEX (לדוגמה: "#000000", "#FFFFFF", "#FFC0CB")
+        
+        תן את הצבע הדומיננטי ביותר בבגד.`,
+        file_urls: [item.image_url],
+        response_json_schema: {
+          type: "object",
+          properties: {
+            color_name: { type: "string" },
+            color_hex: { type: "string" }
+          }
+        }
+      });
+
+      if (result?.color_name && result?.color_hex) {
+        await handleQuickColorUpdate(itemId, result.color_name, result.color_hex);
+      }
+    } catch (error) {
+      console.error("Error extracting color:", error);
+      alert("שגיאה בזיהוי הצבע");
+    } finally {
+      setExtractingColor(null);
+    }
+  };
+
   if (userRole !== 'admin') {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
@@ -650,10 +701,103 @@ export default function ManageLocalStock() {
 
                   <div>
                     <Label>צבע</Label>
-                    <Input
-                      value={formData.color}
-                      onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                    />
+                    <div className="flex gap-2">
+                      <Select 
+                        value={formData.color || ''} 
+                        onValueChange={(val) => {
+                          const colorMap = {
+                            'שחור': '#000000',
+                            'לבן': '#FFFFFF',
+                            'אדום': '#DC2626',
+                            'כחול': '#2563EB',
+                            'ירוק': '#16A34A',
+                            'צהוב': '#EAB308',
+                            'ורוד': '#EC4899',
+                            'סגול': '#9333EA',
+                            'אפור': '#6B7280',
+                            'חום': '#92400E',
+                            'בז׳': '#D4A574',
+                            'תכלת': '#0EA5E9',
+                            'כתום': '#F97316',
+                            'בורדו': '#7C2D12'
+                          };
+                          setFormData({ ...formData, color: val, color_hex: colorMap[val] || '#CCCCCC' });
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="בחר צבע">
+                            {formData.color && (
+                              <div className="flex items-center gap-2">
+                                {formData.color_hex && (
+                                  <div 
+                                    className="w-4 h-4 border border-stone-300" 
+                                    style={{ backgroundColor: formData.color_hex }}
+                                  />
+                                )}
+                                <span>{formData.color}</span>
+                              </div>
+                            )}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={null}>ללא צבע</SelectItem>
+                          <SelectItem value="שחור">⬛ שחור</SelectItem>
+                          <SelectItem value="לבן">⬜ לבן</SelectItem>
+                          <SelectItem value="אדום">🟥 אדום</SelectItem>
+                          <SelectItem value="כחול">🟦 כחול</SelectItem>
+                          <SelectItem value="ירוק">🟩 ירוק</SelectItem>
+                          <SelectItem value="צהוב">🟨 צהוב</SelectItem>
+                          <SelectItem value="ורוד">🩷 ורוד</SelectItem>
+                          <SelectItem value="סגול">🟪 סגול</SelectItem>
+                          <SelectItem value="אפור">⬜ אפור</SelectItem>
+                          <SelectItem value="חום">🟫 חום</SelectItem>
+                          <SelectItem value="בז׳">🟨 בז׳</SelectItem>
+                          <SelectItem value="תכלת">🔷 תכלת</SelectItem>
+                          <SelectItem value="כתום">🟧 כתום</SelectItem>
+                          <SelectItem value="בורדו">🟥 בורדו</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {formData.image_url && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            setExtractingFromUrl(true);
+                            try {
+                              const result = await InvokeLLM({
+                                prompt: `נתח את התמונה הזו של בגד/אביזר ומצא את הצבע העיקרי שלו.
+                                
+                                החזר JSON עם:
+                                - color_name: שם הצבע בעברית (לדוגמה: "שחור", "לבן", "ורוד", "כחול", "אדום", "ירוק", "אפור", "בז'", "חום", "סגול")
+                                - color_hex: קוד צבע HEX (לדוגמה: "#000000", "#FFFFFF", "#FFC0CB")
+                                
+                                תן את הצבע הדומיננטי ביותר בבגד.`,
+                                file_urls: [formData.image_url],
+                                response_json_schema: {
+                                  type: "object",
+                                  properties: {
+                                    color_name: { type: "string" },
+                                    color_hex: { type: "string" }
+                                  }
+                                }
+                              });
+
+                              if (result?.color_name && result?.color_hex) {
+                                setFormData({ ...formData, color: result.color_name, color_hex: result.color_hex });
+                              }
+                            } catch (error) {
+                              alert("שגיאה בזיהוי הצבע");
+                            } finally {
+                              setExtractingFromUrl(false);
+                            }
+                          }}
+                          disabled={extractingFromUrl}
+                        >
+                          {extractingFromUrl ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
+                        </Button>
+                      )}
+                    </div>
                   </div>
 
                   <div>
@@ -792,7 +936,8 @@ export default function ManageLocalStock() {
                     <th className="text-right p-2">מחיר</th>
                     <th className="text-right p-2">כמות</th>
                     <th className="text-right p-2">ממתינים</th>
-                    <th className="text-right p-2">צבע/מידה</th>
+                    <th className="text-right p-2">צבע</th>
+                    <th className="text-right p-2">מידה</th>
                     <th className="text-right p-2">סטטוס</th>
                     <th className="text-right p-2">פעולות</th>
                   </tr>
@@ -917,8 +1062,188 @@ export default function ManageLocalStock() {
                           </button>
                         )}
                       </td>
+                      <td className="p-2 text-right">
+                        {editingColor === item.id ? (
+                          <div className="flex items-center gap-1">
+                            <select
+                              defaultValue={item.color || ''}
+                              onBlur={(e) => {
+                                const colorName = e.target.value;
+                                const colorMap = {
+                                  'שחור': '#000000',
+                                  'לבן': '#FFFFFF',
+                                  'אדום': '#DC2626',
+                                  'כחול': '#2563EB',
+                                  'ירוק': '#16A34A',
+                                  'צהוב': '#EAB308',
+                                  'ורוד': '#EC4899',
+                                  'סגול': '#9333EA',
+                                  'אפור': '#6B7280',
+                                  'חום': '#92400E',
+                                  'בז׳': '#D4A574',
+                                  'תכלת': '#0EA5E9',
+                                  'כתום': '#F97316',
+                                  'בורדו': '#7C2D12'
+                                };
+                                handleQuickColorUpdate(item.id, colorName, colorMap[colorName] || '#CCCCCC');
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  const colorName = e.target.value;
+                                  const colorMap = {
+                                    'שחור': '#000000',
+                                    'לבן': '#FFFFFF',
+                                    'אדום': '#DC2626',
+                                    'כחול': '#2563EB',
+                                    'ירוק': '#16A34A',
+                                    'צהוב': '#EAB308',
+                                    'ורוד': '#EC4899',
+                                    'סגול': '#9333EA',
+                                    'אפור': '#6B7280',
+                                    'חום': '#92400E',
+                                    'בז׳': '#D4A574',
+                                    'תכלת': '#0EA5E9',
+                                    'כתום': '#F97316',
+                                    'בורדו': '#7C2D12'
+                                  };
+                                  handleQuickColorUpdate(item.id, colorName, colorMap[colorName] || '#CCCCCC');
+                                } else if (e.key === 'Escape') {
+                                  setEditingColor(null);
+                                }
+                              }}
+                              className="h-8 text-sm px-2 border rounded"
+                              autoFocus
+                            >
+                              <option value="">בחר צבע</option>
+                              <option value="שחור">שחור</option>
+                              <option value="לבן">לבן</option>
+                              <option value="אדום">אדום</option>
+                              <option value="כחול">כחול</option>
+                              <option value="ירוק">ירוק</option>
+                              <option value="צהוב">צהוב</option>
+                              <option value="ורוד">ורוד</option>
+                              <option value="סגול">סגול</option>
+                              <option value="אפור">אפור</option>
+                              <option value="חום">חום</option>
+                              <option value="בז׳">בז׳</option>
+                              <option value="תכלת">תכלת</option>
+                              <option value="כתום">כתום</option>
+                              <option value="בורדו">בורדו</option>
+                            </select>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setEditingColor(item.id)}
+                            className="hover:underline flex items-center gap-2"
+                          >
+                            {item.color ? (
+                              <>
+                                {item.color_hex && (
+                                  <div 
+                                    className="w-4 h-4 border border-stone-300 flex-shrink-0" 
+                                    style={{ backgroundColor: item.color_hex }}
+                                  />
+                                )}
+                                <span className="text-xs">{item.color}</span>
+                              </>
+                            ) : (
+                              <span className="text-stone-400 text-xs">+ צבע</span>
+                            )}
+                          </button>
+                        )}
+                      </td>
+                      <td className="p-2 text-right">
+                        {editingColor === item.id ? (
+                          <div className="flex items-center gap-1">
+                            <select
+                              defaultValue={item.color || ''}
+                              onBlur={(e) => {
+                                const colorName = e.target.value;
+                                const colorMap = {
+                                  'שחור': '#000000',
+                                  'לבן': '#FFFFFF',
+                                  'אדום': '#DC2626',
+                                  'כחול': '#2563EB',
+                                  'ירוק': '#16A34A',
+                                  'צהוב': '#EAB308',
+                                  'ורוד': '#EC4899',
+                                  'סגול': '#9333EA',
+                                  'אפור': '#6B7280',
+                                  'חום': '#92400E',
+                                  'בז׳': '#D4A574',
+                                  'תכלת': '#0EA5E9',
+                                  'כתום': '#F97316',
+                                  'בורדו': '#7C2D12'
+                                };
+                                handleQuickColorUpdate(item.id, colorName, colorMap[colorName] || '#CCCCCC');
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  const colorName = e.target.value;
+                                  const colorMap = {
+                                    'שחור': '#000000',
+                                    'לבן': '#FFFFFF',
+                                    'אדום': '#DC2626',
+                                    'כחול': '#2563EB',
+                                    'ירוק': '#16A34A',
+                                    'צהוב': '#EAB308',
+                                    'ורוד': '#EC4899',
+                                    'סגול': '#9333EA',
+                                    'אפור': '#6B7280',
+                                    'חום': '#92400E',
+                                    'בז׳': '#D4A574',
+                                    'תכלת': '#0EA5E9',
+                                    'כתום': '#F97316',
+                                    'בורדו': '#7C2D12'
+                                  };
+                                  handleQuickColorUpdate(item.id, colorName, colorMap[colorName] || '#CCCCCC');
+                                } else if (e.key === 'Escape') {
+                                  setEditingColor(null);
+                                }
+                              }}
+                              className="h-8 text-sm px-2 border rounded"
+                              autoFocus
+                            >
+                              <option value="">ללא צבע</option>
+                              <option value="שחור">שחור</option>
+                              <option value="לבן">לבן</option>
+                              <option value="אדום">אדום</option>
+                              <option value="כחול">כחול</option>
+                              <option value="ירוק">ירוק</option>
+                              <option value="צהוב">צהוב</option>
+                              <option value="ורוד">ורוד</option>
+                              <option value="סגול">סגול</option>
+                              <option value="אפור">אפור</option>
+                              <option value="חום">חום</option>
+                              <option value="בז׳">בז׳</option>
+                              <option value="תכלת">תכלת</option>
+                              <option value="כתום">כתום</option>
+                              <option value="בורדו">בורדו</option>
+                            </select>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setEditingColor(item.id)}
+                            className="hover:underline flex items-center gap-2"
+                          >
+                            {item.color ? (
+                              <>
+                                {item.color_hex && (
+                                  <div 
+                                    className="w-4 h-4 border border-stone-300 flex-shrink-0" 
+                                    style={{ backgroundColor: item.color_hex }}
+                                  />
+                                )}
+                                <span className="text-xs">{item.color}</span>
+                              </>
+                            ) : (
+                              <span className="text-stone-400 text-xs">+ צבע</span>
+                            )}
+                          </button>
+                        )}
+                      </td>
                       <td className="p-2 text-right text-stone-500">
-                        {[item.color, item.size].filter(Boolean).join(' / ') || '—'}
+                        {item.size || '—'}
                       </td>
                       <td className="p-2 text-right">
                         <div className="flex flex-col gap-1 items-end">
@@ -957,6 +1282,17 @@ export default function ManageLocalStock() {
                             <DropdownMenuItem onClick={() => handleDuplicate(item)}>
                               <Copy className="w-4 h-4 ml-2" />
                               שכפול
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleExtractColorFromImage(item.id)}
+                              disabled={!item.image_url || extractingColor === item.id}
+                            >
+                              {extractingColor === item.id ? (
+                                <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                              ) : (
+                                <ImageIcon className="w-4 h-4 ml-2" />
+                              )}
+                              זהה צבע מתמונה
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               onClick={async () => {
