@@ -320,6 +320,18 @@ export default function LocalStock() {
                           <p className="text-stone-800 text-lg font-semibold">
                             ₪{item.price_ils}
                           </p>
+
+                          {item.source_url && (
+                            <a
+                              href={item.source_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-xs text-blue-600 hover:text-blue-700 underline block"
+                            >
+                              🔗 לפריט באתר המקורי
+                            </a>
+                          )}
                           
                           {!item.show_image &&
                       <div className="flex gap-2">
