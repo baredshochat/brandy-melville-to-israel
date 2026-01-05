@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { ShoppingCart, Search, ArrowRight, Loader2, CheckCircle, Plus, Settings, Bell } from "lucide-react";
+import { ShoppingCart, Search, ArrowRight, Loader2, CheckCircle, Plus, Settings, Bell, Heart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPageUrl } from "@/utils";
 import DiscountBanner from '../components/home/DiscountBanner';
