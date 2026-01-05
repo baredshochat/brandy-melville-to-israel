@@ -232,7 +232,13 @@ export default function LocalStockItemDetail() {
             {/* Metadata */}
             <div className="flex flex-wrap gap-2">
               {item.color &&
-              <Badge variant="outline" className="px-2 py-1 text-xs">
+              <Badge variant="outline" className="px-2 py-1 text-xs flex items-center gap-2">
+                  {item.color_hex && (
+                    <div 
+                      className="w-4 h-4 border border-stone-300 flex-shrink-0" 
+                      style={{ backgroundColor: item.color_hex }}
+                    />
+                  )}
                   צבע: {item.color}
                 </Badge>
               }
