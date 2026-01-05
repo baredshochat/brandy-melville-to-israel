@@ -838,6 +838,43 @@ export default function ManageLocalStock() {
                         </div>
                       </td>
                       <td className="p-2 font-medium text-right">{item.product_name}</td>
+                      <td className="p-2 text-right">
+                        {editingUrl === item.id ? (
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="url"
+                              defaultValue={item.source_url || ''}
+                              onBlur={(e) => {
+                                handleQuickUrlUpdate(item.id, e.target.value);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  handleQuickUrlUpdate(item.id, e.target.value);
+                                } else if (e.key === 'Escape') {
+                                  setEditingUrl(null);
+                                }
+                              }}
+                              className="h-8 text-sm w-32"
+                              placeholder="https://..."
+                              autoFocus
+                            />
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setEditingUrl(item.id)}
+                            className="hover:underline text-right flex items-center gap-1"
+                          >
+                            {item.source_url ? (
+                              <>
+                                <LinkIcon className="w-3 h-3 text-blue-600" />
+                                <span className="text-blue-600 text-xs">יש</span>
+                              </>
+                            ) : (
+                              <span className="text-stone-400 text-xs">+ הוסף</span>
+                            )}
+                          </button>
+                        )}
+                      </td>
                       <td className="p-2 text-right">₪{item.price_ils}</td>
                       <td className="p-2 text-right">
                         {editingQuantity === item.id ? (
