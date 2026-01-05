@@ -212,10 +212,10 @@ export default function LocalStock() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center">
             <h1 className="text-2xl sm:text-3xl font-light text-stone-800 mb-2">זמין במלאי</h1>
-            <p className="text-sm text-stone-500 font-light">אספקה מהירה עד הבית תוך 3-7 ימי עסקים
+            <p className="text-sm text-stone-500 font-light">אספקה מהירה עד הבית תוך 3-7 ימי עסקים.
 
- למען שמירה על זכויות יוצרים, הסרנו את כל התמונות 
-לינק לפריט המקורי מופיע בתיאור כל פריט</p>
+ למען שמירה על זכויות יוצרים, הסרנו את כל התמונות
+ לינק לפריט המקורי מופיע בתיאור כל פריט</p>
           </motion.div>
         </div>
       </div>
