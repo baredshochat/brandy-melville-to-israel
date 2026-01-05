@@ -312,6 +312,11 @@ export default function LocalStock() {
                           <h3 className="font-medium text-sm text-stone-800">
                             {item.product_name}
                           </h3>
+                          {(item.color || item.size) && (
+                            <p className="text-xs text-stone-500">
+                              {[item.color, item.size].filter(Boolean).join(' • ')}
+                            </p>
+                          )}
                           <p className="text-stone-800 text-lg font-semibold">
                             ₪{item.price_ils}
                           </p>
