@@ -275,13 +275,8 @@ export default function LocalStock() {
                 onClick={() => window.location.href = createPageUrl('LocalStockItemDetail') + '?id=' + item.id}>
 
                     <CardContent className="p-0 relative">
-                      {item.show_image && item.image_url &&
-                  <div className="w-full bg-stone-50 overflow-hidden relative flex items-center justify-center" style={{ minHeight: '280px' }}>
-                          <img
-                      src={item.image_url}
-                      alt={item.product_name}
-                      className={`w-full h-auto object-contain transition-transform duration-300 ${item.quantity_available > 0 && item.is_available ? 'group-hover:scale-105' : ''}`}
-                      style={{ maxHeight: '320px' }} />
+                      <div className="w-full bg-white overflow-hidden relative flex items-center justify-center" style={{ minHeight: '280px' }}>
+                          <Heart className="w-20 h-20 text-rose-200 fill-rose-200" />
 
                           {item.quantity_available === 0 || !item.is_available ?
                     <button
