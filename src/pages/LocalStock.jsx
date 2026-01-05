@@ -198,8 +198,8 @@ export default function LocalStock() {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <Loader2 className="w-8 h-8 animate-spin text-rose-400" />
-      </div>
-    );
+      </div>);
+
   }
 
   return (
@@ -212,17 +212,17 @@ export default function LocalStock() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center">
             <h1 className="text-2xl sm:text-3xl font-light text-stone-800 mb-2">זמין במלאי</h1>
-            <p className="text-sm text-stone-500 font-light">אספקה מהירה עד הבית</p>
+            <p className="text-sm text-stone-500 font-light">אספקה מהירה עד הבית תוך 3-7 ימי עסקים
+
+למען שמירה על זכויות יוצרים, הסרנו את תמונות הפריטים. לינק לאתר המקורי מופיע בתיאור כל פריט</p>
           </motion.div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        {user && user.role === 'admin' &&
-        <div className="mb-6 flex justify-end gap-3">
-            <Button
-              onClick={() => window.location.href = createPageUrl('ManageLocalStock')}
-              className="bg-stone-800 hover:bg-stone-900 text-white flex items-center gap-2">
+        {user && user.role === 'admin' && <div className="mb-6 flex justify-end gap-3">
+            <Button onClick={() => window.location.href = createPageUrl('ManageLocalStock')}
+          className="bg-stone-800 hover:bg-stone-900 text-white flex items-center gap-2">
               <Settings className="w-4 h-4" />
               ניהול מלאי
             </Button>
@@ -277,43 +277,43 @@ export default function LocalStock() {
 
                     <CardContent className="p-0 relative">
                       {item.show_image && item.image_url &&
-                      <div className="w-full bg-stone-50 overflow-hidden relative flex items-center justify-center" style={{ minHeight: '280px' }}>
+                  <div className="w-full bg-stone-50 overflow-hidden relative flex items-center justify-center" style={{ minHeight: '280px' }}>
                           <img
-                          src={item.image_url}
-                          alt={item.product_name}
-                          className={`w-full h-auto object-contain transition-transform duration-300 ${item.quantity_available > 0 && item.is_available ? 'group-hover:scale-105' : ''}`}
-                          style={{ maxHeight: '320px' }} />
+                      src={item.image_url}
+                      alt={item.product_name}
+                      className={`w-full h-auto object-contain transition-transform duration-300 ${item.quantity_available > 0 && item.is_available ? 'group-hover:scale-105' : ''}`}
+                      style={{ maxHeight: '320px' }} />
 
                           {item.quantity_available === 0 || !item.is_available ?
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleNotifyRequest(item);
-                          }}
-                          className="absolute bottom-1 left-1 w-6 h-6 bg-white/80 hover:bg-white flex items-center justify-center rounded-full shadow-sm transition-all duration-200">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleNotifyRequest(item);
+                      }}
+                      className="absolute bottom-1 left-1 w-6 h-6 bg-white/80 hover:bg-white flex items-center justify-center rounded-full shadow-sm transition-all duration-200">
 
                               <Bell className="w-3 h-3 text-stone-800" />
                             </button> :
 
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAddToCart(item);
-                          }}
-                          disabled={addingToCart[item.id] || addedItems.has(item.id)}
-                          className="absolute bottom-1 left-1 w-6 h-6 bg-white/80 hover:bg-white flex items-center justify-center rounded-full shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAddToCart(item);
+                      }}
+                      disabled={addingToCart[item.id] || addedItems.has(item.id)}
+                      className="absolute bottom-1 left-1 w-6 h-6 bg-white/80 hover:bg-white flex items-center justify-center rounded-full shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
 
                               {addingToCart[item.id] ?
-                          <Loader2 className="w-3 h-3 animate-spin text-stone-800" /> :
-                          addedItems.has(item.id) ?
-                          <CheckCircle className="w-3 h-3 text-green-600" /> :
+                      <Loader2 className="w-3 h-3 animate-spin text-stone-800" /> :
+                      addedItems.has(item.id) ?
+                      <CheckCircle className="w-3 h-3 text-green-600" /> :
 
-                          <Plus className="w-3 h-3 text-stone-800" />
-                          }
-                            </button>
-                        }
-                        </div>
+                      <Plus className="w-3 h-3 text-stone-800" />
                       }
+                            </button>
+                    }
+                        </div>
+                  }
                       <div className="px-4 py-3">
                         <div className="space-y-2">
                           <h3 className="font-medium text-sm text-stone-800">
@@ -323,36 +323,36 @@ export default function LocalStock() {
                             ₪{item.price_ils}
                           </p>
                           
-                          {!item.show_image && (
-                            <div className="flex gap-2">
+                          {!item.show_image &&
+                      <div className="flex gap-2">
                               {item.quantity_available === 0 || !item.is_available ?
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleNotifyRequest(item);
-                                  }}
-                                  className="flex-1 px-3 py-2 bg-stone-100 hover:bg-stone-200 flex items-center justify-center gap-2 transition-all duration-200 text-sm">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleNotifyRequest(item);
+                          }}
+                          className="flex-1 px-3 py-2 bg-stone-100 hover:bg-stone-200 flex items-center justify-center gap-2 transition-all duration-200 text-sm">
                                   <Bell className="w-4 h-4 text-stone-800" />
                                   עדכן אותי
                                 </button> :
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleAddToCart(item);
-                                  }}
-                                  disabled={addingToCart[item.id] || addedItems.has(item.id)}
-                                  className="flex-1 px-3 py-2 bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddToCart(item);
+                          }}
+                          disabled={addingToCart[item.id] || addedItems.has(item.id)}
+                          className="flex-1 px-3 py-2 bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm">
                                   {addingToCart[item.id] ?
-                                    <Loader2 className="w-4 h-4 animate-spin" /> :
-                                    addedItems.has(item.id) ?
-                                    <CheckCircle className="w-4 h-4" /> :
-                                    <Plus className="w-4 h-4" />
-                                  }
+                          <Loader2 className="w-4 h-4 animate-spin" /> :
+                          addedItems.has(item.id) ?
+                          <CheckCircle className="w-4 h-4" /> :
+                          <Plus className="w-4 h-4" />
+                          }
                                   {addedItems.has(item.id) ? 'נוסף' : 'הוסף'}
                                 </button>
-                              }
+                        }
                             </div>
-                          )}
+                      }
                         </div>
                       </div>
                     </CardContent>
