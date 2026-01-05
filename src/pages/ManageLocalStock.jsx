@@ -776,6 +776,7 @@ export default function ManageLocalStock() {
                     </th>
                     <th className="text-right p-2">תמונה</th>
                     <th className="text-right p-2">שם</th>
+                    <th className="text-right p-2">לינק מקורי</th>
                     <th className="text-right p-2">מחיר</th>
                     <th className="text-right p-2">כמות</th>
                     <th className="text-right p-2">ממתינים</th>
@@ -825,6 +826,20 @@ export default function ManageLocalStock() {
                         </div>
                       </td>
                       <td className="p-2 font-medium text-right">{item.product_name}</td>
+                      <td className="p-2 text-right">
+                        {item.source_url ? (
+                          <a
+                            href={item.source_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-700 underline text-xs"
+                          >
+                            🔗 לינק
+                          </a>
+                        ) : (
+                          <span className="text-stone-400 text-xs">—</span>
+                        )}
+                      </td>
                       <td className="p-2 text-right">₪{item.price_ils}</td>
                       <td className="p-2 text-right">
                         {editingQuantity === item.id ? (
