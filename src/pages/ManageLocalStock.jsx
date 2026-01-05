@@ -1067,7 +1067,7 @@ export default function ManageLocalStock() {
                           <div className="flex items-center gap-1">
                             <select
                               defaultValue={item.color || ''}
-                              onBlur={(e) => {
+                              onChange={(e) => {
                                 const colorName = e.target.value;
                                 const colorMap = {
                                   'שחור': '#000000',
@@ -1086,121 +1086,9 @@ export default function ManageLocalStock() {
                                   'בורדו': '#7C2D12'
                                 };
                                 handleQuickColorUpdate(item.id, colorName, colorMap[colorName] || '#CCCCCC');
+                                setEditingColor(null);
                               }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  const colorName = e.target.value;
-                                  const colorMap = {
-                                    'שחור': '#000000',
-                                    'לבן': '#FFFFFF',
-                                    'אדום': '#DC2626',
-                                    'כחול': '#2563EB',
-                                    'ירוק': '#16A34A',
-                                    'צהוב': '#EAB308',
-                                    'ורוד': '#EC4899',
-                                    'סגול': '#9333EA',
-                                    'אפור': '#6B7280',
-                                    'חום': '#92400E',
-                                    'בז׳': '#D4A574',
-                                    'תכלת': '#0EA5E9',
-                                    'כתום': '#F97316',
-                                    'בורדו': '#7C2D12'
-                                  };
-                                  handleQuickColorUpdate(item.id, colorName, colorMap[colorName] || '#CCCCCC');
-                                } else if (e.key === 'Escape') {
-                                  setEditingColor(null);
-                                }
-                              }}
-                              className="h-8 text-sm px-2 border rounded"
-                              autoFocus
-                            >
-                              <option value="">בחר צבע</option>
-                              <option value="שחור">שחור</option>
-                              <option value="לבן">לבן</option>
-                              <option value="אדום">אדום</option>
-                              <option value="כחול">כחול</option>
-                              <option value="ירוק">ירוק</option>
-                              <option value="צהוב">צהוב</option>
-                              <option value="ורוד">ורוד</option>
-                              <option value="סגול">סגול</option>
-                              <option value="אפור">אפור</option>
-                              <option value="חום">חום</option>
-                              <option value="בז׳">בז׳</option>
-                              <option value="תכלת">תכלת</option>
-                              <option value="כתום">כתום</option>
-                              <option value="בורדו">בורדו</option>
-                            </select>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => setEditingColor(item.id)}
-                            className="hover:underline flex items-center gap-2"
-                          >
-                            {item.color ? (
-                              <>
-                                {item.color_hex && (
-                                  <div 
-                                    className="w-4 h-4 border border-stone-300 flex-shrink-0" 
-                                    style={{ backgroundColor: item.color_hex }}
-                                  />
-                                )}
-                                <span className="text-xs">{item.color}</span>
-                              </>
-                            ) : (
-                              <span className="text-stone-400 text-xs">+ צבע</span>
-                            )}
-                          </button>
-                        )}
-                      </td>
-                      <td className="p-2 text-right">
-                        {editingColor === item.id ? (
-                          <div className="flex items-center gap-1">
-                            <select
-                              defaultValue={item.color || ''}
-                              onBlur={(e) => {
-                                const colorName = e.target.value;
-                                const colorMap = {
-                                  'שחור': '#000000',
-                                  'לבן': '#FFFFFF',
-                                  'אדום': '#DC2626',
-                                  'כחול': '#2563EB',
-                                  'ירוק': '#16A34A',
-                                  'צהוב': '#EAB308',
-                                  'ורוד': '#EC4899',
-                                  'סגול': '#9333EA',
-                                  'אפור': '#6B7280',
-                                  'חום': '#92400E',
-                                  'בז׳': '#D4A574',
-                                  'תכלת': '#0EA5E9',
-                                  'כתום': '#F97316',
-                                  'בורדו': '#7C2D12'
-                                };
-                                handleQuickColorUpdate(item.id, colorName, colorMap[colorName] || '#CCCCCC');
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  const colorName = e.target.value;
-                                  const colorMap = {
-                                    'שחור': '#000000',
-                                    'לבן': '#FFFFFF',
-                                    'אדום': '#DC2626',
-                                    'כחול': '#2563EB',
-                                    'ירוק': '#16A34A',
-                                    'צהוב': '#EAB308',
-                                    'ורוד': '#EC4899',
-                                    'סגול': '#9333EA',
-                                    'אפור': '#6B7280',
-                                    'חום': '#92400E',
-                                    'בז׳': '#D4A574',
-                                    'תכלת': '#0EA5E9',
-                                    'כתום': '#F97316',
-                                    'בורדו': '#7C2D12'
-                                  };
-                                  handleQuickColorUpdate(item.id, colorName, colorMap[colorName] || '#CCCCCC');
-                                } else if (e.key === 'Escape') {
-                                  setEditingColor(null);
-                                }
-                              }}
+                              onBlur={() => setEditingColor(null)}
                               className="h-8 text-sm px-2 border rounded"
                               autoFocus
                             >
