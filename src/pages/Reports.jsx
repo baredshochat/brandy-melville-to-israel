@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Order } from "@/entities/Order";
 import { User } from "@/entities/User";
 import { createPageUrl } from "@/utils";
+import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -206,6 +207,39 @@ export default function ReportsPage() {
       .slice(0, 10);
   }, [filteredOrders]);
 
+  // Export all data to 6 CSV files
+  const handleExportAllData = async () => {
+    try {
+      setLoading(true);
+      const response = await base44.functions.invoke('exportAllData', {});
+      const result = response.data;
+      
+      if (!result.success) {
+        alert('שגיאה בייצוא הנתונים');
+        return;
+      }
+      
+      // Download each CSV file
+      const files = result.files;
+      Object.entries(files).forEach(([filename, content]) => {
+        const blob = new Blob(['\uFEFF' + content], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.click();
+        URL.revokeObjectURL(url);
+      });
+      
+      alert(`✅ הייצוא הושלם בהצלחה!\n\n6 קבצים הורדו:\n- orders.csv (${result.stats.orders} הזמנות)\n- order_items.csv\n- customers.csv (${result.stats.users} לקוחות)\n- products.csv (${result.stats.products} מוצרים)\n- income.csv\n- expenses.csv (${result.stats.expenses} הוצאות)`);
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('שגיאה בייצוא הנתונים');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Export to CSV function
   const exportToCSV = () => {
     const headers = [
@@ -313,7 +347,12 @@ export default function ReportsPage() {
 
           <Button onClick={exportToCSV} variant="outline">
             <Download className="w-4 h-4 mr-2" />
-            ייצא ל-CSV
+            ייצא דוח זה
+          </Button>
+          
+          <Button onClick={handleExportAllData} variant="outline" className="bg-stone-800 text-white hover:bg-stone-900">
+            <Download className="w-4 h-4 mr-2" />
+            ייצוא מלא (6 קבצים)
           </Button>
         </div>
       </div>
