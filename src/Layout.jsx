@@ -5,7 +5,7 @@ import { Home, Package, Truck, Settings, Heart, FileText, MessageSquare, BarChar
 import { User } from "@/entities/User";
 import SheetNav from './components/layout/SheetNav';
 import CartPopover from './components/layout/CartPopover';
-import LoyaltySignupPopup from './components/loyalty/LoyaltySignupPopup';
+
 
 const MAINTENANCE_MODE = false; // שנה ל-true כדי לסגור את האתר
 
@@ -56,7 +56,6 @@ export default function Layout({ children }) {
   const allNavLinks = [
   { name: "Home", label: "הזמנה חדשה", icon: Home, roles: ['admin', 'user'] },
   { name: "TrackOrder", label: "מעקב משלוח", icon: Truck, roles: ['admin', 'user'] },
-  { name: "LoyaltyClub", label: "מועדון לקוחות", icon: Heart, roles: ['admin', 'user'] },
   { name: "Chat", label: "שירות לקוחות", icon: MessageSquare, roles: ['admin', 'user'] },
   { name: "Terms", label: "תקנון", icon: FileText, roles: ['admin', 'user'] },
   { name: "Orders", label: "ניהול הזמנות", icon: Package, roles: ['admin'] },
@@ -64,8 +63,6 @@ export default function Layout({ children }) {
   { name: "Reports", label: "דוחות ואנליטיקה", icon: BarChart3, roles: ['admin'] },
   { name: "ProfitReports", label: "דוחות רווח נקי", icon: TrendingUp, roles: ['admin'] },
   { name: "ManageCoupons", label: "ניהול קופונים והטבות", icon: FileText, roles: ['admin'] },
-
-  { name: "LoyaltyAdmin", label: "ניהול מועדון לקוחות", icon: Heart, roles: ['admin'] },
   { name: "ChatLogs", label: "לוג שיחות צ'אט", icon: MessageSquare, roles: ['admin'] }];
 
 
@@ -73,7 +70,6 @@ export default function Layout({ children }) {
 
   return (
     <>
-      <LoyaltySignupPopup />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&display=swap');
         body { font-family: 'Assistant', sans-serif; background-color: #fcfbf9; color: #333; direction: rtl; }
