@@ -2,12 +2,13 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Link2, Loader2, CheckCircle, AlertTriangle, XCircle, ExternalLink, Copy } from "lucide-react";
+import { ArrowLeft, Link2, Loader2, CheckCircle, AlertTriangle, XCircle, ExternalLink, Copy, Upload, Image as ImageIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { InvokeLLM } from "@/integrations/Core";
+import { InvokeLLM, UploadFile } from "@/integrations/Core";
 import { CartItem } from "@/entities/CartItem";
 import { User } from "@/entities/User";
+import { base44 } from "@/api/base44Client";
 
 const siteInfo = {
   us: { name: 'ארצות הברית', flag: 'https://flagcdn.com/w160/us.png', domain: 'us.brandymelville.com', fullUrl: 'https://us.brandymelville.com' },
@@ -50,6 +51,9 @@ export default function CartImport({ site, onImportComplete, onBack, loading }) 
   const [status, setStatus] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [user, setUser] = useState(null);
+  const [importMode, setImportMode] = useState('url'); // 'url' or 'image'
+  const [selectedImages, setSelectedImages] = useState([]);
+  const [uploadedImageUrls, setUploadedImageUrls] = useState([]);
 
   const siteData = siteInfo[site];
 
@@ -75,6 +79,90 @@ export default function CartImport({ site, onImportComplete, onBack, loading }) 
   }, []);
 
   const updateUrl = (index, value) => { const next = [...urls]; next[index] = value; setUrls(next); };
+
+  const handleImageSelect = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    
+    // Limit to 5 images
+    const limitedFiles = files.slice(0, 5);
+    setSelectedImages(limitedFiles);
+    setStatus(null);
+  };
+
+  const handleImageImport = async () => {
+    if (selectedImages.length === 0) {
+      setStatus({ type: 'error', message: 'אנא בחרי לפחות תמונה אחת של עגלת הקניות.' });
+      return;
+    }
+
+    setProcessing(true);
+    setStatus({ type: 'info', message: 'מעלה תמונות...' });
+
+    try {
+      // Upload all images
+      const uploadPromises = selectedImages.map(async (file) => {
+        const result = await UploadFile({ file });
+        const normalized = await normalizeLLMResult(result);
+        return normalized?.file_url || normalized?.url;
+      });
+
+      const imageUrls = await Promise.all(uploadPromises);
+      const validImageUrls = imageUrls.filter(url => url);
+
+      if (validImageUrls.length === 0) {
+        setStatus({ type: 'error', message: 'שגיאה בהעלאת התמונות. נסי שוב.' });
+        setProcessing(false);
+        return;
+      }
+
+      setUploadedImageUrls(validImageUrls);
+      setStatus({ type: 'info', message: 'מנתח תמונות...' });
+
+      // Call backend function to analyze images
+      const response = await base44.functions.invoke('analyzeCartImages', {
+        file_urls: validImageUrls,
+        site: site
+      });
+
+      const normalized = await normalizeLLMResult(response);
+
+      if (!normalized?.success || !normalized?.items || normalized.items.length === 0) {
+        setStatus({ 
+          type: 'error', 
+          message: normalized?.error || 'לא זוהו פריטים בתמונות. אנא וודאי שהתמונה מציגה את עגלת הקניות בבירור.'
+        });
+        setProcessing(false);
+        return;
+      }
+
+      // Save all items to cart
+      const savedItems = [];
+      for (const item of normalized.items) {
+        let savedItem = await CartItem.create(item);
+        savedItem = await normalizeEntity(savedItem);
+        savedItems.push(savedItem);
+      }
+
+      setStatus({ 
+        type: 'success', 
+        message: `זוהו ${savedItems.length} פריטים בהצלחה! מעבירות אותך לסל...` 
+      });
+
+      setTimeout(() => {
+        onImportComplete?.(savedItems);
+      }, 1000);
+
+    } catch (error) {
+      console.error('Image import error:', error);
+      setStatus({ 
+        type: 'error', 
+        message: `שגיאה בניתוח התמונות: ${error.message}` 
+      });
+    } finally {
+      setProcessing(false);
+    }
+  };
 
   const validateUrls = (urlsToValidate, expectedSite) => {
     const currentSiteData = siteInfo[expectedSite];
@@ -271,26 +359,162 @@ Return ONLY a JSON object matching the schema; do not include extra text.
 
         <div className="text-center mb-6">
           <h2 className="text-2xl sm:text-4xl font-semibold text-stone-900 mb-3">הוספת מוצר לסל</h2>
-          <p className="text-sm sm:text-base text-stone-600">הדביקי קישור למוצר שאת רוצה להזמין</p>
+          <p className="text-sm sm:text-base text-stone-600">
+            {importMode === 'url' ? 'הדביקי קישור למוצר שאת רוצה להזמין' : 'העלי תמונה של עגלת הקניות שלך'}
+          </p>
         </div>
 
         <div className="bg-white p-4 sm:p-6 border border-stone-200 shadow-lg space-y-6">
-          <div className="space-y-4">
-            <h3 className="text-base sm:text-lg font-medium text-stone-800 flex items-center gap-2"><Link2 className="w-4 h-4 sm:w-5 sm:h-5" /> קישור למוצר</h3>
-            <div className="space-y-3">
-              <Input type="url" placeholder="הדביקי קישור למוצר..." value={urls[0]} onChange={(e) => updateUrl(0, e.target.value)} className="flex-1 text-left text-sm sm:text-base" dir="ltr" />
-            </div>
-            <Button onClick={handleManualImport} disabled={processing || urls.every((url) => !url.trim())} className="px-4 py-2 w-full h-10 sm:h-12 bg-stone-800 hover:bg-stone-900 text-white text-sm sm:text-base font-medium flex items-center justify-center gap-2">
-              {processing ? (<><Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" /> מעבד קישור...</>) : (<>הוספה לסל</>)}
-            </Button>
+          {/* Mode Selector */}
+          <div className="flex gap-2 p-1 bg-stone-100 rounded-lg">
+            <button
+              onClick={() => setImportMode('url')}
+              className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-all ${
+                importMode === 'url' 
+                  ? 'bg-white text-stone-900 shadow-sm' 
+                  : 'text-stone-600 hover:text-stone-900'
+              }`}
+            >
+              <Link2 className="w-4 h-4 inline-block ml-2" />
+              קישור למוצר
+            </button>
+            <button
+              onClick={() => setImportMode('image')}
+              className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-all ${
+                importMode === 'image' 
+                  ? 'bg-white text-stone-900 shadow-sm' 
+                  : 'text-stone-600 hover:text-stone-900'
+              }`}
+            >
+              <ImageIcon className="w-4 h-4 inline-block ml-2" />
+              תמונת עגלה
+            </button>
           </div>
 
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }} className="bg-rose-50 border border-rose-200 p-3 sm:p-4 mt-4 mb-6">
+          {/* URL Import Mode */}
+          {importMode === 'url' && (
+            <div className="space-y-4">
+              <h3 className="text-base sm:text-lg font-medium text-stone-800 flex items-center gap-2">
+                <Link2 className="w-4 h-4 sm:w-5 sm:h-5" /> קישור למוצר
+              </h3>
+              <div className="space-y-3">
+                <Input 
+                  type="url" 
+                  placeholder="הדביקי קישור למוצר..." 
+                  value={urls[0]} 
+                  onChange={(e) => updateUrl(0, e.target.value)} 
+                  className="flex-1 text-left text-sm sm:text-base" 
+                  dir="ltr" 
+                />
+              </div>
+              <Button 
+                onClick={handleManualImport} 
+                disabled={processing || urls.every((url) => !url.trim())} 
+                className="px-4 py-2 w-full h-10 sm:h-12 bg-stone-800 hover:bg-stone-900 text-white text-sm sm:text-base font-medium flex items-center justify-center gap-2"
+              >
+                {processing ? (
+                  <><Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" /> מעבד קישור...</>
+                ) : (
+                  <>הוספה לסל</>
+                )}
+              </Button>
+            </div>
+          )}
+
+          {/* Image Import Mode */}
+          {importMode === 'image' && (
+            <div className="space-y-4">
+              <h3 className="text-base sm:text-lg font-medium text-stone-800 flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5" /> העלאת תמונות
+              </h3>
+              
+              <div className="border-2 border-dashed border-stone-300 rounded-lg p-6 text-center hover:border-stone-400 transition-colors">
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageSelect}
+                  className="hidden"
+                  id="cart-image-upload"
+                  disabled={processing}
+                />
+                <label 
+                  htmlFor="cart-image-upload" 
+                  className="cursor-pointer flex flex-col items-center gap-3"
+                >
+                  <Upload className="w-10 h-10 text-stone-400" />
+                  <div>
+                    <p className="text-sm font-medium text-stone-700">
+                      לחצי להעלאת תמונות
+                    </p>
+                    <p className="text-xs text-stone-500 mt-1">
+                      ניתן להעלות עד 5 תמונות של עגלת הקניות
+                    </p>
+                  </div>
+                </label>
+              </div>
+
+              {selectedImages.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-stone-700">
+                    נבחרו {selectedImages.length} תמונות:
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedImages.map((file, idx) => (
+                      <div key={idx} className="text-xs bg-stone-100 px-3 py-1 rounded-full text-stone-600">
+                        {file.name}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <Button 
+                onClick={handleImageImport} 
+                disabled={processing || selectedImages.length === 0} 
+                className="px-4 py-2 w-full h-10 sm:h-12 bg-stone-800 hover:bg-stone-900 text-white text-sm sm:text-base font-medium flex items-center justify-center gap-2"
+              >
+                {processing ? (
+                  <><Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" /> מנתח תמונות...</>
+                ) : (
+                  <>זהה פריטים מהתמונות</>
+                )}
+              </Button>
+            </div>
+          )}
+
+          {/* Help Section */}
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }} 
+            animate={{ opacity: 1, scale: 1 }} 
+            transition={{ delay: 0.3 }} 
+            className="bg-rose-50 border border-rose-200 p-3 sm:p-4 mt-4 mb-6"
+          >
             <div className="flex items-start gap-2 sm:gap-3">
-              <div className="bg-rose-200 p-1.5 sm:p-2"><Copy className="w-4 h-4 sm:w-5 sm:h-5 text-rose-600" /></div>
+              <div className="bg-rose-200 p-1.5 sm:p-2">
+                {importMode === 'url' ? (
+                  <Copy className="w-4 h-4 sm:w-5 sm:h-5 text-rose-600" />
+                ) : (
+                  <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-rose-600" />
+                )}
+              </div>
               <div>
-                <h4 className="text-sm sm:text-base font-medium text-stone-800 mb-1">איך מוצאים את הקישור?</h4>
-                <p className="text-xs sm:text-sm text-stone-600">כנסי לאתר {siteData.domain}, בחרי מוצר והעתיקי את הקישור מסרגל הכתובת של הדפדפן</p>
+                {importMode === 'url' ? (
+                  <>
+                    <h4 className="text-sm sm:text-base font-medium text-stone-800 mb-1">איך מוצאים את הקישור?</h4>
+                    <p className="text-xs sm:text-sm text-stone-600">
+                      כנסי לאתר {siteData.domain}, בחרי מוצר והעתיקי את הקישור מסרגל הכתובת של הדפדפן
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <h4 className="text-sm sm:text-base font-medium text-stone-800 mb-1">איך להעלות תמונת עגלה?</h4>
+                    <p className="text-xs sm:text-sm text-stone-600">
+                      צלמי צילום מסך של עגלת הקניות באתר {siteData.domain} והעלי את התמונה. 
+                      המערכת תזהה אוטומטית את כל הפריטים, המחירים והפרטים.
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           </motion.div>
