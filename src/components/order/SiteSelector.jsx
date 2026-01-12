@@ -9,16 +9,16 @@ import { createPageUrl } from '@/utils';
 
 const sites = [
 {
-  id: 'eu',
-  name: 'אירופה',
-  flag: 'https://flagcdn.com/w160/eu.png',
-  url: 'eu.brandymelville.com'
-},
-{
   id: 'uk',
   name: 'בריטניה',
   flag: 'https://flagcdn.com/w160/gb.png',
   url: 'uk.brandymelville.com'
+},
+{
+  id: 'eu',
+  name: 'אירופה',
+  flag: 'https://flagcdn.com/w160/eu.png',
+  url: 'eu.brandymelville.com'
 },
 {
   id: 'local',
