@@ -27,7 +27,7 @@ export default function Layout({ children }) {
       document.head.appendChild(script);
 
       window.dataLayer = window.dataLayer || [];
-      window.gtag = function() { window.dataLayer.push(arguments); };
+      window.gtag = function () {window.dataLayer.push(arguments);};
       window.gtag('js', new Date());
       window.gtag('config', 'G-VCRC7EKKQH');
     }
@@ -49,7 +49,7 @@ export default function Layout({ children }) {
         setLoading(false);
       }
     };
-    
+
     checkUser();
   }, [location.pathname]); // Re-check on route change
 
@@ -66,7 +66,7 @@ export default function Layout({ children }) {
   { name: "ManageCoupons", label: "ניהול קופונים והטבות", icon: FileText, roles: ['admin'] },
 
   { name: "LoyaltyAdmin", label: "ניהול מועדון לקוחות", icon: Heart, roles: ['admin'] },
-    { name: "ChatLogs", label: "לוג שיחות צ'אט", icon: MessageSquare, roles: ['admin'] }];
+  { name: "ChatLogs", label: "לוג שיחות צ'אט", icon: MessageSquare, roles: ['admin'] }];
 
 
   const navLinks = allNavLinks.filter((link) => link.roles.includes(userRole));
@@ -104,8 +104,8 @@ export default function Layout({ children }) {
                   <Heart className="w-3 h-3 sm:w-5 sm:h-5 text-white fill-white" />
                 </div>
                 <div className="text-right">
-                  <h1 className="text-sm sm:text-lg font-semibold tracking-wide text-stone-800">Brandy Melville to Israel</h1>
-                  <p className="text-xs text-stone-500 hidden sm:block">הדרך הקלה להזמין ברנדי </p>
+                  <h1 className="text-sm sm:text-lg font-semibold tracking-wide text-stone-800">ברנדי ישראל</h1>
+                  <p className="text-xs text-stone-500 hidden sm:block">הדרך הקלה להזמין ברנדי מחו״ל</p>
                 </div>
               </Link>
             </div>
@@ -113,16 +113,16 @@ export default function Layout({ children }) {
         </header>
 
         <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-10">
-          {MAINTENANCE_MODE && userRole !== 'admin' ? (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+          {MAINTENANCE_MODE && userRole !== 'admin' ?
+          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
               <Heart className="w-16 h-16 text-rose-300 mb-6" />
               <h1 className="text-3xl font-semibold text-stone-800 mb-4">האתר בבנייה 🚧</h1>
               <p className="text-lg text-stone-600 mb-2">אנחנו עובדים על משהו מדהים!</p>
               <p className="text-stone-500">נחזור בקרוב עם חוויה מושלמת 💖</p>
-            </div>
-          ) : (
-            children
-          )}
+            </div> :
+
+          children
+          }
         </main>
       </div>
     </>);
