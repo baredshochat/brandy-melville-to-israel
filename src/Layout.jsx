@@ -101,7 +101,7 @@ export default function Layout({ children }) {
                 </div>
                 <div className="text-right">
                   <h1 className="text-sm sm:text-lg font-semibold tracking-wide text-stone-800">ברנדי ישראל</h1>
-                  <p className="text-xs text-stone-500 hidden sm:block">הדרך הקלה להזמין ברנדי מחו״ל</p>
+                  <p className="text-xs text-stone-500 hidden sm:block">הדרך הקלה להזמין ברנדי מלוויל מחו״ל</p>
                 </div>
               </Link>
             </div>
