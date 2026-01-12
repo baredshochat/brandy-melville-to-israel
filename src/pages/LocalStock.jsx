@@ -213,8 +213,8 @@ export default function LocalStock() {
             className="text-center">
             <h1 className="text-2xl sm:text-3xl font-light text-stone-800 mb-2">זמין במלאי</h1>
             <p className="text-sm text-stone-500 font-light">אספקה מהירה עד הבית תוך 3-7 ימי עסקים.</p>
-            <p className="text-sm text-stone-500 font-light mt-4">למען שמירה על זכויות יוצרים, הסרנו את כל התמונות</p>
-            <p className="text-sm text-stone-500 font-light">לינק לפריט המקורי מופיע בתיאור כל פריט</p>
+            <p className="text-sm text-stone-500 font-light mt-4"></p>
+            <p className="text-sm text-stone-500 font-light"></p>
           </motion.div>
         </div>
       </div>
@@ -312,35 +312,35 @@ export default function LocalStock() {
                           <h3 className="font-medium text-sm text-stone-800">
                             {item.product_name}
                           </h3>
-                          {(item.color || item.size) && (
-                            <div className="flex items-center gap-2">
-                              {item.color && item.color_hex && (
-                                <div 
-                                  className="w-4 h-4 border border-stone-300 flex-shrink-0" 
-                                  style={{ backgroundColor: item.color_hex }}
-                                  title={item.color}
-                                />
-                              )}
+                          {(item.color || item.size) &&
+                      <div className="flex items-center gap-2">
+                              {item.color && item.color_hex &&
+                        <div
+                          className="w-4 h-4 border border-stone-300 flex-shrink-0"
+                          style={{ backgroundColor: item.color_hex }}
+                          title={item.color} />
+
+                        }
                               <p className="text-xs text-stone-500">
                                 {[item.color, item.size].filter(Boolean).join(' • ')}
                               </p>
                             </div>
-                          )}
+                      }
                           <p className="text-stone-800 text-lg font-semibold">
                             ₪{item.price_ils}
                           </p>
 
-                          {item.source_url && (
-                            <a
-                              href={item.source_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="text-xs text-blue-600 hover:text-blue-700 underline block"
-                            >
+                          {item.source_url &&
+                      <a
+                        href={item.source_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-xs text-blue-600 hover:text-blue-700 underline block">
+
                               🔗 לפריט באתר המקורי
                             </a>
-                          )}
+                      }
                           
                           {!item.show_image &&
                       <div className="flex gap-2">
