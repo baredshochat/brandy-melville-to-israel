@@ -54,8 +54,6 @@ export default function CartImport({ site, onImportComplete, onBack, loading }) 
   const [user, setUser] = useState(null);
   const [uploadedImages, setUploadedImages] = useState([]);
   const [uploadingImages, setUploadingImages] = useState(false);
-  const [imageFiles, setImageFiles] = useState([]);
-  const [uploadingImages, setUploadingImages] = useState(false);
 
   const siteData = siteInfo[site];
 
