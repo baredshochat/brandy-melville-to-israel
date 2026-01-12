@@ -9,12 +9,6 @@ import { createPageUrl } from '@/utils';
 
 const sites = [
 {
-  id: 'eu',
-  name: 'אירופה',
-  flag: 'https://flagcdn.com/w160/eu.png',
-  url: 'eu.brandymelville.com'
-},
-{
   id: 'uk',
   name: 'בריטניה',
   flag: 'https://flagcdn.com/w160/gb.png',
@@ -54,7 +48,7 @@ const HowItWorksModal = () =>
               </div>
               <div>
                 <h4 className="font-semibold mb-1 text-sm">בחירת אתר</h4>
-                <p className="text-sm text-stone-600">בחרי אירופה או בריטניה</p>
+                <p className="text-sm text-stone-600">בחרי בריטניה</p>
               </div>
             </div>
             
@@ -158,7 +152,7 @@ const ShippingInfoModal = () =>
           <div className="flex items-center gap-3 mb-3">
             <Clock className="w-5 h-5 text-stone-500" />
             <div>
-              <h3 className="font-semibold">משלוח בינלאומי (אירופה/בריטניה)</h3>
+              <h3 className="font-semibold">משלוח בינלאומי (בריטניה)</h3>
               <p className="text-sm text-stone-600">3-4 שבועות מרגע ביצוע ההזמנה</p>
             </div>
           </div>
