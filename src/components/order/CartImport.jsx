@@ -115,27 +115,38 @@ export default function CartImport({ site, onImportComplete, onBack, loading }) 
         try {
           console.log('📤 Uploading:', file.name, file.type, (file.size / 1024).toFixed(1) + 'KB');
           
-          const result = await UploadFile({ file });
-          console.log('✅ Upload result:', result);
+          // Use base44 SDK instead of direct integration
+          const result = await base44.integrations.Core.UploadFile({ file });
+          console.log('✅ Raw result:', JSON.stringify(result));
           
           let fileUrl = null;
-          if (result?.file_url) {
+          
+          // Try multiple response formats
+          if (typeof result === 'string') {
+            fileUrl = result;
+          } else if (result?.file_url) {
             fileUrl = result.file_url;
           } else if (result?.data?.file_url) {
             fileUrl = result.data.file_url;
-          } else if (typeof result === 'string') {
-            fileUrl = result;
+          } else if (result?.url) {
+            fileUrl = result.url;
+          } else if (result?.data?.url) {
+            fileUrl = result.data.url;
           }
           
           if (fileUrl) {
             imageUrls.push(fileUrl);
-            console.log('✅ File uploaded:', fileUrl);
+            console.log('✅ File uploaded successfully:', fileUrl);
+          } else {
+            console.error('❌ No URL in result:', result);
           }
         } catch (err) {
-          console.error('❌ Upload failed:', file.name);
-          console.error('Error:', err?.message);
-          console.error('Status:', err?.response?.status);
-          console.error('Response:', err?.response?.data);
+          console.error('❌ Upload failed for:', file.name);
+          console.error('Full error:', err);
+          console.error('Error message:', err?.message);
+          console.error('Error stack:', err?.stack);
+          console.error('Response status:', err?.response?.status);
+          console.error('Response data:', JSON.stringify(err?.response?.data));
         }
       }
 
