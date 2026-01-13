@@ -96,39 +96,62 @@ export default function CartImport({ site, onImportComplete, onBack, loading }) 
     setStatus(null);
 
     try {
-      const uploadPromises = files.map(async (file) => {
+      // Upload files one by one to better handle errors
+      const imageUrls = [];
+      
+      for (const file of files) {
         try {
+          console.log('Uploading file:', file.name, 'type:', file.type, 'size:', file.size);
           const result = await UploadFile({ file });
-          console.log('Upload result:', result);
-          return result;
+          console.log('Raw upload result:', result);
+          
+          // Handle different response formats
+          let fileUrl = null;
+          if (result?.file_url) {
+            fileUrl = result.file_url;
+          } else if (result?.data?.file_url) {
+            fileUrl = result.data.file_url;
+          } else if (typeof result === 'string') {
+            fileUrl = result;
+          }
+          
+          console.log('Extracted file URL:', fileUrl);
+          
+          if (fileUrl) {
+            imageUrls.push(fileUrl);
+          }
         } catch (err) {
-          console.error('Single file upload error:', err);
-          throw err;
+          console.error('Failed to upload file:', file.name, err);
+          console.error('Error details:', {
+            message: err?.message,
+            response: err?.response?.data,
+            status: err?.response?.status
+          });
+          // Continue with other files even if one fails
         }
-      });
-      
-      const results = await Promise.all(uploadPromises);
-      
-      const imageUrls = results.map(result => {
-        if (result?.file_url) return result.file_url;
-        if (result?.data?.file_url) return result.data.file_url;
-        return null;
-      }).filter(Boolean);
+      }
 
       if (imageUrls.length === 0) {
-        setStatus({ type: 'error', message: 'לא הצלחנו לעלות את התמונות. נסי שוב' });
+        setStatus({ type: 'error', message: 'לא הצלחנו לעלות אף תמונה. בדקי את פורמט הקבצים ונסי שוב' });
         return;
       }
 
       setUploadedImages(prev => [...prev, ...imageUrls]);
-      setStatus({ type: 'success', message: `${imageUrls.length} תמונות הועלו בהצלחה` });
+      
+      if (imageUrls.length < files.length) {
+        setStatus({ 
+          type: 'warning', 
+          message: `הועלו ${imageUrls.length} מתוך ${files.length} תמונות. חלק מהקבצים נכשלו` 
+        });
+      } else {
+        setStatus({ type: 'success', message: `${imageUrls.length} תמונות הועלו בהצלחה` });
+      }
     } catch (error) {
       console.error('Upload error:', error);
       const errorMsg = error?.response?.data?.message || error?.message || 'שגיאה לא ידועה';
       setStatus({ type: 'error', message: `שגיאה בהעלאת התמונות: ${errorMsg}` });
     } finally {
       setUploadingImages(false);
-      // Reset the file input
       e.target.value = '';
     }
   };
