@@ -92,20 +92,32 @@ export default function CartImport({ site, onImportComplete, onBack, loading }) 
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
+    // Validate files before uploading
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    
+    const invalidFiles = files.filter(f => f.size > maxSize || !allowedTypes.includes(f.type));
+    if (invalidFiles.length > 0) {
+      setStatus({ 
+        type: 'error', 
+        message: `קבצים לא תקינים: ${invalidFiles.map(f => f.name).join(', ')}. רק תמונות עד 10MB` 
+      });
+      return;
+    }
+
     setUploadingImages(true);
     setStatus(null);
 
     try {
-      // Upload files one by one to better handle errors
       const imageUrls = [];
       
       for (const file of files) {
         try {
-          console.log('Uploading file:', file.name, 'type:', file.type, 'size:', file.size);
-          const result = await UploadFile({ file });
-          console.log('Raw upload result:', result);
+          console.log('📤 Uploading:', file.name, file.type, (file.size / 1024).toFixed(1) + 'KB');
           
-          // Handle different response formats
+          const result = await UploadFile({ file });
+          console.log('✅ Upload result:', result);
+          
           let fileUrl = null;
           if (result?.file_url) {
             fileUrl = result.file_url;
@@ -115,41 +127,29 @@ export default function CartImport({ site, onImportComplete, onBack, loading }) 
             fileUrl = result;
           }
           
-          console.log('Extracted file URL:', fileUrl);
-          
           if (fileUrl) {
             imageUrls.push(fileUrl);
+            console.log('✅ File uploaded:', fileUrl);
           }
         } catch (err) {
-          console.error('Failed to upload file:', file.name, err);
-          console.error('Error details:', {
-            message: err?.message,
-            response: err?.response?.data,
-            status: err?.response?.status
-          });
-          // Continue with other files even if one fails
+          console.error('❌ Upload failed:', file.name);
+          console.error('Error:', err?.message);
+          console.error('Status:', err?.response?.status);
+          console.error('Response:', err?.response?.data);
         }
       }
 
       if (imageUrls.length === 0) {
-        setStatus({ type: 'error', message: 'לא הצלחנו לעלות אף תמונה. בדקי את פורמט הקבצים ונסי שוב' });
+        setStatus({ type: 'error', message: 'לא הצלחנו לעלות את התמונות. בדקי את החיבור לאינטרנט ונסי שוב' });
         return;
       }
 
       setUploadedImages(prev => [...prev, ...imageUrls]);
+      setStatus({ type: 'success', message: `${imageUrls.length} תמונות הועלו בהצלחה ✓` });
       
-      if (imageUrls.length < files.length) {
-        setStatus({ 
-          type: 'warning', 
-          message: `הועלו ${imageUrls.length} מתוך ${files.length} תמונות. חלק מהקבצים נכשלו` 
-        });
-      } else {
-        setStatus({ type: 'success', message: `${imageUrls.length} תמונות הועלו בהצלחה` });
-      }
     } catch (error) {
-      console.error('Upload error:', error);
-      const errorMsg = error?.response?.data?.message || error?.message || 'שגיאה לא ידועה';
-      setStatus({ type: 'error', message: `שגיאה בהעלאת התמונות: ${errorMsg}` });
+      console.error('❌ General upload error:', error);
+      setStatus({ type: 'error', message: 'שגיאה בהעלאת התמונות. נסי שוב' });
     } finally {
       setUploadingImages(false);
       e.target.value = '';
