@@ -364,7 +364,7 @@ Return ONLY a JSON object matching the schema; do not include extra text.
             </h3>
             <p className="text-xs sm:text-sm text-stone-600">צלמי צילום מסך של עגלת הקניות מהאתר ונזהה את כל הפריטים אוטומטית</p>
             
-            <div className="border-2 border-dashed border-stone-300 rounded-lg p-6 text-center hover:border-rose-400 transition-colors">
+            <div className="border-2 border-dashed border-stone-300 rounded-lg text-center hover:border-rose-400 transition-colors">
               <input
                 type="file"
                 accept="image/*"
@@ -374,7 +374,7 @@ Return ONLY a JSON object matching the schema; do not include extra text.
                 className="hidden"
                 id="image-upload"
               />
-              <label htmlFor="image-upload" className="cursor-pointer">
+              <label htmlFor="image-upload" className="cursor-pointer block p-6">
                 <div className="flex flex-col items-center gap-3">
                   {uploadingImages ? (
                     <Loader2 className="w-8 h-8 animate-spin text-stone-400" />
