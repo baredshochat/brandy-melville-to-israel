@@ -113,22 +113,16 @@ export default function CartImport({ site, onImportComplete, onBack, loading }) 
       
       for (const file of files) {
         try {
-          console.log('📤 Starting upload:', file.name, file.type, (file.size / 1024).toFixed(1) + 'KB');
+          console.log('📤 Uploading:', file.name);
           
           const result = await UploadFile({ file });
-          console.log('✅ Upload result:', result);
-          
-          // Extract URL from result
-          const fileUrl = result?.file_url || result?.data?.file_url || result?.url || result?.data?.url || (typeof result === 'string' ? result : null);
+          const fileUrl = result?.file_url || result?.data?.file_url || (typeof result === 'string' ? result : null);
           
           if (fileUrl) {
             imageUrls.push(fileUrl);
-            console.log('✅ Success:', fileUrl);
-          } else {
-            console.error('❌ No URL found in result:', result);
           }
         } catch (err) {
-          console.error('❌ Upload error:', file.name, err);
+          console.error('Upload error:', err);
         }
       }
 
