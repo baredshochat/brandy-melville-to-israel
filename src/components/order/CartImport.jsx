@@ -96,7 +96,17 @@ export default function CartImport({ site, onImportComplete, onBack, loading }) 
     setStatus(null);
 
     try {
-      const uploadPromises = files.map(file => UploadFile({ file }));
+      const uploadPromises = files.map(async (file) => {
+        try {
+          const result = await UploadFile({ file });
+          console.log('Upload result:', result);
+          return result;
+        } catch (err) {
+          console.error('Single file upload error:', err);
+          throw err;
+        }
+      });
+      
       const results = await Promise.all(uploadPromises);
       
       const imageUrls = results.map(result => {
@@ -105,13 +115,21 @@ export default function CartImport({ site, onImportComplete, onBack, loading }) 
         return null;
       }).filter(Boolean);
 
+      if (imageUrls.length === 0) {
+        setStatus({ type: 'error', message: 'לא הצלחנו לעלות את התמונות. נסי שוב' });
+        return;
+      }
+
       setUploadedImages(prev => [...prev, ...imageUrls]);
       setStatus({ type: 'success', message: `${imageUrls.length} תמונות הועלו בהצלחה` });
     } catch (error) {
       console.error('Upload error:', error);
-      setStatus({ type: 'error', message: 'שגיאה בהעלאת התמונות' });
+      const errorMsg = error?.response?.data?.message || error?.message || 'שגיאה לא ידועה';
+      setStatus({ type: 'error', message: `שגיאה בהעלאת התמונות: ${errorMsg}` });
     } finally {
       setUploadingImages(false);
+      // Reset the file input
+      e.target.value = '';
     }
   };
 
