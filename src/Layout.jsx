@@ -101,8 +101,10 @@ export default function Layout({ children }) {
                 </div>
                 <div className="text-right">
                   <h1 className="text-sm sm:text-lg font-semibold tracking-wide text-stone-800">ברנדי ישראל</h1>
-                  <p className="text-xs text-stone-500 hidden sm:block">הדרך הקלה להזמין ברנדי מחו״ל
-*כל המוצרים הינם מקוריים, אך איננו אתר רשמי של ברנדי מלוויל</p>
+                  <p className="text-xs text-stone-500 hidden sm:block">
+                    הדרך הקלה להזמין ברנדי מחו״ל<br />
+                    *כל המוצרים הינם מקוריים, אך איננו אתר רשמי של ברנדי מלוויל
+                  </p>
                 </div>
               </Link>
             </div>
