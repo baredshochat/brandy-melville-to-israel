@@ -387,7 +387,7 @@ export default function SiteSelector({ onSiteSelect, onBack, userRole }) {
             <Heart className="w-8 h-8 sm:w-10 sm:h-10 text-rose-300 fill-rose-300/30" />
         </div>
         <h2 className="text-2xl sm:text-3xl mb-2 sm:mb-3 font-semibold tracking-normal">מאיפה קונות היום?</h2>
-        <p className="text-sm sm:text-base text-stone-600 max-w-2xl mx-auto px-4">בחרי את אתר ברנדי מלוויל ממנו את רוצה להזמין
+        <p className="text-sm sm:text-base text-stone-600 max-w-2xl mx-auto px-4">בחרי את האתר ממנו את רוצה להזמין
 
         </p>
       </div>
