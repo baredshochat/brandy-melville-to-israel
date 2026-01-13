@@ -101,7 +101,8 @@ export default function Layout({ children }) {
                 </div>
                 <div className="text-right">
                   <h1 className="text-sm sm:text-lg font-semibold tracking-wide text-stone-800">ברנדי ישראל</h1>
-                  <p className="text-xs text-stone-500 hidden sm:block">הדרך הקלה להזמין ברנדי מחו״ל</p>
+                  <p className="text-xs text-stone-500 hidden sm:block">הדרך הקלה להזמין ברנדי מחו״ל
+*כל המוצרים הינם מקוריים, אך איננו אתר רשמי של ברנדי מלוויל</p>
                 </div>
               </Link>
             </div>
@@ -109,8 +110,7 @@ export default function Layout({ children }) {
         </header>
 
         <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-10">
-          {MAINTENANCE_MODE && userRole !== 'admin' ?
-          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+          {MAINTENANCE_MODE && userRole !== 'admin' ? <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
               <Heart className="w-16 h-16 text-rose-300 mb-6" />
               <h1 className="text-3xl font-semibold text-stone-800 mb-4">האתר בבנייה 🚧</h1>
               <p className="text-lg text-stone-600 mb-2">אנחנו עובדים על משהו מדהים!</p>
