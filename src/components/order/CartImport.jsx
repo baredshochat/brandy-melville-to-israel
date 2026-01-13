@@ -5,7 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Link2, Loader2, CheckCircle, AlertTriangle, XCircle, ExternalLink, Copy, Upload, Image as ImageIcon, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { InvokeLLM, UploadFile } from "@/integrations/Core";
+import { InvokeLLM } from "@/integrations/Core";
 import { CartItem } from "@/entities/CartItem";
 import { User } from "@/entities/User";
 import { base44 } from '@/api/base44Client';
@@ -115,7 +115,7 @@ export default function CartImport({ site, onImportComplete, onBack, loading }) 
         try {
           console.log('📤 Uploading:', file.name, file.type, (file.size / 1024).toFixed(1) + 'KB');
           
-          const result = await UploadFile({ file });
+          const result = await base44.integrations.Core.UploadFile({ file });
           console.log('✅ Upload result:', result);
           
           let fileUrl = null;
