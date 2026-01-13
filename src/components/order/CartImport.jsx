@@ -96,7 +96,6 @@ export default function CartImport({ site, onImportComplete, onBack, loading }) 
     setStatus(null);
 
     try {
-      const { UploadFile } = await import('@/integrations/Core');
       const uploadPromises = files.map(file => UploadFile({ file }));
       const results = await Promise.all(uploadPromises);
       
